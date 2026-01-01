@@ -869,6 +869,8 @@
     </style>
     <!-- Farcaster Mini App SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js"></script>
+    <!-- Ethers.js for Base ETH payments -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
   </head>
   <body>
     <div id="introOverlay">
@@ -920,18 +922,21 @@
     </div>
 
     <div id="upgradeModal" class="custom-modal">
-      <h2 style="color: var(--neon); margin: 0 0 15px 0">FACTORY UPGRADES</h2>
+      <h2 style="color: var(--neon); margin: 0 0 10px 0">FACTORY UPGRADES</h2>
+      <p style="font-size: 10px; color: #888; margin: 0 0 15px 0">Payment: Base Network ETH</p>
       <div class="factory-modal-grid">
         <div class="fac-card">
           <span class="fac-header">METAL FACTORY</span>
-          <span id="metalFacLevel" style="font-size: 9px; text-align: center; margin-bottom: 5px">Lvl 1</span>
+          <span id="metalFacLevel" style="font-size: 9px; text-align: center; margin-bottom: 3px">Lvl 1</span>
+          <span id="metalBuildTime" style="font-size: 8px; text-align: center; margin-bottom: 5px; color: #888">⏱️ 2h</span>
           <button id="upMetalFac" class="btn-upgrade" onclick="upgradeFactory('metal')">
             UPGRADE <span id="costMetalFac"></span>
           </button>
         </div>
         <div class="fac-card">
           <span class="fac-header">CRYSTAL FACTORY</span>
-          <span id="kristalFacLevel" style="font-size: 9px; text-align: center; margin-bottom: 5px">Lvl 1</span>
+          <span id="kristalFacLevel" style="font-size: 9px; text-align: center; margin-bottom: 3px">Lvl 1</span>
+          <span id="kristalBuildTime" style="font-size: 8px; text-align: center; margin-bottom: 5px; color: #888">⏱️ 2h</span>
           <button id="upKristalFac" class="btn-upgrade" onclick="upgradeFactory('kristal')">
             UPGRADE <span id="costKristalFac"></span>
           </button>
@@ -1487,65 +1492,126 @@
         }
       }
 
-      function upgradeFactory(type) {
-        let mCost, kCost, upgradeTime;
+      // ETH Payment Configuration (Base Network)
+      const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
+      const BASE_ETH_COST = 0.0005; // Starting cost in ETH
+      const BASE_UPGRADE_TIME = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+      const BASE_CHAIN_ID = 8453; // Base Mainnet Chain ID
+
+      // Calculate ETH cost for upgrade (doubles each level)
+      function getUpgradeCost(level) {
+        return BASE_ETH_COST * Math.pow(2, level - 1);
+      }
+
+      // Calculate upgrade time (doubles each level)
+      function getUpgradeTime(level) {
+        return BASE_UPGRADE_TIME * Math.pow(2, level - 1);
+      }
+
+      // Connect wallet and send ETH payment
+      async function sendETHPayment(amountETH) {
+        if (typeof window.ethereum === "undefined") {
+          alert("Please install MetaMask or use a Web3 wallet!");
+          return false;
+        }
+
+        try {
+          // Request wallet connection
+          await window.ethereum.request({ method: "eth_requestAccounts" });
+          
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const network = await provider.getNetwork();
+          
+          // Check if on Base network
+          if (Number(network.chainId) !== BASE_CHAIN_ID) {
+            try {
+              await window.ethereum.request({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: "0x2105" }], // Base Mainnet hex
+              });
+            } catch (switchError) {
+              if (switchError.code === 4902) {
+                await window.ethereum.request({
+                  method: "wallet_addEthereumChain",
+                  params: [{
+                    chainId: "0x2105",
+                    chainName: "Base",
+                    nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+                    rpcUrls: ["https://mainnet.base.org"],
+                    blockExplorerUrls: ["https://basescan.org"]
+                  }]
+                });
+              } else {
+                throw switchError;
+              }
+            }
+          }
+
+          const signer = await provider.getSigner();
+          const amountWei = ethers.parseEther(amountETH.toString());
+
+          const tx = await signer.sendTransaction({
+            to: PAYMENT_ADDRESS,
+            value: amountWei
+          });
+
+          // Wait for confirmation
+          await tx.wait();
+          return true;
+        } catch (error) {
+          console.error("Payment error:", error);
+          alert("Payment failed: " + (error.message || "Unknown error"));
+          return false;
+        }
+      }
+
+      async function upgradeFactory(type) {
+        let currentLevel, upgradeEndTime;
+        
         if (type === "metal") {
-          // Eğer zaten yükseltme yapılıyorsa çık
           if (metalFacUpgradeEndTime > Date.now()) {
             return;
           }
-
-          // Metal fabrikası yükseltme maliyeti
-          mCost = metalFacLvl * 50;
-          kCost = metalFacLvl * 20;
-
-          // Yeterli kaynak kontrolü
-          if (metal < mCost || kristal < kCost) {
-            alert("Insufficient resources!");
-            return;
-          }
-
-          // Kaynakları düş
-          metal -= mCost;
-          kristal -= kCost;
-
-          // Yükseltme süresini hesapla: 15 dakika + (mevcut seviye - 1) * 15 dakika
-          upgradeTime = (15 + (metalFacLvl - 1) * 15) * 60 * 1000;
-          // dakika -> milisaniye
-
-          // Yükseltme bitiş zamanını ayarla
-          metalFacUpgradeEndTime = Date.now() + upgradeTime;
+          currentLevel = metalFacLvl;
         } else if (type === "kristal") {
-          // Eğer zaten yükseltme yapılıyorsa çık
           if (kristalFacUpgradeEndTime > Date.now()) {
             return;
           }
+          currentLevel = kristalFacLvl;
+        }
 
-          // Kristal fabrikası yükseltme maliyeti
-          mCost = kristalFacLvl * 20;
-          kCost = kristalFacLvl * 50;
+        const ethCost = getUpgradeCost(currentLevel);
+        const upgradeTime = getUpgradeTime(currentLevel);
 
-          // Yeterli kaynak kontrolü
-          if (metal < mCost || kristal < kCost) {
-            alert("Insufficient resources!");
-            return;
-          }
+        // Confirm payment
+        const confirmMsg = `Upgrade to Level ${currentLevel + 1}\n\nCost: ${ethCost} ETH (Base Network)\nBuild Time: ${formatTimeHours(upgradeTime)}\n\nProceed with payment?`;
+        if (!confirm(confirmMsg)) {
+          return;
+        }
 
-          // Kaynakları düş
-          metal -= mCost;
-          kristal -= kCost;
+        // Process ETH payment
+        const paymentSuccess = await sendETHPayment(ethCost);
+        if (!paymentSuccess) {
+          return;
+        }
 
-          // Yükseltme süresini hesapla
-          upgradeTime = (15 + (kristalFacLvl - 1) * 15) * 60 * 1000;
-          // dakika -> milisaniye
-
-          // Yükseltme bitiş zamanını ayarla
+        // Set upgrade end time
+        if (type === "metal") {
+          metalFacUpgradeEndTime = Date.now() + upgradeTime;
+        } else if (type === "kristal") {
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        // UI ve veriyi güncelle
+        alert("Payment successful! Upgrade started.");
         updateUI();
         saveData();
+      }
+
+      // Format time for hours display
+      function formatTimeHours(ms) {
+        const hours = Math.floor(ms / 3600000);
+        const minutes = Math.floor((ms % 3600000) / 60000);
+        return `${hours}h ${minutes}m`;
       }
 
       function formatTime(ms) {
@@ -1703,8 +1769,16 @@
         );
         setText("metalFacLevel", `Lvl ${metalFacLvl}`);
         setText("kristalFacLevel", `Lvl ${kristalFacLvl}`);
-        setText("costMetalFac", `⚙️${metalFacLvl * 50}`);
-        setText("costKristalFac", `💎${kristalFacLvl * 50}`);
+        
+        // ETH costs and build times for upgrades
+        const metalEthCost = getUpgradeCost(metalFacLvl);
+        const kristalEthCost = getUpgradeCost(kristalFacLvl);
+        const metalBuildTime = getUpgradeTime(metalFacLvl);
+        const kristalBuildTime = getUpgradeTime(kristalFacLvl);
+        setText("costMetalFac", `Ξ${metalEthCost} ETH`);
+        setText("costKristalFac", `Ξ${kristalEthCost} ETH`);
+        setText("metalBuildTime", `⏱️ ${formatTimeHours(metalBuildTime)}`);
+        setText("kristalBuildTime", `⏱️ ${formatTimeHours(kristalBuildTime)}`);
         setText("resUI", `⚙️: ${Math.floor(metal)} | 💎: ${Math.floor(kristal)}`);
         setText("healthUI", "❤️: " + health);
 
@@ -1721,8 +1795,8 @@
           upMetalFacBtn.disabled = true;
         } else {
           // Yükseltme yapılabilir
-          upMetalFacBtn.innerHTML = `UPGRADE <span id="costMetalFac">⚙️${metalFacLvl * 50}</span>`;
-          upMetalFacBtn.disabled = !(metal >= metalFacLvl * 50 && kristal >= metalFacLvl * 20);
+          upMetalFacBtn.innerHTML = `UPGRADE <span id="costMetalFac">Ξ${metalEthCost} ETH</span>`;
+          upMetalFacBtn.disabled = false;
         }
 
         // Kristal fabrikası buton güncelleme
@@ -1734,8 +1808,8 @@
           upKristalFacBtn.disabled = true;
         } else {
           // Yükseltme yapılabilir
-          upKristalFacBtn.innerHTML = `UPGRADE <span id="costKristalFac">💎${kristalFacLvl * 50}</span>`;
-          upKristalFacBtn.disabled = !(metal >= kristalFacLvl * 20 && kristal >= kristalFacLvl * 50);
+          upKristalFacBtn.innerHTML = `UPGRADE <span id="costKristalFac">Ξ${kristalEthCost} ETH</span>`;
+          upKristalFacBtn.disabled = false;
         }
 
         setDisabled("swapBtn", Math.min(Math.floor(metal), Math.floor(kristal)) <= 0);
