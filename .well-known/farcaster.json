@@ -1,0 +1,19 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjEyMzQ1LCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4Li4uIn0",
+    "payload": "eyJkb21haW4iOiJ5b3VyLWRvbWFpbi5jb20ifQ",
+    "signature": "YOUR_SIGNATURE_HERE"
+  },
+  "frame": {
+    "version": "1",
+    "name": "TRANIUM VERSE",
+    "iconUrl": "https://your-domain.com/icon.png",
+    "homeUrl": "https://your-domain.com",
+    "imageUrl": "https://your-domain.com/preview.png",
+    "buttonTitle": "Play Now",
+    "splashImageUrl": "https://your-domain.com/splash.png",
+    "splashBackgroundColor": "#0a0a00",
+    "webhookUrl": "https://your-domain.com/api/webhook"
+  }
+}
+
