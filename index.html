@@ -513,7 +513,7 @@
         box-shadow: 0 4px 0 #b89600;
         font-size: 14px;
         min-height: 60px;
-        margin: 5px 0;
+        margin: 10px 0;
         flex-shrink: 0;
       }
       .btn-refine:disabled {
@@ -777,7 +777,7 @@
           padding: 10px;
           min-height: 45px; /* Butonları küçült */
           font-size: 12px;
-          margin: 2px 0;
+          margin: 8px 0;
         }
 
         .footer {
@@ -1053,23 +1053,35 @@
       // Initialize Farcaster SDK
       async function initFarcasterSDK() {
         try {
-          // Check if running inside Farcaster
-          if (window.FarcasterFrameSDK || window.sdk) {
-            farcasterSDK = window.FarcasterFrameSDK || window.sdk;
+          // Check for Farcaster SDK under various possible global names
+          const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
+          
+          if (sdk) {
+            farcasterSDK = sdk;
             isMiniApp = true;
+            console.log("Farcaster SDK found:", sdk);
             
             // Get context (user info, etc.)
             try {
-              farcasterContext = await farcasterSDK.context;
-              console.log("Farcaster context:", farcasterContext);
+              if (sdk.context) {
+                farcasterContext = await sdk.context;
+                console.log("Farcaster context:", farcasterContext);
+              }
             } catch (e) {
               console.log("Could not get Farcaster context:", e);
             }
             
             // Signal that the app is ready to be displayed
-            if (farcasterSDK.actions && farcasterSDK.actions.ready) {
-              await farcasterSDK.actions.ready();
-              console.log("Farcaster Mini App ready!");
+            try {
+              if (sdk.actions && typeof sdk.actions.ready === 'function') {
+                await sdk.actions.ready();
+                console.log("Farcaster Mini App ready!");
+              } else if (typeof sdk.ready === 'function') {
+                await sdk.ready();
+                console.log("Farcaster Mini App ready (direct)!");
+              }
+            } catch (e) {
+              console.log("Could not call ready:", e);
             }
           } else {
             console.log("Not running inside Farcaster, using standalone mode");
