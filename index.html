@@ -923,7 +923,7 @@
 
     <div id="upgradeModal" class="custom-modal">
       <h2 style="color: var(--neon); margin: 0 0 10px 0">FACTORY UPGRADES</h2>
-      <p style="font-size: 10px; color: #888; margin: 0 0 15px 0">Payment: Base Network ETH</p>
+      <p style="font-size: 10px; color: #888; margin: 0 0 15px 0">💎 Payment: Base Network ETH</p>
       <div class="factory-modal-grid">
         <div class="fac-card">
           <span class="fac-header">METAL FACTORY</span>
@@ -1492,7 +1492,9 @@
         }
       }
 
-      // ETH Payment Configuration (Base Network)
+      // ============================================
+      // ETH PAYMENT SYSTEM (Base Network)
+      // ============================================
       const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
       const BASE_ETH_COST = 0.0005; // Starting cost in ETH
       const BASE_UPGRADE_TIME = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
@@ -1506,6 +1508,13 @@
       // Calculate upgrade time (doubles each level)
       function getUpgradeTime(level) {
         return BASE_UPGRADE_TIME * Math.pow(2, level - 1);
+      }
+
+      // Format time for hours display
+      function formatTimeHours(ms) {
+        const hours = Math.floor(ms / 3600000);
+        const minutes = Math.floor((ms % 3600000) / 60000);
+        return `${hours}h ${minutes}m`;
       }
 
       // Connect wallet and send ETH payment
@@ -1566,15 +1575,17 @@
       }
 
       async function upgradeFactory(type) {
-        let currentLevel, upgradeEndTime;
+        let currentLevel;
         
         if (type === "metal") {
           if (metalFacUpgradeEndTime > Date.now()) {
+            alert("Upgrade already in progress!");
             return;
           }
           currentLevel = metalFacLvl;
         } else if (type === "kristal") {
           if (kristalFacUpgradeEndTime > Date.now()) {
+            alert("Upgrade already in progress!");
             return;
           }
           currentLevel = kristalFacLvl;
@@ -1584,7 +1595,7 @@
         const upgradeTime = getUpgradeTime(currentLevel);
 
         // Confirm payment
-        const confirmMsg = `Upgrade to Level ${currentLevel + 1}\n\nCost: ${ethCost} ETH (Base Network)\nBuild Time: ${formatTimeHours(upgradeTime)}\n\nProceed with payment?`;
+        const confirmMsg = `🏭 Upgrade to Level ${currentLevel + 1}\n\n💰 Cost: ${ethCost} ETH (Base Network)\n⏱️ Build Time: ${formatTimeHours(upgradeTime)}\n\n💳 Proceed with payment?`;
         if (!confirm(confirmMsg)) {
           return;
         }
@@ -1602,16 +1613,9 @@
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        alert("Payment successful! Upgrade started.");
+        alert("✅ Payment successful! Upgrade started.");
         updateUI();
         saveData();
-      }
-
-      // Format time for hours display
-      function formatTimeHours(ms) {
-        const hours = Math.floor(ms / 3600000);
-        const minutes = Math.floor((ms % 3600000) / 60000);
-        return `${hours}h ${minutes}m`;
       }
 
       function formatTime(ms) {
@@ -1775,6 +1779,7 @@
         const kristalEthCost = getUpgradeCost(kristalFacLvl);
         const metalBuildTime = getUpgradeTime(metalFacLvl);
         const kristalBuildTime = getUpgradeTime(kristalFacLvl);
+        
         setText("costMetalFac", `Ξ${metalEthCost} ETH`);
         setText("costKristalFac", `Ξ${kristalEthCost} ETH`);
         setText("metalBuildTime", `⏱️ ${formatTimeHours(metalBuildTime)}`);
@@ -1791,7 +1796,7 @@
         if (metalFacUpgradeEndTime > now) {
           // Yükseltme devam ediyor
           const remainingTime = metalFacUpgradeEndTime - now;
-          upMetalFacBtn.innerHTML = `UPGRADING... ${formatTime(remainingTime)}`;
+          upMetalFacBtn.innerHTML = `⏳ UPGRADING... ${formatTime(remainingTime)}`;
           upMetalFacBtn.disabled = true;
         } else {
           // Yükseltme yapılabilir
@@ -1804,7 +1809,7 @@
         if (kristalFacUpgradeEndTime > now) {
           // Yükseltme devam ediyor
           const remainingTime = kristalFacUpgradeEndTime - now;
-          upKristalFacBtn.innerHTML = `UPGRADING... ${formatTime(remainingTime)}`;
+          upKristalFacBtn.innerHTML = `⏳ UPGRADING... ${formatTime(remainingTime)}`;
           upKristalFacBtn.disabled = true;
         } else {
           // Yükseltme yapılabilir
