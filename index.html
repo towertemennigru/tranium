@@ -1063,24 +1063,30 @@
 
       // Initialize Farcaster SDK
       async function initFarcasterSDK() {
-        try {
-          // Check for Farcaster SDK under various possible global names
-          const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
-          
-          if (sdk) {
-            farcasterSDK = sdk;
-            isMiniApp = true;
-            console.log("Farcaster SDK found:", sdk);
-            
-            // Get context (user info, etc.)
-            try {
-              if (sdk.context) {
-                farcasterContext = await sdk.context;
-                console.log("Farcaster context:", farcasterContext);
-              }
-            } catch (e) {
-              console.log("Could not get Farcaster context:", e);
-            }
+  const sdk = window.sdk; // frame-sdk'nin doğru global'i
+
+  if (!sdk) {
+    console.log("Standalone mode");
+    return;
+  }
+
+  isMiniApp = true;
+  farcasterSDK = sdk;
+
+  // splash'i KAPAT
+  try {
+    sdk.actions.ready(); // ❗ await ETME
+    console.log("Mini App ready");
+  } catch (e) {
+    console.log("ready error", e);
+  }
+
+  // context arkada alınabilir
+  try {
+    farcasterContext = await sdk.context;
+  } catch {}
+}
+
             
             // Signal that the app is ready to be displayed
             try {
