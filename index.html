@@ -2143,13 +2143,19 @@
       }
 
       // Sayfa yüklendiğinde intro'yu başlat
-      // window.onload yerine bunu kullanıyoruz.
-// Bu sayede resimleri beklemeden 'Ready' sinyali gider ve hata kaybolur.
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startIntro);
-} else {
-    startIntro();
-}
+      // window.onload = startIntro;  <-- BU ESKİ SATIRI SİLİN VEYA YORUMA ALIN
+      
+      // YENİ KOD BLOĞU:
+      
+      // 1. Farcaster'a hemen "Ben hazırım" de (Resimleri bekleme!)
+      initFarcasterSDK(); 
+
+      // 2. Oyun introsunu görseller hazır olunca başlat
+      if (document.readyState === 'complete') {
+        startIntro();
+      } else {
+        window.addEventListener('load', startIntro);
+      }
     </script>
     <script>
       /**
