@@ -540,27 +540,66 @@
       }
     </style>
     
-    <!-- SDK MODULE INIT (SPLASH FIX) -->
-    <script type="module">
-      import sdk from 'https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js';
-      
-      // 1. ANINDA HAZIR OL (Resimleri bekleme)
-      try {
-        sdk.actions.ready();
-        console.log("✅ SDK Ready sent via Module");
-      } catch(e) { console.error("SDK ready error:", e); }
+    <!-- SDK MODULE INIT (SPLASH FIX - UPDATED) -->
+    <!-- Eski import yöntemi yerine global script yükleme ve polling -->
+    <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js"></script>
+    
+    <script>
+      window.isSDKReady = false;
+      window.farcasterSDK = null;
 
-      // 2. Global'e ata ki oyunun geri kalanı erişebilsin
-      window.farcasterSDK = sdk;
-      
-      // 3. Context yükle
-      try {
-        const context = await sdk.context;
-        window.farcasterContext = context;
-        console.log("Context loaded", context);
-      } catch(e) {
-        console.warn("Context error", e);
+      function initializeFarcaster() {
+        if (window.isSDKReady) return;
+
+        // SDK genellikle window.sdk olarak yüklenir
+        const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
+        
+        if (sdk) {
+          window.farcasterSDK = sdk;
+          
+          // 1. HAZIR SİNYALİ GÖNDER
+          try {
+            if (sdk.actions && sdk.actions.ready) {
+              sdk.actions.ready();
+              console.log("✅ Farcaster SDK Ready (actions)");
+            } else if (sdk.ready) {
+              sdk.ready();
+              console.log("✅ Farcaster SDK Ready (legacy)");
+            }
+          } catch(e) {
+            console.warn("Ready signal warning:", e);
+          }
+
+          // 2. CONTEXT YÜKLE
+          if (sdk.context) {
+            sdk.context.then(ctx => {
+              window.farcasterContext = ctx;
+              console.log("👤 Context loaded:", ctx);
+            }).catch(e => console.error("Context error:", e));
+          }
+
+          window.isSDKReady = true;
+        }
       }
+
+      // Hızlı Yükleme Stratejisi:
+      // 1. Hemen dene
+      initializeFarcaster();
+      
+      // 2. Belirli aralıklarla dene (Script yüklenmesi zaman alabilir)
+      const sdkCheckInterval = setInterval(() => {
+        if (window.isSDKReady) {
+          clearInterval(sdkCheckInterval);
+        } else {
+          initializeFarcaster();
+        }
+      }, 100); // Her 100ms'de bir kontrol et
+
+      // 3. 5 saniye sonra kontrolü bırak (Sonsuz döngü önlemi)
+      setTimeout(() => clearInterval(sdkCheckInterval), 5000);
+      
+      // 4. Sayfa tam yüklendiğinde son bir kez dene
+      window.addEventListener('load', initializeFarcaster);
     </script>
 
     <!-- Ethers.js for Base ETH payments -->
