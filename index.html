@@ -1086,16 +1086,7 @@
     farcasterContext = await sdk.context;
   } catch {}
 }
-     catch (e) {
-              console.log("Could not call ready:", e);
-            }
-          } else {
-            console.log("Not running inside Farcaster, using standalone mode");
-          }
-        } catch (error) {
-          console.log("Farcaster SDK init error:", error);
-        }
-      }
+    
 
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
