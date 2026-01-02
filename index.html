@@ -1086,18 +1086,7 @@
     farcasterContext = await sdk.context;
   } catch {}
 }
-
-            
-            // Signal that the app is ready to be displayed
-            try {
-              if (sdk.actions && typeof sdk.actions.ready === 'function') {
-                await sdk.actions.ready();
-                console.log("Farcaster Mini App ready!");
-              } else if (typeof sdk.ready === 'function') {
-                await sdk.ready();
-                console.log("Farcaster Mini App ready (direct)!");
-              }
-            } catch (e) {
+     catch (e) {
               console.log("Could not call ready:", e);
             }
           } else {
