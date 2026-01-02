@@ -977,45 +977,43 @@
       let isMiniApp = false;
 
       // Initialize Farcaster SDK
-      async function initFarcasterSDK() {
-        try {
-          // Check for Farcaster SDK under various possible global names
-          const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
-          
-          if (sdk) {
-            farcasterSDK = sdk;
-            isMiniApp = true;
-            console.log("Farcaster SDK found:", sdk);
-            
-            // Get context (user info, etc.)
-            try {
-              if (sdk.context) {
-                farcasterContext = await sdk.context;
-                console.log("Farcaster context:", farcasterContext);
-              }
-            } catch (e) {
-              console.log("Could not get Farcaster context:", e);
-            }
-            
-            // Signal that the app is ready to be displayed
-            try {
-              if (sdk.actions && typeof sdk.actions.ready === 'function') {
-                await sdk.actions.ready();
-                console.log("Farcaster Mini App ready!");
-              } else if (typeof sdk.ready === 'function') {
-                await sdk.ready();
-                console.log("Farcaster Mini App ready (direct)!");
-              }
-            } catch (e) {
-              console.log("Could not call ready:", e);
-            }
-          } else {
-            console.log("Not running inside Farcaster, using standalone mode");
+      // DÜZELTÄ°LMÄ°Åž FARCASTER SDK Ä°NÄ°TÄ°ALÄ°ZASYONU
+async function initFarcasterSDK() {
+  try {
+    // SDK yüklenene kadar bekle
+    await new Promise(resolve => {
+      if (window.sdk) resolve();
+      else {
+        const checkSDK = setInterval(() => {
+          if (window.sdk) {
+            clearInterval(checkSDK);
+            resolve();
           }
-        } catch (error) {
-          console.log("Farcaster SDK init error:", error);
-        }
+        }, 100);
       }
+    });
+
+    farcasterSDK = window.sdk;
+    isMiniApp = true;
+    console.log("✅ Farcaster SDK loaded");
+    
+    // Context al
+    if (farcasterSDK.context) {
+      farcasterContext = await farcasterSDK.context;
+      console.log("✅ Context:", farcasterContext);
+    }
+    
+    // KRIT
+
+İK: ready() çağrısı - splash ekranını kapat
+    if (farcasterSDK.actions && farcasterSDK.actions.ready) {
+      await farcasterSDK.actions.ready();
+      console.log("✅ Mini App Ready!");
+    }
+  } catch (error) {
+    console.error("❌ SDK Error:", error);
+  }
+}
 
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
@@ -2160,5 +2158,6 @@
     </script>
   </body>
 </html>
+
 
 
