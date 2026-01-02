@@ -877,33 +877,6 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
-    <script>
-      // Call ready() as early as possible to hide splash screen
-      (function() {
-        function callReady() {
-          try {
-            const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
-            if (sdk && sdk.actions && typeof sdk.actions.ready === 'function') {
-              sdk.actions.ready().catch(console.error);
-            } else if (sdk && typeof sdk.ready === 'function') {
-              sdk.ready().catch(console.error);
-            }
-          } catch (e) {
-            console.error('Farcaster ready error:', e);
-          }
-        }
-        
-        // Try immediately
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', callReady);
-        } else {
-          callReady();
-        }
-        
-        // Also try after a short delay in case SDK loads late
-        setTimeout(callReady, 100);
-      })();
-    </script>
   </head>
   <body>
     <div id="introOverlay">
@@ -1399,17 +1372,32 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
       function completeLoading() {
         clearInterval(loadingInterval);
-      const progressBar = document.querySelector(".loading-progress-bar");
+        const progressBar = document.querySelector(".loading-progress-bar");
         const percentageText = document.querySelector(".loading-percentage");
         const loadingText = document.querySelector(".loading-text");
 
         progressBar.style.width = "100%";
         percentageText.textContent = "100%";
-      loadingText.textContent = "Ready to Mine!";
+        loadingText.textContent = "Ready to Mine!";
 
         setTimeout(() => {
           document.getElementById("loadingOverlay").style.display = "none";
           document.getElementById("overlay").style.display = "flex";
+          
+          // Call ready() AFTER overlay is shown to hide splash screen
+          try {
+            const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
+            if (sdk && sdk.actions && typeof sdk.actions.ready === 'function') {
+              sdk.actions.ready().catch(console.error);
+              console.log("Farcaster ready() called after overlay shown");
+            } else if (sdk && typeof sdk.ready === 'function') {
+              sdk.ready().catch(console.error);
+              console.log("Farcaster ready() called (direct) after overlay shown");
+            }
+          } catch (e) {
+            console.error('Farcaster ready error:', e);
+          }
+          
           initHub();
         }, 1000);
       }
