@@ -13,6 +13,32 @@
     />
     
     <title>TRANIUM VERSE - Strategy Hub</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js"></script>
+    <script>
+      (function() {
+        // SDK yüklenir yüklenmez Ready sinyalini gönder
+        const start = Date.now();
+        const checkSDK = setInterval(function() {
+            const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
+            if (sdk && sdk.actions) {
+                clearInterval(checkSDK);
+                try {
+                    sdk.actions.ready();
+                    console.log("✅ READY sinyali gönderildi (HEAD)");
+                    
+                    // Context bilgisini al (Varsa)
+                    if(sdk.context) {
+                        sdk.context.then(ctx => window.farcasterContext = ctx).catch(e=>console.error(e));
+                    }
+                } catch(e) { console.error(e); }
+            }
+            // 10 saniye sonra pes et
+            if (Date.now() - start > 10000) clearInterval(checkSDK);
+        }, 50); // Her 50ms'de bir kontrol et
+      })();
+    </script>
+
     <style>
       :root {
         --gold: #ffcc00;
@@ -875,37 +901,7 @@
         }
       }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
-
-    <script>
-      (async function() {
-        console.log("🚀 SDK Başlatıcı Tetiklendi (HEAD)");
-        const start = Date.now();
-        // 5 saniye boyunca her 50ms'de bir SDK'yı kontrol et
-        while (Date.now() - start < 5000) {
-          const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
-          if (sdk && sdk.actions) {
-            // SDK bulundu, anında Ready sinyalini gönder
-            sdk.actions.ready();
-            console.log("✅ Farcaster READY sinyali gönderildi! (HEAD)");
-            
-            // Context bilgisini de arka planda al
-            if (sdk.context) {
-                sdk.context.then(ctx => {
-                    window.farcasterContext = ctx;
-                    console.log("Context alındı:", ctx);
-                }).catch(e => console.log(e));
-            }
-            return; // İşlem tamam, döngüden çık
-          }
-          // Bulamazsan 50ms bekle
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-        console.log("⚠️ SDK zaman aşımına uğradı (HEAD)");
-      })();
-    </script>
-
   </head>
   <body>
     <div id="introOverlay">
@@ -1104,7 +1100,6 @@
 
     <script>
       // Ana oyun değişkenleri
-      let farcasterSDK = null; // Head script'ten doldurulacak
       let isMiniApp = false;
       
       const canvas = document.getElementById("gameCanvas");
