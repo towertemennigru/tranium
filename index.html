@@ -7,29 +7,12 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
+    <meta name="fc:miniapp" content="hosted" />
+    <meta property="og:title" content="TRANIUM VERSE - Strategy Hub" />
+    <meta property="og:description" content="Collect resources and refine Tranium to dominate the Verse. A strategic mining game on Farcaster."
+    />
     
     <title>TRANIUM VERSE - Strategy Hub</title>
-    
-    <meta property="og:title" content="TRANIUM VERSE" />
-    <meta property="og:description" content="Collect resources and refine Tranium to dominate the Verse. A strategic mining game on Farcaster." />
-    <meta property="og:url" content="https://tranium-xi.vercel.app" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Tranium Verse" />
-
-    <meta property="og:image" content="https://raw.githubusercontent.com/towertemennigru/tranium/72718991dead992e4353e9cb65c018878e691dec/preview.png" />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://raw.githubusercontent.com/towertemennigru/tranium/72718991dead992e4353e9cb65c018878e691dec/preview.png" />
-    
-    <meta property="fc:frame" content="vNext" />
-    <meta property="fc:frame:image" content="https://raw.githubusercontent.com/towertemennigru/tranium/72718991dead992e4353e9cb65c018878e691dec/preview.png" />
-    <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
-    <meta property="fc:frame:button:1" content="Start Mining" />
-    <meta property="fc:frame:button:1:action" content="link" />
-    <meta property="fc:frame:button:1:target" content="https://tranium-xi.vercel.app" />
-    <meta name="fc:miniapp" content="hosted" />
     <style>
       :root {
         --gold: #ffcc00;
@@ -47,7 +30,7 @@
         margin: 0;
         padding: 0;
         background-color: var(--dark);
-        overflow: hidden;
+        overflow: hidden; /* Tüm sayfa kaydırmasını engelle */
         touch-action: none;
         font-family: "Segoe UI", sans-serif;
         color: white;
@@ -64,6 +47,8 @@
         touch-action: none;
         image-rendering: pixelated;
       }
+
+      /* INTRO SCREEN */
       #introOverlay {
         position: fixed;
         top: 0;
@@ -78,12 +63,14 @@
         z-index: 1000;
         overflow: hidden;
       }
+
       .intro-container {
         text-align: center;
         position: relative;
         z-index: 2;
         animation: introFadeIn 1.5s ease-out;
       }
+
       .disease-logo {
         font-size: min(60px, 12vw);
         font-weight: 900;
@@ -96,6 +83,7 @@
           0 0 40px rgba(255, 34, 34, 0.5);
         position: relative;
       }
+
       .disease-logo::after {
         content: "";
         position: absolute;
@@ -106,6 +94,7 @@
         height: 4px;
         background: linear-gradient(90deg, transparent, var(--disease-red), transparent);
       }
+
       .presents-text {
         font-size: min(18px, 4vw);
         color: rgba(255, 255, 255, 0.7);
@@ -114,6 +103,7 @@
         letter-spacing: 4px;
         animation: pulse 2s infinite;
       }
+
       .game-title-intro {
         font-size: min(48px, 10vw);
         font-weight: 900;
@@ -123,6 +113,7 @@
         text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
         letter-spacing: 4px;
       }
+
       .game-subtitle {
         font-size: min(16px, 3.5vw);
         color: rgba(255, 255, 255, 0.6);
@@ -130,6 +121,8 @@
         font-weight: 300;
         letter-spacing: 2px;
       }
+
+      /* LOADING SCREEN */
       #loadingOverlay {
         position: fixed;
         top: 0;
@@ -143,12 +136,14 @@
         justify-content: center;
         z-index: 999;
       }
+
       .loading-container {
         text-align: center;
         width: 90%;
         max-width: 400px;
         animation: loadingFadeIn 1s ease;
       }
+
       .loading-logo {
         font-size: min(32px, 7vw);
         font-weight: 900;
@@ -158,10 +153,12 @@
         letter-spacing: 3px;
         position: relative;
       }
+
       .loading-logo::before {
         content: "⛏️";
         margin-right: 10px;
       }
+
       .loading-spinner {
         width: 80px;
         height: 80px;
@@ -171,6 +168,7 @@
         margin: 0 auto 30px;
         animation: spin 1s linear infinite;
       }
+
       .loading-progress-container {
         width: 100%;
         height: 6px;
@@ -179,6 +177,7 @@
         overflow: hidden;
         margin-bottom: 15px;
       }
+
       .loading-progress-bar {
         height: 100%;
         width: 0%;
@@ -187,6 +186,7 @@
         transition: width 0.3s ease;
         box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
       }
+
       .loading-text {
         font-size: min(18px, 4vw);
         color: var(--neon);
@@ -195,6 +195,7 @@
         text-transform: uppercase;
         letter-spacing: 2px;
       }
+
       .loading-percentage {
         font-size: min(24px, 5vw);
         font-weight: 900;
@@ -202,6 +203,7 @@
         margin-bottom: 20px;
         text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
       }
+
       .loading-tip {
         font-size: min(12px, 2.5vw);
         color: rgba(255, 255, 255, 0.5);
@@ -210,6 +212,8 @@
         max-width: 300px;
         line-height: 1.4;
       }
+
+      /* MAIN OVERLAY - PC DEFAULT */
       #overlay {
         position: fixed;
         top: 0;
@@ -223,10 +227,13 @@
         z-index: 100;
         padding: 20px;
         justify-content: space-evenly;
+        /* MOBİLDE KAYDIRMAYI ENGELLEMEK İÇİN: */
         overflow: hidden;
         gap: 0;
         display: none;
       }
+
+      /* HOW TO PLAY SCREEN (FULL OVERLAY) */
       #howToPlayScreen {
         position: fixed;
         top: 0;
@@ -244,6 +251,7 @@
         touch-action: pan-y;
         overscroll-behavior: contain;
       }
+
       .close-btn {
         position: absolute;
         top: max(env(safe-area-inset-top), 15px);
@@ -257,6 +265,7 @@
         font-weight: bold;
         line-height: 1;
       }
+
       .btn-help-open {
         background: transparent;
         border: 1px solid var(--gold);
@@ -285,11 +294,14 @@
         line-height: 16px;
         font-size: 10px;
       }
+
+      /* How to Play Styles */
       .help-container {
         width: 100%;
         max-width: 500px;
         margin-top: 40px;
       }
+
       .help-card {
         background: var(--panel);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -328,6 +340,8 @@
         border-radius: 8px;
         margin-top: 20px;
       }
+
+      /* Modal responsive düzenlemeleri */
       .custom-modal {
         display: none;
         position: fixed;
@@ -354,6 +368,7 @@
       #upgradeModal {
         border-color: var(--neon);
       }
+
       .modal-input {
         width: 100%;
         padding: 15px;
@@ -366,6 +381,7 @@
         font-size: 16px;
         min-height: 50px;
       }
+
       .percentage-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -387,6 +403,7 @@
         background: var(--gold);
         color: #000;
       }
+
       .modal-btn-row {
         display: flex;
         gap: 10px;
@@ -402,6 +419,8 @@
         text-transform: uppercase;
         min-height: 50px;
       }
+
+      /* UI ELEMENTS - PC DEFAULT */
       .header {
         text-align: center;
         margin-top: env(safe-area-inset-top);
@@ -442,6 +461,7 @@
         font-size: 9px;
         font-weight: bold;
       }
+
       .resource-section {
         width: 100%;
         max-width: 380px;
@@ -450,6 +470,7 @@
         gap: 12px;
         padding: 0 10px;
         flex-shrink: 1;
+        /* Küçülmesine izin ver */
       }
       .res-card {
         background: var(--panel);
@@ -479,6 +500,7 @@
         color: var(--neon);
         opacity: 0.9;
       }
+
       .btn-refine {
         width: 100%;
         max-width: 380px;
@@ -502,12 +524,14 @@
         box-shadow: none;
         transform: translateY(4px);
       }
+
       .btn-upgrade-menu {
         background: var(--neon);
         color: #000;
         box-shadow: 0 4px 0 #00b894;
         margin-top: 10px;
       }
+
       .factory-modal-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -542,6 +566,8 @@
         min-height: 44px;
         margin-top: auto;
       }
+
+      /* FOOTER */
       .footer {
         width: 100%;
         max-width: 380px;
@@ -571,6 +597,8 @@
         min-height: 70px;
         box-shadow: 0 6px 0 #b89600;
       }
+
+      /* Oyun içi UI */
       #ui {
         position: absolute;
         top: max(env(safe-area-inset-top), 15px);
@@ -585,6 +613,7 @@
         text-shadow: 2px 2px 4px black;
         font-size: min(14px, 3.5vw);
       }
+
       .reset-link {
         color: var(--neon);
         font-size: 12px;
@@ -602,6 +631,8 @@
         min-height: 44px;
         flex-shrink: 0;
       }
+
+      /* Joystick Stilleri */
       #joystickContainer {
         position: fixed;
         left: 25px;
@@ -612,6 +643,7 @@
         display: none;
         pointer-events: auto;
       }
+
       #joystickBase {
         position: absolute;
         width: 100%;
@@ -621,6 +653,7 @@
         border-radius: 50%;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
       }
+
       #joystickHandle {
         position: absolute;
         width: 60px;
@@ -633,6 +666,8 @@
         transform: translate(-50%, -50%);
         box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
       }
+
+      /* ANIMATIONS */
       @keyframes introFadeIn {
         from {
           opacity: 0;
@@ -643,6 +678,7 @@
           transform: scale(1);
         }
       }
+
       @keyframes loadingFadeIn {
         from {
           opacity: 0;
@@ -651,6 +687,7 @@
           opacity: 1;
         }
       }
+
       @keyframes spin {
         0% {
           transform: rotate(0deg);
@@ -659,6 +696,7 @@
           transform: rotate(360deg);
         }
       }
+
       @keyframes pulse {
         0%,
         100% {
@@ -668,21 +706,30 @@
           opacity: 1;
         }
       }
+
+      /* --- KRİTİK MOBİL OPTİMİZASYON (FIT TO SCREEN) --- */
+      /* Özellikle kısa ekranlı telefonlar (iPhone 6/7/8 gibi 667px yüksekliğinde) için */
       @media (max-width: 600px) and (max-height: 850px) {
+        /* ANA MENÜ OPTİMİZASYONU */
         #overlay {
           justify-content: space-evenly;
+          /* Öğeleri dikeyde eşit dağıt */
           padding: 10px;
           gap: 0;
+          /* Gap yerine space-evenly kullan */
           padding-bottom: max(env(safe-area-inset-bottom), 10px);
         }
+
         .header {
           margin-top: 0;
           margin-bottom: 0;
         }
+
         .game-title {
           font-size: 18px;
           margin: 2px 0;
         }
+
         .tranium-circle {
           width: 65px;
           height: 65px;
@@ -695,12 +742,14 @@
         .tranium-lbl {
           font-size: 8px;
         }
+
         .btn-help-open {
           padding: 4px 12px;
           font-size: 10px;
           margin-bottom: 2px;
           min-height: 25px;
         }
+
         .reset-link {
           padding: 5px;
           min-height: 30px;
@@ -708,13 +757,15 @@
           margin: 2px 0;
           max-width: 200px;
         }
+
         .resource-section {
           gap: 8px;
           margin: 2px 0;
         }
+
         .res-card {
           padding: 8px;
-          min-height: 60px;
+          min-height: 60px; /* Kart yüksekliğini düşür */
         }
         .res-name {
           font-size: 10px;
@@ -726,12 +777,14 @@
         .res-info {
           font-size: 9px;
         }
+
         .btn-refine {
           padding: 10px;
-          min-height: 45px;
+          min-height: 45px; /* Butonları küçült */
           font-size: 12px;
           margin: 8px 0;
         }
+
         .footer {
           padding: 5px;
           margin-bottom: 5px;
@@ -745,55 +798,71 @@
           min-height: 50px;
           font-size: 16px;
         }
+
+        /* HOW TO PLAY EKRANI OPTİMİZASYONU (NO SCROLL) */
         #howToPlayScreen {
           justify-content: center;
+          /* Ortala */
           padding: 10px;
           overflow: hidden;
+          /* Kaydırmayı kapat */
         }
+
         #howToPlayScreen .header {
           margin-top: 0;
           margin-bottom: 5px;
         }
+
         #howToPlayScreen .game-title {
           font-size: 16px;
+          /* Başlığı küçült */
           margin: 0;
         }
+
         #howToPlayScreen .close-btn {
           font-size: 30px;
           top: 10px;
           right: 15px;
           z-index: 302;
         }
+
         .help-container {
           margin-top: 5px;
           width: 100%;
         }
+
         .help-card {
           padding: 10px;
           display: flex;
           flex-direction: column;
-          gap: 5px;
+          gap: 5px; /* Öğeler arası boşluk */
         }
+
         .warning-text {
           font-size: 11px;
           padding: 5px;
           margin-top: 0;
           margin-bottom: 5px;
         }
+
         .help-title {
           font-size: 11px;
           margin-bottom: 2px;
           padding-bottom: 2px;
           border-bottom-width: 1px;
         }
+
         .help-text {
           font-size: 10px;
           line-height: 1.2;
-          margin-bottom: 4px;
+          margin-bottom: 4px; /* Paragraf boşluğunu azalt */
         }
+        /* Son elemanın marginini sıfırla */
         .help-text:last-child {
           margin-bottom: 0;
         }
+
+        /* Joystick mobilde biraz daha küçük olsun */
         #joystickContainer {
           width: 90px;
           height: 90px;
@@ -816,7 +885,8 @@
         <div class="presents-text">PRESENTS</div>
         <div class="game-title-intro">TRANIUM VERSE</div>
         <div class="game-subtitle">TRANIUM VERSE</div>
-      </div>
+    
+  </div>
     </div>
 
     <div id="loadingOverlay">
@@ -1005,85 +1075,79 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
     <script>
   
-    // FARCASTER SDK INITIALIZATION - FIXED
+    // Farcaster Mini App SDK initialization
       let farcasterSDK = null;
-let farcasterContext = null;
+      let farcasterContext = null;
       let isMiniApp = false;
 
+      // Initialize Farcaster SDK
       async function initFarcasterSDK() {
         try {
-          // SDK yüklenene kadar bekle
-          await new Promise(resolve => {
-            if (window.sdk) {
-              resolve();
-            } else {
+          // Check for Farcaster SDK under various possible global names
+          const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
           
-    const checkSDK = setInterval(() => {
-                if (window.sdk) {
-                  clearInterval(checkSDK);
-                  resolve();
-                }
-              }, 100);
-      
-        // 5 saniye timeout
-              setTimeout(() => {
-                clearInterval(checkSDK);
-                resolve();
-              }, 5000);
-            }
-          });
-if (window.sdk) {
-            farcasterSDK = window.sdk;
+          if (sdk) {
+            farcasterSDK = sdk;
             isMiniApp = true;
-console.log("✅ Farcaster SDK loaded");
+            console.log("Farcaster SDK found");
             
-            // Context al
+            // --- KRITIK DUZELTME: ONCE READY SINYALI GONDER ---
+            // Context yüklenmesini beklemeden önce istemciye "hazırız" diyelim
+            // Böylece splash screen (siyah ekran) kalkar.
             try {
-              if (farcasterSDK.context) {
-                farcasterContext = await farcasterSDK.context;
-console.log("✅ Context received:", farcasterContext);
+              if (sdk.actions && typeof sdk.actions.ready === 'function') {
+                sdk.actions.ready();
+                console.log("Farcaster Mini App ready triggered!");
+              } else if (typeof sdk.ready === 'function') {
+                sdk.ready();
+                console.log("Farcaster Mini App ready (direct) triggered!");
               }
             } catch (e) {
-              console.log("Context error:", e);
-}
+              console.log("Could not call ready:", e);
+            }
             
-            // CRITICAL: ready() çağrısı - splash ekranını kapat
+            // --- ARKA PLANDA CONTEXT YUKLE ---
+            // Context'i bekleyerek uygulamayı kilitleme (await kullanma)
             try {
-              if (farcasterSDK.actions && typeof farcasterSDK.actions.ready === 'function') {
-                await farcasterSDK.actions.ready();
-console.log("✅ Mini App Ready - Splash hidden!");
+              if (sdk.context) {
+                sdk.context.then(ctx => {
+                    farcasterContext = ctx;
+                    console.log("Farcaster context loaded in background:", ctx);
+                });
               }
             } catch (e) {
-              console.log("Ready error:", e);
-}
+              console.log("Could not get Farcaster context:", e);
+            }
+            
           } else {
-            console.log("⚠️ Not in Farcaster environment");
-}
+            console.log("Not running inside Farcaster, using standalone mode");
+          }
         } catch (error) {
-          console.error("❌ SDK Init Error:", error);
-}
+          console.log("Farcaster SDK init error:", error);
+        }
       }
 
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
-const WORLD_SIZE = 2500;
+      const WORLD_SIZE = 2500;
 
       let metal = 0,
         kristal = 0,
         tranium = 0,
         metalWorkers = 0,
         kristalWorkers = 0;
-let metalFacLvl = 1,
+      let metalFacLvl = 1,
         kristalFacLvl = 1,
         energy = 10,
         lastTime = Date.now();
-const BASE_WORKER_SPEED = 0.001;
+      // CHANGED: Speed reduced from 0.005 to 0.001 (5x slower)
+      const BASE_WORKER_SPEED = 0.001;
       let health = 3,
         isStarted = false,
         isTouching = false;
-let walkCycle = 0,
+      let walkCycle = 0,
         camera = { x: 0, y: 0 };
-let player = {
+      let player = {
         x: WORLD_SIZE / 2,
         y: WORLD_SIZE / 2,
         speed: 7.5,
@@ -1092,153 +1156,172 @@ let player = {
         flipX: false,
         isMoving: false,
       };
-let lastUpdate = Date.now();
+      let lastUpdate = Date.now();
       let workers = [],
         enemies = [];
-let joystickActive = false;
+      // Joystick değişkenleri
+      let joystickActive = false;
       let joystickCenterX = 0;
       let joystickCenterY = 0;
       let joystickHandleX = 0;
       let joystickHandleY = 0;
-let joystickDirection = { x: 0, y: 0 };
+      let joystickDirection = { x: 0, y: 0 };
       const JOYSTICK_RADIUS = 60;
       const JOYSTICK_HANDLE_RADIUS = 30;
-let nextEnergyTime = 0;
+
+      // Enerji geri sayım değişkenleri
+      let nextEnergyTime = 0;
       let energyTimer = null;
       let energyRegenerationStartTime = 0;
 
+      // Loading değişkenleri
       let totalAssets = 0;
       let loadedAssets = 0;
-let loadingInterval = null;
+      let loadingInterval = null;
 
+      // Factory yükseltme değişkenleri
       let metalFacUpgradeEndTime = 0;
       let kristalFacUpgradeEndTime = 0;
 
       const imgBG = new Image();
-imgBG.src =
+      imgBG.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/bg-H8I42XFyjR45PCLXsG4fQp7B323kKw.webp?37vf";
       const imgDayi = new Image();
-imgDayi.src =
+      imgDayi.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/dayi-removebg-preview-9XEJ3aO8Iwnas0qrRC6kST14YUZeab.webp?yQ69";
       const imgMiner1 = new Image();
-imgMiner1.src =
+      imgMiner1.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner1-removebg-preview-49BIGjfxcrYSez39WOvCLyIxeY56q2.webp?pMVT";
       const imgMiner2 = new Image();
-imgMiner2.src =
+      imgMiner2.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner2-removebg-preview-d2bFviiOsn7cXyHcptbNJtKdHoMuvp.webp?1b6n";
       const imgInfected = new Image();
-imgInfected.src =
+      imgInfected.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/infect-removebg-preview-5HhmhH4V5DqNbYNXhiFg3o9Z0RkEIj.webp?uN63";
-function openHowToPlay() {
+      // How to Play Logic
+      function openHowToPlay() {
         document.getElementById("howToPlayScreen").style.display = "flex";
-}
+      }
       function closeHowToPlay() {
         document.getElementById("howToPlayScreen").style.display = "none";
-}
+      }
 
+      // Upgrade Modal Logic
       function openUpgradeModal() {
         document.getElementById("upgradeModal").style.display = "block";
-}
+      }
       function closeUpgradeModal() {
         document.getElementById("upgradeModal").style.display = "none";
-}
+      }
 
+      // End Game Logic (Replaces Hard Reset)
       function openEndGameConfirmation() {
         document.getElementById("endGameModal").style.display = "block";
-}
+      }
       function closeEndGameConfirmation() {
         document.getElementById("endGameModal").style.display = "none";
-}
+      }
       function triggerManualEndGame() {
         closeEndGameConfirmation();
-if (isMiniApp && farcasterSDK) {
+      // Use Farcaster SDK if available, otherwise fallback
+        if (isMiniApp && farcasterSDK) {
+          // For Farcaster Mini Apps, we can close the app or show a completion message
           console.log("Game Over! Score: " + Math.floor(tranium));
-alert("Game Over! Your score: " + Math.floor(tranium) + " TRANIUM");
-if (farcasterSDK.actions && farcasterSDK.actions.close) {
+      alert("Game Over! Your score: " + Math.floor(tranium) + " TRANIUM");
+      // Optionally close the mini app
+          if (farcasterSDK.actions && farcasterSDK.actions.close) {
             farcasterSDK.actions.close();
-}
+      }
         } else {
           alert("Game Over Triggered! Score sent: " + Math.floor(tranium));
-location.reload();
+      location.reload();
         }
       }
 
       function openSwapModal() {
         document.getElementById("swapModal").style.display = "block";
-document.getElementById("swapAmountInput").value = "";
+      document.getElementById("swapAmountInput").value = "";
       }
       function closeSwapModal() {
         document.getElementById("swapModal").style.display = "none";
-}
+      }
       function setSwapPct(pct) {
         let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
-document.getElementById("swapAmountInput").value = Math.floor(maxRefine * pct);
+      document.getElementById("swapAmountInput").value = Math.floor(maxRefine * pct);
       }
       function executeSwap() {
         let amount = parseInt(document.getElementById("swapAmountInput").value);
-let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
+      let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
         if (amount > 0 && amount <= maxRefine) {
           tranium += amount;
-metal -= amount;
+      metal -= amount;
           kristal -= amount;
           updateUI();
           saveData();
           closeSwapModal();
         } else {
           alert("Invalid amount or insufficient resources!");
-}
+      }
       }
 
+      // Load Data
       if (localStorage.getItem("w_last_time")) {
         metal = parseFloat(localStorage.getItem("w_metal")) ||
-0;
+      0;
         kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
         tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
         metalWorkers = parseInt(localStorage.getItem("w_mw")) || 0;
         kristalWorkers = parseInt(localStorage.getItem("w_kw")) ||
-0;
+      0;
         metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
         kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
 
         let savedEnergy = localStorage.getItem("w_energy");
-if (savedEnergy !== null) {
+      if (savedEnergy !== null) {
           energy = parseInt(savedEnergy);
-} else {
+      } else {
           energy = 10;
-}
+      }
 
         lastTime = parseInt(localStorage.getItem("w_last_time")) || Date.now();
-
+      // Enerji sistemini yükle
         nextEnergyTime = parseInt(localStorage.getItem("w_next_energy_time")) || 0;
-energyRegenerationStartTime = parseInt(localStorage.getItem("w_energy_reg_start")) || 0;
+        energyRegenerationStartTime = parseInt(localStorage.getItem("w_energy_reg_start")) ||
+      0;
 
+        // Factory yükseltme zamanlarını yükle
         metalFacUpgradeEndTime = parseInt(localStorage.getItem("w_mfue")) || 0;
-        kristalFacUpgradeEndTime = parseInt(localStorage.getItem("w_kfue")) || 0;
+      kristalFacUpgradeEndTime = parseInt(localStorage.getItem("w_kfue")) || 0;
 
+        // Offline enerji yenilenmesini kontrol et
         updateOfflineEnergyRegeneration();
-}
+      }
 
+      // INTRO VE LOADING SİSTEMİ
       async function startIntro() {
-        await initFarcasterSDK();
-const introOverlay = document.getElementById("introOverlay");
+        // --- KRITIK DUZELTME: AWAIT KALDIRILDI ---
+        // SDK init işlemini arka planda başlat, uygulamanın açılışını bloklama
+        initFarcasterSDK();
+        
+        const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "flex";
 
         setTimeout(() => {
           introOverlay.style.display = "none";
           startLoading();
         }, 3000);
-}
+      }
 
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
-const progressBar = document.querySelector(".loading-progress-bar");
+      const progressBar = document.querySelector(".loading-progress-bar");
         const percentageText = document.querySelector(".loading-percentage");
         const loadingText = document.querySelector(".loading-text");
 
         loadingOverlay.style.display = "flex";
 
         let progress = 0;
-const loadingMessages = [
+      const loadingMessages = [
           "Initializing Systems",
           "Loading Resources",
           "Preparing Miners",
@@ -1246,7 +1329,7 @@ const loadingMessages = [
           "Calibrating Energy Grid",
           "Ready to Mine!",
         ];
-let messageIndex = 0;
+      let messageIndex = 0;
 
         loadingInterval = setInterval(() => {
           if (progress < 100) {
@@ -1255,7 +1338,7 @@ let messageIndex = 0;
 
             if (progress % 15 < 5 && messageIndex < loadingMessages.length - 1) {
               messageIndex = Math.min(Math.floor(progress / 
-15), loadingMessages.length - 1);
+      15), loadingMessages.length - 1);
               loadingText.textContent = loadingMessages[messageIndex];
             }
 
@@ -1263,12 +1346,12 @@ let messageIndex = 0;
             percentageText.textContent = Math.floor(progress) + "%";
           }
         }, 150);
-loadAssets();
+      loadAssets();
       }
 
       function loadAssets() {
         totalAssets = 5;
-const images = [imgBG, imgDayi, imgMiner1, imgMiner2, imgInfected];
+      const images = [imgBG, imgDayi, imgMiner1, imgMiner2, imgInfected];
 
         images.forEach((img) => {
           if (img.complete) {
@@ -1278,335 +1361,385 @@ const images = [imgBG, imgDayi, imgMiner1, imgMiner2, imgInfected];
             img.onerror = assetLoaded;
           }
         });
-}
+      }
 
       function assetLoaded() {
         loadedAssets++;
-if (loadedAssets >= totalAssets) {
+      if (loadedAssets >= totalAssets) {
           setTimeout(completeLoading, 500);
-}
+      }
       }
 
       function completeLoading() {
         clearInterval(loadingInterval);
-const progressBar = document.querySelector(".loading-progress-bar");
+      const progressBar = document.querySelector(".loading-progress-bar");
         const percentageText = document.querySelector(".loading-percentage");
         const loadingText = document.querySelector(".loading-text");
 
         progressBar.style.width = "100%";
         percentageText.textContent = "100%";
-loadingText.textContent = "Ready to Mine!";
+      loadingText.textContent = "Ready to Mine!";
 
         setTimeout(() => {
           document.getElementById("loadingOverlay").style.display = "none";
           document.getElementById("overlay").style.display = "flex";
           initHub();
         }, 1000);
-}
+      }
 
+      // ENERJİ SİSTEMİ
       function updateOfflineEnergyRegeneration() {
         const now = Date.now();
-if (energy < 10 && energyRegenerationStartTime > 0) {
+      // Eğer enerji 10'dan azsa ve yenilenme başlamışsa
+        if (energy < 10 && energyRegenerationStartTime > 0) {
           const timePassed = now - energyRegenerationStartTime;
-const energyToAdd = Math.floor(timePassed / 3600000);
+      const energyToAdd = Math.floor(timePassed / 3600000); // Her 1 saat (3600000 ms) için 1 enerji
 
           if (energyToAdd > 0) {
+            // Enerji ekle (maksimum 10'a kadar)
             const newEnergy = Math.min(10, energy + energyToAdd);
-const addedEnergy = newEnergy - energy;
+      const addedEnergy = newEnergy - energy;
 
             if (addedEnergy > 0) {
               energy = newEnergy;
-energyRegenerationStartTime = now - (timePassed % 3600000);
+      // Enerji yenilenme başlangıç zamanını güncelle
+              // Kalan süre için başlangıcı ayarla
+              energyRegenerationStartTime = now - (timePassed % 3600000);
+      // Eğer enerji 10 olduysa, sıfırla
               if (energy >= 10) {
                 energyRegenerationStartTime = 0;
-nextEnergyTime = 0;
+      nextEnergyTime = 0;
               } else {
+                // Bir sonraki enerji zamanını hesapla
                 nextEnergyTime = energyRegenerationStartTime + 3600000;
-}
+      }
 
               saveData();
               updateUI();
-}
+      }
           } else if (nextEnergyTime > 0 && nextEnergyTime <= now) {
+            // Zaman dolduysa 1 enerji ekle
             if (energy < 10) {
               energy++;
-updateEnergyTimers();
+      updateEnergyTimers();
               saveData();
               updateUI();
             }
           }
         } else if (energy < 10 && energyRegenerationStartTime === 0) {
+          // Enerji yenilenmesi hiç başlamamış, şimdi başlat
           updateEnergyTimers();
-}
+      }
       }
 
       function updateEnergyTimers() {
         const now = Date.now();
-if (energy < 10) {
+      if (energy < 10) {
           if (energyRegenerationStartTime === 0) {
+            // İlk kez enerji yenilenmesi başlatılıyor
             energyRegenerationStartTime = now;
-}
+      }
 
+          // Bir sonraki enerji zamanını hesapla
           const timeSinceStart = now - energyRegenerationStartTime;
-const energyGained = Math.floor(timeSinceStart / 3600000);
+      const energyGained = Math.floor(timeSinceStart / 3600000);
           const nextEnergyIn = 3600000 - (timeSinceStart % 3600000);
           nextEnergyTime = now + nextEnergyIn;
-if (energy >= 10) {
+      // Eğer enerji 10 olduysa sıfırla
+          if (energy >= 10) {
             energyRegenerationStartTime = 0;
-nextEnergyTime = 0;
+      nextEnergyTime = 0;
           }
         } else {
+          // Enerji full
           energyRegenerationStartTime = 0;
-nextEnergyTime = 0;
+      nextEnergyTime = 0;
         }
 
         saveData();
-}
+      }
 
       function updateEnergyCountdown() {
         const energyStatus = document.getElementById("energyStatus");
-const energyUI = document.getElementById("energyUI");
+      const energyUI = document.getElementById("energyUI");
         if (!energyStatus || !energyUI) return;
 
         const now = Date.now();
-if (energy >= 10) {
+      // Enerji tam ise
+        if (energy >= 10) {
           energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (FULL)`;
-energyUI.innerHTML = `⚡: ${energy}/10`;
+      energyUI.innerHTML = `⚡: ${energy}/10`;
           energyRegenerationStartTime = 0;
           nextEnergyTime = 0;
           return;
-}
+      }
 
+        // Enerji yenilenme başlamamışsa başlat
         if (energyRegenerationStartTime === 0) {
           updateEnergyTimers();
-}
+      }
 
+        // Zaman dolmuş mu kontrol et
         if (nextEnergyTime > 0 && now >= nextEnergyTime) {
+          // 1 enerji ekle
           if (energy < 10) {
             energy++;
-updateEnergyTimers();
+      updateEnergyTimers();
             saveData();
             updateUI();
           }
         }
 
+        // Kalan süreyi hesapla ve göster
         if (nextEnergyTime > now) {
           const timeLeft = nextEnergyTime - now;
-const minutesLeft = Math.floor(timeLeft / 60000);
+      const minutesLeft = Math.floor(timeLeft / 60000);
           const secondsLeft = Math.floor((timeLeft % 60000) / 1000);
 
           const formattedMinutes = minutesLeft.toString().padStart(2, "0");
-const formattedSeconds = secondsLeft.toString().padStart(2, "0");
+      const formattedSeconds = secondsLeft.toString().padStart(2, "0");
 
+          // Hangi enerjiyi beklediğimizi göster
           const currentEnergyBeingRegenerated = energy + 1;
-          energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (Next ${currentEnergyBeingRegenerated}/10 in ${formattedMinutes}:${formattedSeconds})`;
-energyUI.innerHTML = `⚡: ${energy}/10`;
-        } else {
+      energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (Next ${currentEnergyBeingRegenerated}/10 in ${formattedMinutes}:${formattedSeconds})`;
+          energyUI.innerHTML = `⚡: ${energy}/10`;
+      } else {
+          // Hemen enerji eklenmesi gerekiyor
           energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (Next energy ready!)`;
-energyUI.innerHTML = `⚡: ${energy}/10`;
+      energyUI.innerHTML = `⚡: ${energy}/10`;
         }
       }
 
       function startEnergyCountdown() {
         if (energyTimer) {
           clearInterval(energyTimer);
-}
+      }
 
+        // Önce offline süredeki enerji kazanımını kontrol et
         updateOfflineEnergyRegeneration();
+      // Sonra geri sayımı başlat
         updateEnergyCountdown();
         energyTimer = setInterval(updateEnergyCountdown, 1000);
-}
+      }
 
+      // FACTORY YÜKSELTME SİSTEMİ
       function checkUpgradeProgress() {
         const now = Date.now();
-if (metalFacUpgradeEndTime > 0 && now >= metalFacUpgradeEndTime) {
+      // Metal fabrikası yükseltme kontrolü
+        if (metalFacUpgradeEndTime > 0 && now >= metalFacUpgradeEndTime) {
           metalFacLvl++;
-metalFacUpgradeEndTime = 0;
+      metalFacUpgradeEndTime = 0;
           updateUI();
           saveData();
         }
 
+        // Kristal fabrikası yükseltme kontrolü
         if (kristalFacUpgradeEndTime > 0 && now >= kristalFacUpgradeEndTime) {
           kristalFacLvl++;
-kristalFacUpgradeEndTime = 0;
+      kristalFacUpgradeEndTime = 0;
           updateUI();
           saveData();
         }
       }
 
+      // ============================================
+      // ETH PAYMENT SYSTEM (Base Network)
+      // ============================================
       const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
-const BASE_ETH_COST = 0.0005;
+      const BASE_ETH_COST = 0.0005; // Starting cost in ETH
       const BASE_UPGRADE_TIME = 2 * 60 * 60 * 1000;
+      // 2 hours in milliseconds
       const BASE_CHAIN_ID = 8453;
-function getUpgradeCost(level) {
-        return BASE_ETH_COST * Math.pow(2, level - 1);
-}
+      // Base Mainnet Chain ID
 
+      // Calculate ETH cost for upgrade (doubles each level)
+      function getUpgradeCost(level) {
+        return BASE_ETH_COST * Math.pow(2, level - 1);
+      }
+
+      // Calculate upgrade time (doubles each level)
       function getUpgradeTime(level) {
         return BASE_UPGRADE_TIME * Math.pow(2, level - 1);
-}
+      }
 
+      // Format time for hours display
       function formatTimeHours(ms) {
         const hours = Math.floor(ms / 3600000);
-const minutes = Math.floor((ms % 3600000) / 60000);
+      const minutes = Math.floor((ms % 3600000) / 60000);
         return `${hours}h ${minutes}m`;
-}
+      }
 
+      // Connect wallet and send ETH payment
       async function sendETHPayment(amountETH) {
         if (typeof window.ethereum === "undefined") {
           alert("Please install MetaMask or use a Web3 wallet!");
-return false;
+      return false;
         }
 
         try {
+          // Request wallet connection
           await window.ethereum.request({ method: "eth_requestAccounts" });
-const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(window.ethereum);
           const network = await provider.getNetwork();
-if (Number(network.chainId) !== BASE_CHAIN_ID) {
+      // Check if on Base network
+          if (Number(network.chainId) !== BASE_CHAIN_ID) {
             try {
               await window.ethereum.request({
                 method: "wallet_switchEthereumChain",
-                params: [{ chainId: "0x2105" }],
-              });
-} catch (switchError) {
+                params: [{ chainId: "0x2105" }], // Base Mainnet hex
+            
+  });
+            } catch (switchError) {
               if (switchError.code === 4902) {
                 await window.ethereum.request({
                   method: "wallet_addEthereumChain",
                   params: [{
-                    chainId: "0x2105",
-   
-                  chainName: "Base",
+                    chainId: 
+"0x2105",
+                    chainName: "Base",
                     nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
                     rpcUrls: ["https://mainnet.base.org"],
                     blockExplorerUrls: ["https://basescan.org"]
-            
-      }]
+         
+         }]
                 });
-} else {
+      } else {
                 throw switchError;
-}
+      }
             }
           }
 
           const signer = await provider.getSigner();
-const amountWei = ethers.parseEther(amountETH.toString());
+      const amountWei = ethers.parseEther(amountETH.toString());
 
           const tx = await signer.sendTransaction({
             to: PAYMENT_ADDRESS,
             value: amountWei
           });
-await tx.wait();
+      // Wait for confirmation
+          await tx.wait();
           return true;
-        } catch (error) {
+      } catch (error) {
           console.error("Payment error:", error);
-alert("Payment failed: " + (error.message || "Unknown error"));
+      alert("Payment failed: " + (error.message || "Unknown error"));
           return false;
-}
+      }
       }
 
       async function upgradeFactory(type) {
         let currentLevel;
-if (type === "metal") {
+      if (type === "metal") {
           if (metalFacUpgradeEndTime > Date.now()) {
             alert("Upgrade already in progress!");
-return;
+      return;
           }
           currentLevel = metalFacLvl;
-} else if (type === "kristal") {
+      } else if (type === "kristal") {
           if (kristalFacUpgradeEndTime > Date.now()) {
             alert("Upgrade already in progress!");
-return;
+      return;
           }
           currentLevel = kristalFacLvl;
-}
+      }
 
         const ethCost = getUpgradeCost(currentLevel);
         const upgradeTime = getUpgradeTime(currentLevel);
-const confirmMsg = `🏭 Upgrade to Level ${currentLevel + 1}\n\n💰 Cost: ${ethCost} ETH (Base Network)\n⏱️ Build Time: ${formatTimeHours(upgradeTime)}\n\n💳 Proceed with payment?`;
-if (!confirm(confirmMsg)) {
+      // Confirm payment
+        const confirmMsg = `🏭 Upgrade to Level ${currentLevel + 1}\n\n💰 Cost: ${ethCost} ETH (Base Network)\n⏱️ Build Time: ${formatTimeHours(upgradeTime)}\n\n💳 Proceed with payment?`;
+      if (!confirm(confirmMsg)) {
           return;
-}
+      }
 
+        // Process ETH payment
         const paymentSuccess = await sendETHPayment(ethCost);
-if (!paymentSuccess) {
+      if (!paymentSuccess) {
           return;
-}
+      }
 
+        // Set upgrade end time
         if (type === "metal") {
           metalFacUpgradeEndTime = Date.now() + upgradeTime;
-} else if (type === "kristal") {
+      } else if (type === "kristal") {
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
-}
+      }
 
         alert("✅ Payment successful! Upgrade started.");
         updateUI();
         saveData();
-}
+      }
 
       function formatTime(ms) {
         if (ms <= 0) return "00:00";
-const minutes = Math.floor(ms / 60000);
+      const minutes = Math.floor(ms / 60000);
         const seconds = Math.floor((ms % 60000) / 1000);
         return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-}
+      }
 
       function initHub() {
         canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+      canvas.height = window.innerHeight;
         canvas.style.imageRendering = "pixelated";
 
         const now = Date.now();
         const secondsPassed = Math.floor((now - lastTime) / 1000);
+      // OFFLINE MADENCİLİK
         processMining(secondsPassed);
+      // Yükseltme ilerlemesini kontrol et
         checkUpgradeProgress();
-updateUI();
+
+        updateUI();
+      // ENERJİ GERİ SAYIMINI BAŞLAT
         startEnergyCountdown();
-        for (let i = 0; i < 40; i++) spawnWorker();
-for (let i = 0; i < 15; i++) spawnEnemy();
-        requestAnimationFrame(gameLoop);
+      for (let i = 0; i < 40; i++) spawnWorker();
+        for (let i = 0; i < 15; i++) spawnEnemy();
+      requestAnimationFrame(gameLoop);
         setInterval(saveData, 3000);
 
+        // Yükseltme kontrolü için interval
         setInterval(checkUpgradeProgress, 1000);
+      // Joystick pozisyonunu ayarla
         initJoystick();
-}
+      }
 
+      // Joystick başlatma
       function initJoystick() {
         const joystickContainer = document.getElementById("joystickContainer");
-const rect = joystickContainer.getBoundingClientRect();
+      const rect = joystickContainer.getBoundingClientRect();
         joystickCenterX = rect.left + rect.width / 2;
         joystickCenterY = rect.top + rect.height / 2;
-joystickHandleX = joystickCenterX;
+      joystickHandleX = joystickCenterX;
         joystickHandleY = joystickCenterY;
 
         joystickContainer.addEventListener("touchstart", handleJoystickStart, { passive: false });
         joystickContainer.addEventListener("touchmove", handleJoystickMove, { passive: false });
-joystickContainer.addEventListener("touchend", handleJoystickEnd, { passive: false });
+      joystickContainer.addEventListener("touchend", handleJoystickEnd, { passive: false });
 
         joystickContainer.addEventListener("mousedown", handleJoystickStart);
         document.addEventListener("mousemove", handleJoystickMove);
         document.addEventListener("mouseup", handleJoystickEnd);
-}
+      }
 
+      // Joystick fonksiyonları
       function handleJoystickStart(e) {
         e.preventDefault();
-        joystickActive = true;
-const joystickContainer = document.getElementById("joystickContainer");
+      joystickActive = true;
+        const joystickContainer = document.getElementById("joystickContainer");
         const rect = joystickContainer.getBoundingClientRect();
         joystickCenterX = rect.left + rect.width / 2;
-joystickCenterY = rect.top + rect.height / 2;
+      joystickCenterY = rect.top + rect.height / 2;
 
         updateJoystickPosition(e);
       }
 
       function handleJoystickMove(e) {
         if (!joystickActive) return;
-e.preventDefault();
+      e.preventDefault();
         updateJoystickPosition(e);
       }
 
       function handleJoystickEnd(e) {
         if (!joystickActive) return;
-e.preventDefault();
+      e.preventDefault();
         joystickActive = false;
 
         joystickHandleX = joystickCenterX;
@@ -1614,51 +1747,51 @@ e.preventDefault();
         joystickDirection = { x: 0, y: 0 };
 
         updateJoystickVisual();
-player.isMoving = false;
+      player.isMoving = false;
       }
 
       function updateJoystickPosition(e) {
         let clientX, clientY;
-if (e.type.includes("touch")) {
+      if (e.type.includes("touch")) {
           clientX = e.touches[0].clientX;
           clientY = e.touches[0].clientY;
-} else {
+      } else {
           clientX = e.clientX;
           clientY = e.clientY;
-}
+      }
 
         const dx = clientX - joystickCenterX;
         const dy = clientY - joystickCenterY;
-const distance = Math.sqrt(dx * dx + dy * dy);
+      const distance = Math.sqrt(dx * dx + dy * dy);
 
         const limitedDistance = Math.min(distance, JOYSTICK_RADIUS);
         const angle = Math.atan2(dy, dx);
-joystickHandleX = joystickCenterX + Math.cos(angle) * limitedDistance;
+      joystickHandleX = joystickCenterX + Math.cos(angle) * limitedDistance;
         joystickHandleY = joystickCenterY + Math.sin(angle) * limitedDistance;
 
         joystickDirection.x = limitedDistance > 0 ?
-dx / distance : 0;
+      dx / distance : 0;
         joystickDirection.y = limitedDistance > 0 ? dy / distance : 0;
 
         updateJoystickVisual();
         player.isMoving = true;
-}
+      }
 
       function updateJoystickVisual() {
         const joystickHandle = document.getElementById("joystickHandle");
-if (joystickHandle) {
+      if (joystickHandle) {
           const joystickContainer = document.getElementById("joystickContainer");
           const rect = joystickContainer.getBoundingClientRect();
-const x = joystickHandleX - rect.left - JOYSTICK_HANDLE_RADIUS;
+      const x = joystickHandleX - rect.left - JOYSTICK_HANDLE_RADIUS;
           const y = joystickHandleY - rect.top - JOYSTICK_HANDLE_RADIUS;
 
           joystickHandle.style.transform = `translate(${x}px, ${y}px)`;
-if (joystickActive) {
+      if (joystickActive) {
             joystickHandle.style.background = "rgba(255, 204, 0, 1)";
-joystickHandle.style.boxShadow = "0 0 20px rgba(255, 204, 0, 0.8)";
+      joystickHandle.style.boxShadow = "0 0 20px rgba(255, 204, 0, 0.8)";
           } else {
             joystickHandle.style.background = "rgba(255, 204, 0, 0.9)";
-joystickHandle.style.boxShadow = "0 0 15px rgba(255, 204, 0, 0.5)";
+      joystickHandle.style.boxShadow = "0 0 15px rgba(255, 204, 0, 0.5)";
           }
         }
       }
@@ -1666,73 +1799,80 @@ joystickHandle.style.boxShadow = "0 0 15px rgba(255, 204, 0, 0.5)";
       function updateUI() {
         const setText = (id, text) => {
           const el = document.getElementById(id);
-if (el) el.innerText = text;
+      if (el) el.innerText = text;
         };
         const setDisabled = (id, value) => {
           const el = document.getElementById(id);
-if (el) el.disabled = value;
+      if (el) el.disabled = value;
         };
+        // Update Inner HTML for buttons with icons
         const setHTML = (id, html) => {
           const el = document.getElementById(id);
-if (el) el.innerHTML = html;
+      if (el) el.innerHTML = html;
         };
 
         setText("traniumCount", tranium);
         setText("metalCount", Math.floor(metal));
         setText("kristalCount", Math.floor(kristal));
-setText(
+      setText(
           "metalWorkers",
           `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalFacLvl).toFixed(3)}/s)`,
         );
-setText(
+      setText(
           "kristalWorkers",
           `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl).toFixed(3)}/s)`,
         );
-setText("metalFacLevel", `Lvl ${metalFacLvl}`);
+      setText("metalFacLevel", `Lvl ${metalFacLvl}`);
         setText("kristalFacLevel", `Lvl ${kristalFacLvl}`);
         
+        // ETH costs and build times for upgrades
         const metalEthCost = getUpgradeCost(metalFacLvl);
-        const kristalEthCost = getUpgradeCost(kristalFacLvl);
+      const kristalEthCost = getUpgradeCost(kristalFacLvl);
         const metalBuildTime = getUpgradeTime(metalFacLvl);
-const kristalBuildTime = getUpgradeTime(kristalFacLvl);
+        const kristalBuildTime = getUpgradeTime(kristalFacLvl);
         
         setText("costMetalFac", `Ξ${metalEthCost} ETH`);
         setText("costKristalFac", `Ξ${kristalEthCost} ETH`);
-        setText("metalBuildTime", `⏱️ ${formatTimeHours(metalBuildTime)}`);
+      setText("metalBuildTime", `⏱️ ${formatTimeHours(metalBuildTime)}`);
         setText("kristalBuildTime", `⏱️ ${formatTimeHours(kristalBuildTime)}`);
-setText("resUI", `⚙️: ${Math.floor(metal)} | 💎: ${Math.floor(kristal)}`);
+        setText("resUI", `⚙️: ${Math.floor(metal)} | 💎: ${Math.floor(kristal)}`);
         setText("healthUI", "❤️: " + health);
 
         updateEnergyCountdown();
-
+      // Metal fabrikası buton güncelleme
         const upMetalFacBtn = document.getElementById("upMetalFac");
         const now = Date.now();
-if (metalFacUpgradeEndTime > now) {
+      if (metalFacUpgradeEndTime > now) {
+          // Yükseltme devam ediyor
           const remainingTime = metalFacUpgradeEndTime - now;
-upMetalFacBtn.innerHTML = `⏳ UPGRADING... ${formatTime(remainingTime)}`;
+      upMetalFacBtn.innerHTML = `⏳ UPGRADING... ${formatTime(remainingTime)}`;
           upMetalFacBtn.disabled = true;
         } else {
+          // Yükseltme yapılabilir
           upMetalFacBtn.innerHTML = `UPGRADE <span id="costMetalFac">Ξ${metalEthCost} ETH</span>`;
-upMetalFacBtn.disabled = false;
+      upMetalFacBtn.disabled = false;
         }
 
+        // Kristal fabrikası buton güncelleme
         const upKristalFacBtn = document.getElementById("upKristalFac");
-if (kristalFacUpgradeEndTime > now) {
+      if (kristalFacUpgradeEndTime > now) {
+          // Yükseltme devam ediyor
           const remainingTime = kristalFacUpgradeEndTime - now;
-upKristalFacBtn.innerHTML = `⏳ UPGRADING... ${formatTime(remainingTime)}`;
+      upKristalFacBtn.innerHTML = `⏳ UPGRADING... ${formatTime(remainingTime)}`;
           upKristalFacBtn.disabled = true;
         } else {
+          // Yükseltme yapılabilir
           upKristalFacBtn.innerHTML = `UPGRADE <span id="costKristalFac">Ξ${kristalEthCost} ETH</span>`;
-upKristalFacBtn.disabled = false;
+      upKristalFacBtn.disabled = false;
         }
 
         setDisabled("swapBtn", Math.min(Math.floor(metal), Math.floor(kristal)) <= 0);
-}
+      }
 
       function saveData() {
         localStorage.setItem("w_metal", metal);
         localStorage.setItem("w_kristal", kristal);
-localStorage.setItem("w_tranium", tranium);
+      localStorage.setItem("w_tranium", tranium);
         localStorage.setItem("w_mw", metalWorkers);
         localStorage.setItem("w_kw", kristalWorkers);
         localStorage.setItem("w_mfl", metalFacLvl);
@@ -1742,18 +1882,18 @@ localStorage.setItem("w_tranium", tranium);
         localStorage.setItem("w_next_energy_time", nextEnergyTime);
         localStorage.setItem("w_energy_reg_start", energyRegenerationStartTime);
         localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
-localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
+      localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
       }
 
       function spawnWorker() {
         const isM = Math.random() > 0.5;
-workers.push({
+      workers.push({
           x: 100 + Math.random() * (WORLD_SIZE - 200),
           y: 100 + Math.random() * (WORLD_SIZE - 200),
           img: isM ? imgMiner1 : imgMiner2,
           type: isM ? "metal" : "kristal",
         });
-}
+      }
 
       function spawnEnemy() {
         enemies.push({
@@ -1763,67 +1903,70 @@ workers.push({
           spawnTime: Date.now(),
           currentSpeed: 3.8,
         });
-}
+      }
 
       function attemptStart() {
         if (energy > 0) {
           energy--;
-health = 3;
+      health = 3;
 
+          // Enerji azaldı, zamanlayıcıları güncelle
           updateEnergyTimers();
 
           saveData();
           updateUI();
-          document.getElementById("overlay").style.display = "none";
+      document.getElementById("overlay").style.display = "none";
           document.getElementById("ui").style.opacity = "1";
           document.getElementById("joystickContainer").style.display = "block";
           isStarted = true;
-} else {
+      } else {
           alert("Not enough energy! Wait for energy to regenerate.");
-}
+      }
       }
 
       function processMining(dtSec) {
         const metalGain = dtSec * (metalWorkers * BASE_WORKER_SPEED * metalFacLvl);
-const kristalGain = dtSec * (kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl);
+      const kristalGain = dtSec * (kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl);
 
         metal += metalGain;
         kristal += kristalGain;
 
         if (!isStarted) updateUI();
-}
+      }
 
       function update(dt) {
         processMining(dt);
+      // Yükseltme ilerlemesini kontrol et
         checkUpgradeProgress();
-if (!isStarted) return;
-        if (joystickActive) {
+
+        if (!isStarted) return;
+      if (joystickActive) {
           const moveSpeed = player.speed;
-player.x += joystickDirection.x * moveSpeed;
+      player.x += joystickDirection.x * moveSpeed;
           player.y += joystickDirection.y * moveSpeed;
           player.flipX = joystickDirection.x < 0;
           player.isMoving = true;
-walkCycle += 0.35;
+      walkCycle += 0.35;
         } else {
           if (isTouching) {
             let dx = player.targetX - player.x,
               dy = player.targetY - player.y,
               dist = Math.hypot(dx, dy);
-if (dist > 5) {
+      if (dist > 5) {
               player.x += (dx / dist) * player.speed;
-player.y += (dy / dist) * player.speed;
+      player.y += (dy / dist) * player.speed;
               player.flipX = dx < 0;
               player.isMoving = true;
               walkCycle += 0.35;
-} else player.isMoving = false;
+      } else player.isMoving = false;
           }
         }
 
         player.x = Math.max(50, Math.min(WORLD_SIZE - 50, player.x));
-player.y = Math.max(50, Math.min(WORLD_SIZE - 50, player.y));
+      player.y = Math.max(50, Math.min(WORLD_SIZE - 50, player.y));
         camera.x = Math.max(0, Math.min(WORLD_SIZE - canvas.width, player.x - canvas.width / 2));
-camera.y = Math.max(0, Math.min(WORLD_SIZE - canvas.height, player.y - canvas.height / 2));
-workers.forEach((w, i) => {
+      camera.y = Math.max(0, Math.min(WORLD_SIZE - canvas.height, player.y - canvas.height / 2));
+      workers.forEach((w, i) => {
           if (Math.hypot(player.x - w.x, player.y - w.y) < 70) {
             if (w.type === "metal") metalWorkers++;
             else kristalWorkers++;
@@ -1835,7 +1978,7 @@ workers.forEach((w, i) => {
       });
 
         const now = Date.now();
-enemies.forEach((en, i) => {
+      enemies.forEach((en, i) => {
           if (en.isChasing && now - en.chaseStartTime > 5000) {
             enemies.splice(i, 1);
             spawnEnemy();
@@ -1866,21 +2009,21 @@ enemies.forEach((en, i) => {
             }
           }
         });
-}
+      }
 
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-ctx.save();
+      ctx.save();
         ctx.translate(-camera.x, -camera.y);
         if (imgBG.complete) ctx.drawImage(imgBG, 0, 0, WORLD_SIZE, WORLD_SIZE);
-workers.forEach((w) => {
+      workers.forEach((w) => {
           ctx.save();
           ctx.shadowBlur = 10;
           ctx.shadowColor = w.type === "metal" ? "#ffcc00" : "#00ffff";
           ctx.drawImage(w.img, w.x - 40, w.y - 40, 80, 80);
           ctx.restore();
         });
-enemies.forEach((en) => {
+      enemies.forEach((en) => {
           ctx.save();
           ctx.shadowBlur = 20;
           ctx.shadowColor = "red";
@@ -1896,36 +2039,36 @@ enemies.forEach((en) => {
           ctx.drawImage(imgInfected, en.x - 40, en.y - 50, 80, 100);
           ctx.restore();
         });
-ctx.save();
+      ctx.save();
         let bounce = player.isMoving ? Math.abs(Math.sin(walkCycle)) * 14 : 0;
         ctx.translate(player.x, player.y - bounce);
         if (player.flipX) ctx.scale(-1, 1);
-ctx.drawImage(imgDayi, -50, -60, 100, 120);
+      ctx.drawImage(imgDayi, -50, -60, 100, 120);
         ctx.restore();
         ctx.restore();
       }
 
       function gameLoop() {
         let now = Date.now();
-let dt = (now - lastUpdate) / 1000;
+      let dt = (now - lastUpdate) / 1000;
         lastUpdate = now;
         update(dt);
         draw();
         requestAnimationFrame(gameLoop);
-}
+      }
 
       const setTarget = (e) => {
         if (joystickActive) return;
-const rect = canvas.getBoundingClientRect();
+      const rect = canvas.getBoundingClientRect();
         const cx = e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-const cy = e.touches ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+      const cy = e.touches ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
 
         const scaleX = canvas.width / rect.width;
-const scaleY = canvas.height / rect.height;
+      const scaleY = canvas.height / rect.height;
 
         player.targetX = cx * scaleX + camera.x;
         player.targetY = cy * scaleY + camera.y;
-player.isMoving = true;
+      player.isMoving = true;
       };
 
       window.addEventListener("mousedown", (e) => {
@@ -1943,14 +2086,14 @@ player.isMoving = true;
         isTouching = true;
         setTarget(e);
       });
-window.addEventListener("mousemove", (e) => {
+      window.addEventListener("mousemove", (e) => {
         if (isTouching && !joystickActive) setTarget(e);
       });
-window.addEventListener("mouseup", () => {
+      window.addEventListener("mouseup", () => {
         isTouching = false;
         if (!joystickActive) player.isMoving = false;
       });
-window.addEventListener(
+      window.addEventListener(
         "touchstart",
         (e) => {
           const joystickRect = document.getElementById("joystickContainer").getBoundingClientRect();
@@ -1981,28 +2124,41 @@ false },
         },
         { passive: false },
       );
-window.addEventListener("touchend", () => {
+      window.addEventListener("touchend", () => {
         isTouching = false;
         if (!joystickActive) player.isMoving = false;
       });
-function endGame() {
+      // End game function
+      function endGame() {
         document.getElementById("overlay").style.display = "flex";
-        document.getElementById("ui").style.opacity = "0";
+      document.getElementById("ui").style.opacity = "0";
         document.getElementById("joystickContainer").style.display = "none";
-if (energyTimer) {
+        if (energyTimer) {
           clearInterval(energyTimer);
-          energyTimer = null;
-}
+      energyTimer = null;
+        }
 
+        // Enerji geri sayımını tekrar başlat
         startEnergyCountdown();
-        
+      // Log score for Farcaster Mini App
         console.log("Game Over! Score: " + Math.floor(tranium));
-}
+      }
 
+      // Sayfa yüklendiğinde intro'yu başlat
       window.onload = startIntro;
     </script>
     <script>
-      (function () {
+      /**
+       * FINAL SYSTEM PATCH V4.0 (TURBO MODE)
+       * - FPS Lock: 60 FPS
+       * - Player Speed: 7.0 (2x Faster)
+       * - Enemy Speed: Max 6.6 (2x Faster)
+       * - Camera: Wide Angle (Fixed)
+       * - Control: Touch Joystick (Mobile) / Mouse Click (PC)
+       */
+   
+    (function () {
+        // 1. FPS GÖSTERGESİ
         const fpsBox = document.createElement("div");
         fpsBox.id = "pc-fps-counter";
         fpsBox.style.cssText =
@@ -2010,99 +2166,114 @@ if (energyTimer) {
         fpsBox.innerHTML = "FPS: ...";
         document.body.appendChild(fpsBox);
 
-    
-    function lockPlayerSpeed() {
+        // 
+2. OYUNCU HIZINI KİLİTLEME (7.0 - TURBO)
+        function lockPlayerSpeed() {
           try {
+            // Hızı 7.0 yapıyoruz (Eskisi 3.5 idi)
             if (typeof player !== "undefined" && player.speed !== 7.0) {
               player.speed = 7.0;
-              Object.defineProperty(player, "speed", {
+      Object.defineProperty(player, "speed", {
                 value: 7.0,
-             
-   writable: false,
+                writable: false,
                 configurable: true,
               });
-            }
+      }
           } catch (e) {}
         }
 
+        // 3. BAŞLATICIYI GÜVENLİ HALE GETİRME
         const originalInitHub = window.initHub;
-        window.initHub = function () {
-         
-  if (originalInitHub) originalInitHub();
-
-          const cvs = document.getElementById("gameCanvas");
+      window.initHub = function () {
+          if (originalInitHub) originalInitHub();
+      const cvs = document.getElementById("gameCanvas");
           if (cvs) {
+            // KAMERA AYARI (Geniş Açı Koruma)
             let targetWidth = window.innerWidth;
-let targetHeight = window.innerHeight;
+      let targetHeight = window.innerHeight;
 
             if (targetWidth > 1920) {
               const ratio = window.innerHeight / window.innerWidth;
-targetWidth = 1920;
+      targetWidth = 1920;
               targetHeight = 1920 * ratio;
             }
 
             cvs.width = targetWidth;
-cvs.height = targetHeight;
+      cvs.height = targetHeight;
             cvs.style.width = "100vw";
             cvs.style.height = "100vh";
             cvs.style.transform = "translate3d(0,0,0)";
             cvs.style.imageRendering = "pixelated";
-}
+      }
 
+          // PC'de Joystick Gizle
           if (!("ontouchstart" in window) && navigator.maxTouchPoints === 0) {
             const joyContainer = document.getElementById("joystickContainer");
-if (joyContainer) joyContainer.style.display = "none";
+      if (joyContainer) joyContainer.style.display = "none";
             const style = document.createElement("style");
             style.innerHTML = "#joystickContainer { display: none !important; }";
             document.head.appendChild(style);
-}
+      }
 
           lockPlayerSpeed();
           fpsBox.style.display = "block";
-console.log("✅ TURBO MODE: Player 7.0 | Enemy Max 6.6");
+      console.log("✅ TURBO MODE: Player 7.0 | Enemy Max 6.6");
         };
-
+      // 4. OYUN DÖNGÜSÜ + DÜŞMAN HIZ KONTROLÜ
         let lastTime = performance.now();
-        let frameCount = 0;
-let lastFpsTime = performance.now();
+      let frameCount = 0;
+        let lastFpsTime = performance.now();
         const targetFPS = 60;
         const frameDelay = 1000 / targetFPS;
-        const originalRAF = window.requestAnimationFrame;
-function secureGameLoop() {
-          originalRAF(secureGameLoop);
+      const originalRAF = window.requestAnimationFrame;
 
-          const now = performance.now();
-const elapsed = now - lastTime;
+        function secureGameLoop() {
+          originalRAF(secureGameLoop);
+      const now = performance.now();
+          const elapsed = now - lastTime;
 
           if (elapsed < frameDelay) return;
-          lastTime = now - (elapsed % frameDelay);
-if (typeof player !== "undefined") {
-            if (player.speed !== 7.0) player.speed = 7.0;
-}
+      lastTime = now - (elapsed % frameDelay);
 
+          // --- HIZ KONTROLLERİ ---
+
+          // A) OYUNCU HIZI (7.0'da Tut)
+          if (typeof player !== "undefined") {
+            // Eğer hız değişirse tekrar 7.0'a çek
+            if (player.speed !== 7.0) player.speed = 7.0;
+      }
+
+          // B) DÜŞMAN HIZI (2x Arttırılmış)
           if (typeof enemies !== "undefined" && Array.isArray(enemies)) {
             enemies.forEach((en) => {
+              // Başlangıç hızını düşürmüyoruz (Orijinal 3.8 kalsın)
+
+              // Maksimum hızı sınırla (6.6)
+              // Oyuncu 
+7.0 olduğu için 6.6 adil bir kovalamaca hızıdır.
               if (en.currentSpeed > 6.6) {
                 en.currentSpeed = 6.6;
               }
             });
-}
+      }
 
+          // FPS Sayacı
           frameCount++;
-if (now - lastFpsTime >= 1000) {
+      if (now - lastFpsTime >= 1000) {
             fpsBox.innerHTML = "FPS: " + frameCount;
-frameCount = 0;
+      frameCount = 0;
             lastFpsTime = now;
           }
 
+          // Oyun Güncelleme
           if (typeof window.update === "function" && typeof window.draw === "function") {
             window.update(0.016);
-window.draw();
+      window.draw();
           }
         }
 
         window.gameLoop = function () {};
-secureGameLoop();
+      secureGameLoop();
       })();
     </script>
   </body>
