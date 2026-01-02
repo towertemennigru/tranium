@@ -13,32 +13,6 @@
     />
     
     <title>TRANIUM VERSE - Strategy Hub</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js"></script>
-    <script>
-      (function() {
-        // SDK yüklenir yüklenmez Ready sinyalini gönder
-        const start = Date.now();
-        const checkSDK = setInterval(function() {
-            const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
-            if (sdk && sdk.actions) {
-                clearInterval(checkSDK);
-                try {
-                    sdk.actions.ready();
-                    console.log("✅ READY sinyali gönderildi (HEAD)");
-                    
-                    // Context bilgisini al (Varsa)
-                    if(sdk.context) {
-                        sdk.context.then(ctx => window.farcasterContext = ctx).catch(e=>console.error(e));
-                    }
-                } catch(e) { console.error(e); }
-            }
-            // 10 saniye sonra pes et
-            if (Date.now() - start > 10000) clearInterval(checkSDK);
-        }, 50); // Her 50ms'de bir kontrol et
-      })();
-    </script>
-
     <style>
       :root {
         --gold: #ffcc00;
@@ -901,6 +875,7 @@
         }
       }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
   </head>
   <body>
@@ -1099,9 +1074,50 @@
     <canvas id="gameCanvas"></canvas>
 
     <script>
-      // Ana oyun değişkenleri
+  
+      // Farcaster Mini App SDK initialization
+      let farcasterSDK = null;
+      let farcasterContext = null;
       let isMiniApp = false;
-      
+
+      // Initialize Farcaster SDK (DÜZELTİLMİŞ OTO-BAŞLATMALI VERSİYON)
+      // Bu fonksiyon script yüklenir yüklenmez en altta çağrılıyor.
+      async function initFarcasterSDK() {
+        console.log("SDK Başlatıcı çalışıyor...");
+        const start = Date.now();
+        
+        // 5 Saniye boyunca SDK'yı kontrol eden bir döngü
+        // SDK bulunur bulunmaz ready() gönderip döngüyü kıracak.
+        const interval = setInterval(async () => {
+             const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
+             
+             if (sdk && sdk.actions) {
+                 clearInterval(interval);
+                 farcasterSDK = sdk;
+                 isMiniApp = true;
+                 console.log("✅ SDK Bulundu!");
+
+                 try {
+                     // KRİTİK: Resimleri beklemeden hemen READY de!
+                     await sdk.actions.ready();
+                     console.log("✅ Farcaster READY sinyali gönderildi!");
+                     
+                     if(sdk.context) {
+                        farcasterContext = await sdk.context;
+                     }
+                 } catch(e) { 
+                    console.error("Ready hatası:", e); 
+                 }
+             }
+             
+             // 5 saniye sonra hala bulamadıysa pes et
+             if (Date.now() - start > 5000) {
+                clearInterval(interval);
+                console.log("SDK zaman aşımı (Standalone mod)");
+             }
+        }, 100); // Her 100ms'de bir kontrol et
+      }
+
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
       const WORLD_SIZE = 2500;
@@ -1199,14 +1215,14 @@
       function triggerManualEndGame() {
         closeEndGameConfirmation();
       // Use Farcaster SDK if available, otherwise fallback
-        // SDK'yı pencereden al (head script'ten gelmiş olabilir)
-        const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
-        if (sdk) {
+        if (isMiniApp && farcasterSDK) {
+          // For Farcaster Mini Apps, we can close the app or show a completion message
           console.log("Game Over! Score: " + Math.floor(tranium));
           alert("Game Over! Your score: " + Math.floor(tranium) + " TRANIUM");
-          if (sdk.actions && sdk.actions.close) {
-            sdk.actions.close();
-          }
+      // Optionally close the mini app
+          if (farcasterSDK.actions && farcasterSDK.actions.close) {
+            farcasterSDK.actions.close();
+      }
         } else {
           alert("Game Over Triggered! Score sent: " + Math.floor(tranium));
       location.reload();
@@ -1274,8 +1290,9 @@
 
       // INTRO VE LOADING SİSTEMİ
       async function startIntro() {
-        // SDK başlatma kodu buradaydı, artık HEAD kısmında.
-        // Sadece intro animasyonunu başlatıyoruz.
+        // --- SDK BAŞLATMA KODU BURADAN SİLİNDİ ---
+        // Artık en altta otomatik başlıyor.
+        
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "flex";
 
@@ -2116,6 +2133,10 @@
       // Log score for Farcaster Mini App
         console.log("Game Over! Score: " + Math.floor(tranium));
       }
+
+      // --- SİHİRLİ DOKUNUŞ: SDK'yı HEMEN TETİKLE ---
+      // Sayfa yüklenmeden önce SDK'yı bulup ready sinyalini gönder.
+      initFarcasterSDK();
 
       // Oyunu yükle (Resimler bitince)
       window.onload = startIntro;
