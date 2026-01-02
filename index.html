@@ -920,6 +920,7 @@ export default function App() {
         requestAnimationFrame(async () => {
           requestAnimationFrame(async () => {
             // Splash ekranını kaldır
+            Promise.race(120)
             await sdk.actions.ready();
             setIsReady(true);
             console.log(' Farcaster SDK Ready Signal Sent successfully.');
@@ -2249,6 +2250,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
     </script>
   </body>
 </html>
+
 
 
 
