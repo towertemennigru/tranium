@@ -2105,7 +2105,13 @@
       }
 
       // Sayfa yüklendiğinde intro'yu başlat
-      window.onload = startIntro;
+      // window.onload yerine bunu kullanıyoruz.
+// Bu sayede resimleri beklemeden 'Ready' sinyali gider ve hata kaybolur.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startIntro);
+} else {
+    startIntro();
+}
     </script>
     <script>
       /**
