@@ -971,49 +971,63 @@
     <canvas id="gameCanvas"></canvas>
 
     <script>
-      // Farcaster Mini App SDK initialization
+      // FARCASTER SDK INITIALIZATION - FIXED
       let farcasterSDK = null;
       let farcasterContext = null;
       let isMiniApp = false;
 
-      // Initialize Farcaster SDK
-      // DÜZELTÄ°LMÄ°Åž FARCASTER SDK Ä°NÄ°TÄ°ALÄ°ZASYONU
-async function initFarcasterSDK() {
-  try {
-    // SDK yüklenene kadar bekle
-    await new Promise(resolve => {
-      if (window.sdk) resolve();
-      else {
-        const checkSDK = setInterval(() => {
+      async function initFarcasterSDK() {
+        try {
+          // SDK yüklenene kadar bekle
+          await new Promise(resolve => {
+            if (window.sdk) {
+              resolve();
+            } else {
+              const checkSDK = setInterval(() => {
+                if (window.sdk) {
+                  clearInterval(checkSDK);
+                  resolve();
+                }
+              }, 100);
+              // 5 saniye timeout
+              setTimeout(() => {
+                clearInterval(checkSDK);
+                resolve();
+              }, 5000);
+            }
+          });
+
           if (window.sdk) {
-            clearInterval(checkSDK);
-            resolve();
+            farcasterSDK = window.sdk;
+            isMiniApp = true;
+            console.log("✅ Farcaster SDK loaded");
+            
+            // Context al
+            try {
+              if (farcasterSDK.context) {
+                farcasterContext = await farcasterSDK.context;
+                console.log("✅ Context received:", farcasterContext);
+              }
+            } catch (e) {
+              console.log("Context error:", e);
+            }
+            
+            // CRITICAL: ready() çağrısı - splash ekranını kapat
+            try {
+              if (farcasterSDK.actions && typeof farcasterSDK.actions.ready === 'function') {
+                await farcasterSDK.actions.ready();
+                console.log("✅ Mini App Ready - Splash hidden!");
+              }
+            } catch (e) {
+              console.log("Ready error:", e);
+            }
+          } else {
+            console.log("⚠️ Not in Farcaster environment");
           }
-        }, 100);
+        } catch (error) {
+          console.error("❌ SDK Init Error:", error);
+        }
       }
-    });
-
-    farcasterSDK = window.sdk;
-    isMiniApp = true;
-    console.log("✅ Farcaster SDK loaded");
-    
-    // Context al
-    if (farcasterSDK.context) {
-      farcasterContext = await farcasterSDK.context;
-      console.log("✅ Context:", farcasterContext);
-    }
-    
-    // KRIT
-
-İK: ready() çağrısı - splash ekranını kapat
-    if (farcasterSDK.actions && farcasterSDK.actions.ready) {
-      await farcasterSDK.actions.ready();
-      console.log("✅ Mini App Ready!");
-    }
-  } catch (error) {
-    console.error("❌ SDK Error:", error);
-  }
-}
 
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
@@ -1028,7 +1042,6 @@ async function initFarcasterSDK() {
         kristalFacLvl = 1,
         energy = 10,
         lastTime = Date.now();
-      // CHANGED: Speed reduced from 0.005 to 0.001 (5x slower)
       const BASE_WORKER_SPEED = 0.001;
       let health = 3,
         isStarted = false,
@@ -1047,7 +1060,6 @@ async function initFarcasterSDK() {
       let lastUpdate = Date.now();
       let workers = [],
         enemies = [];
-      // Joystick değişkenleri
       let joystickActive = false;
       let joystickCenterX = 0;
       let joystickCenterY = 0;
@@ -1057,17 +1069,14 @@ async function initFarcasterSDK() {
       const JOYSTICK_RADIUS = 60;
       const JOYSTICK_HANDLE_RADIUS = 30;
 
-      // Enerji geri sayım değişkenleri
       let nextEnergyTime = 0;
       let energyTimer = null;
       let energyRegenerationStartTime = 0;
 
-      // Loading değişkenleri
       let totalAssets = 0;
       let loadedAssets = 0;
       let loadingInterval = null;
 
-      // Factory yükseltme değişkenleri
       let metalFacUpgradeEndTime = 0;
       let kristalFacUpgradeEndTime = 0;
 
@@ -1087,7 +1096,6 @@ async function initFarcasterSDK() {
       imgInfected.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/infect-removebg-preview-5HhmhH4V5DqNbYNXhiFg3o9Z0RkEIj.webp?uN63";
 
-      // How to Play Logic
       function openHowToPlay() {
         document.getElementById("howToPlayScreen").style.display = "flex";
       }
@@ -1095,7 +1103,6 @@ async function initFarcasterSDK() {
         document.getElementById("howToPlayScreen").style.display = "none";
       }
 
-      // Upgrade Modal Logic
       function openUpgradeModal() {
         document.getElementById("upgradeModal").style.display = "block";
       }
@@ -1103,7 +1110,6 @@ async function initFarcasterSDK() {
         document.getElementById("upgradeModal").style.display = "none";
       }
 
-      // End Game Logic (Replaces Hard Reset)
       function openEndGameConfirmation() {
         document.getElementById("endGameModal").style.display = "block";
       }
@@ -1112,12 +1118,9 @@ async function initFarcasterSDK() {
       }
       function triggerManualEndGame() {
         closeEndGameConfirmation();
-        // Use Farcaster SDK if available, otherwise fallback
         if (isMiniApp && farcasterSDK) {
-          // For Farcaster Mini Apps, we can close the app or show a completion message
           console.log("Game Over! Score: " + Math.floor(tranium));
           alert("Game Over! Your score: " + Math.floor(tranium) + " TRANIUM");
-          // Optionally close the mini app
           if (farcasterSDK.actions && farcasterSDK.actions.close) {
             farcasterSDK.actions.close();
           }
@@ -1153,7 +1156,6 @@ async function initFarcasterSDK() {
         }
       }
 
-      // Load Data
       if (localStorage.getItem("w_last_time")) {
         metal = parseFloat(localStorage.getItem("w_metal")) || 0;
         kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
@@ -1172,21 +1174,16 @@ async function initFarcasterSDK() {
 
         lastTime = parseInt(localStorage.getItem("w_last_time")) || Date.now();
 
-        // Enerji sistemini yükle
         nextEnergyTime = parseInt(localStorage.getItem("w_next_energy_time")) || 0;
         energyRegenerationStartTime = parseInt(localStorage.getItem("w_energy_reg_start")) || 0;
 
-        // Factory yükseltme zamanlarını yükle
         metalFacUpgradeEndTime = parseInt(localStorage.getItem("w_mfue")) || 0;
         kristalFacUpgradeEndTime = parseInt(localStorage.getItem("w_kfue")) || 0;
 
-        // Offline enerji yenilenmesini kontrol et
         updateOfflineEnergyRegeneration();
       }
 
-      // INTRO VE LOADING SİSTEMİ
       async function startIntro() {
-        // Initialize Farcaster SDK first
         await initFarcasterSDK();
         
         const introOverlay = document.getElementById("introOverlay");
@@ -1272,30 +1269,23 @@ async function initFarcasterSDK() {
         }, 1000);
       }
 
-      // ENERJİ SİSTEMİ
       function updateOfflineEnergyRegeneration() {
         const now = Date.now();
-        // Eğer enerji 10'dan azsa ve yenilenme başlamışsa
         if (energy < 10 && energyRegenerationStartTime > 0) {
           const timePassed = now - energyRegenerationStartTime;
-          const energyToAdd = Math.floor(timePassed / 3600000); // Her 1 saat (3600000 ms) için 1 enerji
+          const energyToAdd = Math.floor(timePassed / 3600000);
 
           if (energyToAdd > 0) {
-            // Enerji ekle (maksimum 10'a kadar)
             const newEnergy = Math.min(10, energy + energyToAdd);
             const addedEnergy = newEnergy - energy;
 
             if (addedEnergy > 0) {
               energy = newEnergy;
-              // Enerji yenilenme başlangıç zamanını güncelle
-              // Kalan süre için başlangıcı ayarla
               energyRegenerationStartTime = now - (timePassed % 3600000);
-              // Eğer enerji 10 olduysa, sıfırla
               if (energy >= 10) {
                 energyRegenerationStartTime = 0;
                 nextEnergyTime = 0;
               } else {
-                // Bir sonraki enerji zamanını hesapla
                 nextEnergyTime = energyRegenerationStartTime + 3600000;
               }
 
@@ -1303,7 +1293,6 @@ async function initFarcasterSDK() {
               updateUI();
             }
           } else if (nextEnergyTime > 0 && nextEnergyTime <= now) {
-            // Zaman dolduysa 1 enerji ekle
             if (energy < 10) {
               energy++;
               updateEnergyTimers();
@@ -1312,7 +1301,6 @@ async function initFarcasterSDK() {
             }
           }
         } else if (energy < 10 && energyRegenerationStartTime === 0) {
-          // Enerji yenilenmesi hiç başlamamış, şimdi başlat
           updateEnergyTimers();
         }
       }
@@ -1321,22 +1309,18 @@ async function initFarcasterSDK() {
         const now = Date.now();
         if (energy < 10) {
           if (energyRegenerationStartTime === 0) {
-            // İlk kez enerji yenilenmesi başlatılıyor
             energyRegenerationStartTime = now;
           }
 
-          // Bir sonraki enerji zamanını hesapla
           const timeSinceStart = now - energyRegenerationStartTime;
           const energyGained = Math.floor(timeSinceStart / 3600000);
           const nextEnergyIn = 3600000 - (timeSinceStart % 3600000);
           nextEnergyTime = now + nextEnergyIn;
-          // Eğer enerji 10 olduysa sıfırla
           if (energy >= 10) {
             energyRegenerationStartTime = 0;
             nextEnergyTime = 0;
           }
         } else {
-          // Enerji full
           energyRegenerationStartTime = 0;
           nextEnergyTime = 0;
         }
@@ -1350,7 +1334,6 @@ async function initFarcasterSDK() {
         if (!energyStatus || !energyUI) return;
 
         const now = Date.now();
-        // Enerji tam ise
         if (energy >= 10) {
           energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (FULL)`;
           energyUI.innerHTML = `⚡: ${energy}/10`;
@@ -1359,14 +1342,11 @@ async function initFarcasterSDK() {
           return;
         }
 
-        // Enerji yenilenme başlamamışsa başlat
         if (energyRegenerationStartTime === 0) {
           updateEnergyTimers();
         }
 
-        // Zaman dolmuş mu kontrol et
         if (nextEnergyTime > 0 && now >= nextEnergyTime) {
-          // 1 enerji ekle
           if (energy < 10) {
             energy++;
             updateEnergyTimers();
@@ -1375,7 +1355,6 @@ async function initFarcasterSDK() {
           }
         }
 
-        // Kalan süreyi hesapla ve göster
         if (nextEnergyTime > now) {
           const timeLeft = nextEnergyTime - now;
           const minutesLeft = Math.floor(timeLeft / 60000);
@@ -1384,12 +1363,10 @@ async function initFarcasterSDK() {
           const formattedMinutes = minutesLeft.toString().padStart(2, "0");
           const formattedSeconds = secondsLeft.toString().padStart(2, "0");
 
-          // Hangi enerjiyi beklediğimizi göster
           const currentEnergyBeingRegenerated = energy + 1;
           energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (Next ${currentEnergyBeingRegenerated}/10 in ${formattedMinutes}:${formattedSeconds})`;
           energyUI.innerHTML = `⚡: ${energy}/10`;
         } else {
-          // Hemen enerji eklenmesi gerekiyor
           energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (Next energy ready!)`;
           energyUI.innerHTML = `⚡: ${energy}/10`;
         }
@@ -1400,17 +1377,13 @@ async function initFarcasterSDK() {
           clearInterval(energyTimer);
         }
 
-        // Önce offline süredeki enerji kazanımını kontrol et
         updateOfflineEnergyRegeneration();
-        // Sonra geri sayımı başlat
         updateEnergyCountdown();
         energyTimer = setInterval(updateEnergyCountdown, 1000);
       }
 
-      // FACTORY YÜKSELTME SİSTEMİ
       function checkUpgradeProgress() {
         const now = Date.now();
-        // Metal fabrikası yükseltme kontrolü
         if (metalFacUpgradeEndTime > 0 && now >= metalFacUpgradeEndTime) {
           metalFacLvl++;
           metalFacUpgradeEndTime = 0;
@@ -1418,7 +1391,6 @@ async function initFarcasterSDK() {
           saveData();
         }
 
-        // Kristal fabrikası yükseltme kontrolü
         if (kristalFacUpgradeEndTime > 0 && now >= kristalFacUpgradeEndTime) {
           kristalFacLvl++;
           kristalFacUpgradeEndTime = 0;
@@ -1427,32 +1399,25 @@ async function initFarcasterSDK() {
         }
       }
 
-      // ============================================
-      // ETH PAYMENT SYSTEM (Base Network)
-      // ============================================
       const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
-      const BASE_ETH_COST = 0.0005; // Starting cost in ETH
-      const BASE_UPGRADE_TIME = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
-      const BASE_CHAIN_ID = 8453; // Base Mainnet Chain ID
+      const BASE_ETH_COST = 0.0005;
+      const BASE_UPGRADE_TIME = 2 * 60 * 60 * 1000;
+      const BASE_CHAIN_ID = 8453;
 
-      // Calculate ETH cost for upgrade (doubles each level)
       function getUpgradeCost(level) {
         return BASE_ETH_COST * Math.pow(2, level - 1);
       }
 
-      // Calculate upgrade time (doubles each level)
       function getUpgradeTime(level) {
         return BASE_UPGRADE_TIME * Math.pow(2, level - 1);
       }
 
-      // Format time for hours display
       function formatTimeHours(ms) {
         const hours = Math.floor(ms / 3600000);
         const minutes = Math.floor((ms % 3600000) / 60000);
         return `${hours}h ${minutes}m`;
       }
 
-      // Connect wallet and send ETH payment
       async function sendETHPayment(amountETH) {
         if (typeof window.ethereum === "undefined") {
           alert("Please install MetaMask or use a Web3 wallet!");
@@ -1460,18 +1425,16 @@ async function initFarcasterSDK() {
         }
 
         try {
-          // Request wallet connection
           await window.ethereum.request({ method: "eth_requestAccounts" });
           
           const provider = new ethers.BrowserProvider(window.ethereum);
           const network = await provider.getNetwork();
           
-          // Check if on Base network
           if (Number(network.chainId) !== BASE_CHAIN_ID) {
             try {
               await window.ethereum.request({
                 method: "wallet_switchEthereumChain",
-                params: [{ chainId: "0x2105" }], // Base Mainnet hex
+                params: [{ chainId: "0x2105" }],
               });
             } catch (switchError) {
               if (switchError.code === 4902) {
@@ -1499,7 +1462,6 @@ async function initFarcasterSDK() {
             value: amountWei
           });
 
-          // Wait for confirmation
           await tx.wait();
           return true;
         } catch (error) {
@@ -1529,19 +1491,16 @@ async function initFarcasterSDK() {
         const ethCost = getUpgradeCost(currentLevel);
         const upgradeTime = getUpgradeTime(currentLevel);
 
-        // Confirm payment
         const confirmMsg = `🏭 Upgrade to Level ${currentLevel + 1}\n\n💰 Cost: ${ethCost} ETH (Base Network)\n⏱️ Build Time: ${formatTimeHours(upgradeTime)}\n\n💳 Proceed with payment?`;
         if (!confirm(confirmMsg)) {
           return;
         }
 
-        // Process ETH payment
         const paymentSuccess = await sendETHPayment(ethCost);
         if (!paymentSuccess) {
           return;
         }
 
-        // Set upgrade end time
         if (type === "metal") {
           metalFacUpgradeEndTime = Date.now() + upgradeTime;
         } else if (type === "kristal") {
@@ -1567,26 +1526,20 @@ async function initFarcasterSDK() {
 
         const now = Date.now();
         const secondsPassed = Math.floor((now - lastTime) / 1000);
-        // OFFLINE MADENCİLİK
         processMining(secondsPassed);
-        // Yükseltme ilerlemesini kontrol et
         checkUpgradeProgress();
 
         updateUI();
-        // ENERJİ GERİ SAYIMINI BAŞLAT
         startEnergyCountdown();
         for (let i = 0; i < 40; i++) spawnWorker();
         for (let i = 0; i < 15; i++) spawnEnemy();
         requestAnimationFrame(gameLoop);
         setInterval(saveData, 3000);
 
-        // Yükseltme kontrolü için interval
         setInterval(checkUpgradeProgress, 1000);
-        // Joystick pozisyonunu ayarla
         initJoystick();
       }
 
-      // Joystick başlatma
       function initJoystick() {
         const joystickContainer = document.getElementById("joystickContainer");
         const rect = joystickContainer.getBoundingClientRect();
@@ -1604,7 +1557,6 @@ async function initFarcasterSDK() {
         document.addEventListener("mouseup", handleJoystickEnd);
       }
 
-      // Joystick fonksiyonları
       function handleJoystickStart(e) {
         e.preventDefault();
         joystickActive = true;
@@ -1633,6 +1585,32 @@ async function initFarcasterSDK() {
 
         updateJoystickVisual();
         player.isMoving = false;
+      }
+
+      function updateJoystickPosition(e) {
+        let clientX, clientY;
+        if (e.type.includes("touch")) {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
+        }
+
+        const dx = clientX - joystickCenterX;
+        const dy = clientY - joystickCenterY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        const limitedDistance = Math.min(distance, JOYSTICK_RADIUS);
+        const angle = Math.atan2(dy, dx);
+        joystickHandleX = joystickCenterX + Math.cos(angle) * limitedDistance;
+        joystickHandleY = joystickCenterY + Math.sin(angle) * limitedDistance;
+
+        joystickDirection.x = limitedDistance > 0 ? dx / distance : 0;
+        joystickDirection.y = limitedDistance > 0 ? dy / distance : 0;
+
+        updateJoystickVisual();
+        player.isMoving = true;
       }
 
       function updateJoystickPosition(e) {
