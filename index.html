@@ -1,29 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <meta name="base:app_id" content="6957083ec63ad876c9081cd6" />
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#000000" />
-    
     <meta property="fc:frame" content="vNext" />
     <meta property="fc:frame:image" content="https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/dayi-removebg-preview-9XEJ3aO8Iwnas0qrRC6kST14YUZeab.webp?yQ69" />
     <meta property="fc:frame:button:1" content="Start Mining" />
     <meta property="fc:frame:button:1:action" content="post" />
+    <meta property="fc:frame:post_url" content="https://your-deployed-url.com" />
     
     <meta name="fc:miniapp" content="hosted" />
-    <meta property="fc:miniapp:version" content="0.0.1" />
-    <meta property="fc:miniapp:name" content="Tranium Verse" />
-    <meta property="fc:miniapp:icon" content="https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/dayi-removebg-preview-9XEJ3aO8Iwnas0qrRC6kST14YUZeab.webp?yQ69" />
-
-    <meta property="og:title" content="TRANIUM VERSE" />
-    <meta property="og:description" content="Collect resources and refine Tranium to dominate the Verse." />
+    <meta property="og:title" content="TRANIUM VERSE - Strategy Hub" />
+    <meta property="og:description" content="Collect resources and refine Tranium to dominate the Verse. A strategic mining game on Farcaster." />
     <meta property="og:image" content="https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/dayi-removebg-preview-9XEJ3aO8Iwnas0qrRC6kST14YUZeab.webp?yQ69" />
-    
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:type" content="website" />
     <title>TRANIUM VERSE - Strategy Hub</title>
-    
     <style>
       :root {
         --gold: #ffcc00;
@@ -36,7 +33,7 @@
       * {
         box-sizing: border-box;
         -webkit-tap-highlight-color: transparent;
-        user-select: none;
+        user-select: none; /* Metin seçimini engelle */
       }
       body {
         margin: 0;
@@ -60,7 +57,7 @@
         image-rendering: pixelated;
       }
 
-      /* FPS COUNTER STYLE */
+      /* FPS GÖSTERGESİ (Eklenen özellik) */
       #fps-counter {
         position: fixed;
         top: 60px;
@@ -108,7 +105,9 @@
         text-transform: uppercase;
         letter-spacing: 8px;
         margin-bottom: 10px;
-        text-shadow: 0 0 20px rgba(255, 34, 34, 0.7), 0 0 40px rgba(255, 34, 34, 0.5);
+        text-shadow:
+          0 0 20px rgba(255, 34, 34, 0.7),
+          0 0 40px rgba(255, 34, 34, 0.5);
         position: relative;
       }
 
@@ -140,6 +139,14 @@
         margin: 30px 0;
         text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
         letter-spacing: 4px;
+      }
+
+      .game-subtitle {
+        font-size: min(16px, 3.5vw);
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 10px;
+        font-weight: 300;
+        letter-spacing: 2px;
       }
 
       /* LOADING SCREEN */
@@ -233,7 +240,7 @@
         line-height: 1.4;
       }
 
-      /* MAIN OVERLAY */
+      /* MAIN OVERLAY - PC DEFAULT */
       #overlay {
         position: fixed;
         top: 0;
@@ -247,12 +254,13 @@
         z-index: 100;
         padding: 20px;
         justify-content: space-evenly;
+        /* MOBİLDE KAYDIRMAYI ENGELLEMEK İÇİN: */
         overflow: hidden;
         gap: 0;
         display: none;
       }
 
-      /* HOW TO PLAY SCREEN */
+      /* HOW TO PLAY SCREEN (FULL OVERLAY) */
       #howToPlayScreen {
         position: fixed;
         top: 0;
@@ -301,7 +309,6 @@
         gap: 5px;
         flex-shrink: 0;
       }
-
       .btn-help-open:before {
         content: "?";
         display: inline-block;
@@ -315,6 +322,7 @@
         font-size: 10px;
       }
 
+      /* How to Play Styles */
       .help-container {
         width: 100%;
         max-width: 500px;
@@ -360,7 +368,7 @@
         margin-top: 20px;
       }
 
-      /* Modals */
+      /* Modal responsive düzenlemeleri */
       .custom-modal {
         display: none;
         position: fixed;
@@ -380,152 +388,489 @@
         box-shadow: 0 0 30px rgba(255, 204, 0, 0.2);
         touch-action: pan-y;
       }
-      #endGameModal { border-color: var(--neon); box-shadow: 0 0 30px rgba(0, 255, 204, 0.4); }
-      #upgradeModal { border-color: var(--neon); }
+      #endGameModal {
+        border-color: var(--neon);
+        box-shadow: 0 0 30px rgba(0, 255, 204, 0.4);
+      }
+      #upgradeModal {
+        border-color: var(--neon);
+      }
 
       .modal-input {
-        width: 100%; padding: 15px; margin: 15px 0; background: #111;
-        border: 1px solid #333; color: white; text-align: center; border-radius: 8px; font-size: 16px; min-height: 50px;
+        width: 100%;
+        padding: 15px;
+        margin: 15px 0;
+        background: #111;
+        border: 1px solid #333;
+        color: white;
+        text-align: center;
+        border-radius: 8px;
+        font-size: 16px;
+        min-height: 50px;
       }
 
-      .percentage-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
+      .percentage-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-bottom: 15px;
+      }
       .pct-btn {
-        background: #222; border: 1px solid #444; color: var(--gold); padding: 12px 0;
-        border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; min-height: 44px;
+        background: #222;
+        border: 1px solid #444;
+        color: var(--gold);
+        padding: 12px 0;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 14px;
+        min-height: 44px;
       }
-      .pct-btn:active { background: var(--gold); color: #000; }
+      .pct-btn:active {
+        background: var(--gold);
+        color: #000;
+      }
 
-      .modal-btn-row { display: flex; gap: 10px; margin-top: 15px; }
+      .modal-btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+      }
       .modal-btn {
-        flex: 1; padding: 15px; border-radius: 10px; border: none; font-weight: 900;
-        cursor: pointer; text-transform: uppercase; min-height: 50px;
+        flex: 1;
+        padding: 15px;
+        border-radius: 10px;
+        border: none;
+        font-weight: 900;
+        cursor: pointer;
+        text-transform: uppercase;
+        min-height: 50px;
       }
 
-      /* UI Elements */
+      /* UI ELEMENTS - PC DEFAULT */
       .header {
-        text-align: center; margin-top: env(safe-area-inset-top); width: 100%;
-        display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+        text-align: center;
+        margin-top: env(safe-area-inset-top);
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
       }
       .game-title {
-        color: var(--gold); font-size: 22px; font-weight: 900; letter-spacing: 1px;
-        text-transform: uppercase; margin: 10px 0;
+        color: var(--gold);
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin: 10px 0;
       }
       .tranium-circle {
-        margin: 15px auto 10px auto; width: 85px; height: 85px; border: 3px solid var(--gold);
-        border-radius: 50%; display: flex; flex-direction: column; align-items: center;
-        justify-content: center; background: rgba(255, 204, 0, 0.1); box-shadow: 0 0 15px rgba(255, 204, 0, 0.3); flex-shrink: 0;
+        margin: 15px auto 10px auto;
+        width: 85px;
+        height: 85px;
+        border: 3px solid var(--gold);
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 204, 0, 0.1);
+        box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+        flex-shrink: 0;
       }
-      .tranium-val { font-size: 28px; font-weight: 900; color: var(--gold); }
-      .tranium-lbl { font-size: 9px; font-weight: bold; }
+      .tranium-val {
+        font-size: 28px;
+        font-weight: 900;
+        color: var(--gold);
+      }
+      .tranium-lbl {
+        font-size: 9px;
+        font-weight: bold;
+      }
 
       .resource-section {
-        width: 100%; max-width: 380px; display: grid; grid-template-columns: 1fr 1fr;
-        gap: 12px; padding: 0 10px; flex-shrink: 1;
+        width: 100%;
+        max-width: 380px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 0 10px;
+        flex-shrink: 1;
+        /* Küçülmesine izin ver */
       }
       .res-card {
-        background: var(--panel); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
-        padding: 15px; text-align: center; min-height: 100px; display: flex; flex-direction: column; justify-content: center;
+        background: var(--panel);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
-      .res-name { font-size: 11px; color: var(--gold); font-weight: bold; display: block; }
-      .res-amount { font-size: 20px; font-weight: 800; display: block; margin: 5px 0; }
-      .res-info { font-size: 10px; color: var(--neon); opacity: 0.9; }
+      .res-name {
+        font-size: 11px;
+        color: var(--gold);
+        font-weight: bold;
+        display: block;
+      }
+      .res-amount {
+        font-size: 20px;
+        font-weight: 800;
+        display: block;
+        margin: 5px 0;
+      }
+      .res-info {
+        font-size: 10px;
+        color: var(--neon);
+        opacity: 0.9;
+      }
 
       .btn-refine {
-        width: 100%; max-width: 380px; background: var(--gold); color: #000; border: none;
-        padding: 18px; border-radius: 12px; font-weight: 900; cursor: pointer; text-transform: uppercase;
-        box-shadow: 0 4px 0 #b89600; font-size: 14px; min-height: 60px; margin: 10px 0; flex-shrink: 0;
+        width: 100%;
+        max-width: 380px;
+        background: var(--gold);
+        color: #000;
+        border: none;
+        padding: 18px;
+        border-radius: 12px;
+        font-weight: 900;
+        cursor: pointer;
+        text-transform: uppercase;
+        box-shadow: 0 4px 0 #b89600;
+        font-size: 14px;
+        min-height: 60px;
+        margin: 10px 0;
+        flex-shrink: 0;
       }
-      .btn-refine:disabled { background: #333; color: #666; box-shadow: none; transform: translateY(4px); }
-      .btn-upgrade-menu { background: var(--neon); color: #000; box-shadow: 0 4px 0 #00b894; margin-top: 10px; }
+      .btn-refine:disabled {
+        background: #333;
+        color: #666;
+        box-shadow: none;
+        transform: translateY(4px);
+      }
 
-      .factory-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+      .btn-upgrade-menu {
+        background: var(--neon);
+        color: #000;
+        box-shadow: 0 4px 0 #00b894;
+        margin-top: 10px;
+      }
+
+      .factory-modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        width: 100%;
+      }
       .fac-card {
-        background: rgba(0, 255, 204, 0.03); border: 1px solid rgba(0, 255, 204, 0.3);
-        border-radius: 12px; padding: 12px; display: flex; flex-direction: column; min-height: 120px;
+        background: rgba(0, 255, 204, 0.03);
+        border: 1px solid rgba(0, 255, 204, 0.3);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        min-height: 120px;
       }
-      .fac-header { font-size: 10px; font-weight: bold; color: var(--neon); text-align: center; margin-bottom: 8px; }
+      .fac-header {
+        font-size: 10px;
+        font-weight: bold;
+        color: var(--neon);
+        text-align: center;
+        margin-bottom: 8px;
+      }
       .btn-upgrade {
-        background: var(--neon); color: #000; border: none; padding: 12px; border-radius: 8px;
-        font-weight: 800; font-size: 10px; cursor: pointer; min-height: 44px; margin-top: auto;
+        background: var(--neon);
+        color: #000;
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 10px;
+        cursor: pointer;
+        min-height: 44px;
+        margin-top: auto;
       }
 
+      /* FOOTER */
       .footer {
-        width: 100%; max-width: 380px; text-align: center; padding: 15px 10px;
-        margin-top: auto; margin-bottom: max(env(safe-area-inset-bottom), 20px); flex-shrink: 0;
+        width: 100%;
+        max-width: 380px;
+        text-align: center;
+        padding: 15px 10px;
+        margin-top: auto;
+        margin-bottom: max(env(safe-area-inset-bottom), 20px);
+        flex-shrink: 0;
       }
-      .energy-info { font-size: 16px; font-weight: bold; color: var(--gold); margin-bottom: 15px; display: block; }
+      .energy-info {
+        font-size: 16px;
+        font-weight: bold;
+        color: var(--gold);
+        margin-bottom: 15px;
+        display: block;
+      }
       .btn-start {
-        width: 100%; background: var(--gold); color: #000; padding: 20px; border-radius: 40px;
-        border: none; font-size: 20px; font-weight: 900; cursor: pointer; min-height: 70px; box-shadow: 0 6px 0 #b89600;
+        width: 100%;
+        background: var(--gold);
+        color: #000;
+        padding: 20px;
+        border-radius: 40px;
+        border: none;
+        font-size: 20px;
+        font-weight: 900;
+        cursor: pointer;
+        min-height: 70px;
+        box-shadow: 0 6px 0 #b89600;
       }
 
-      /* In-Game UI */
+      /* Oyun içi UI */
       #ui {
-        position: absolute; top: max(env(safe-area-inset-top), 15px); left: 15px; right: 15px;
-        pointer-events: none; display: flex; justify-content: space-between; z-index: 10; opacity: 0;
-        font-weight: bold; text-shadow: 2px 2px 4px black; font-size: min(14px, 3.5vw);
+        position: absolute;
+        top: max(env(safe-area-inset-top), 15px);
+        left: 15px;
+        right: 15px;
+        pointer-events: none;
+        display: flex;
+        justify-content: space-between;
+        z-index: 10;
+        opacity: 0;
+        font-weight: bold;
+        text-shadow: 2px 2px 4px black;
+        font-size: min(14px, 3.5vw);
       }
 
       .reset-link {
-        color: var(--neon); font-size: 12px; text-decoration: none; cursor: pointer;
-        background: rgba(0, 0, 0, 0.5); border: 1px solid var(--neon); border-radius: 8px;
-        display: block; width: 100%; max-width: 250px; font-weight: bold; margin: 10px 0; padding: 10px; min-height: 44px; flex-shrink: 0;
+        color: var(--neon);
+        font-size: 12px;
+        text-decoration: none;
+        cursor: pointer;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--neon);
+        border-radius: 8px;
+        display: block;
+        width: 100%;
+        max-width: 250px;
+        font-weight: bold;
+        margin: 10px 0;
+        padding: 10px;
+        min-height: 44px;
+        flex-shrink: 0;
       }
 
-      /* Joystick */
+      /* Joystick Stilleri */
       #joystickContainer {
-        position: fixed; left: 25px; bottom: 25px; width: 120px; height: 120px;
-        z-index: 20; display: none; pointer-events: auto;
+        position: fixed;
+        left: 25px;
+        bottom: 25px;
+        width: 120px;
+        height: 120px;
+        z-index: 20;
+        display: none;
+        pointer-events: auto;
       }
+
       #joystickBase {
-        position: absolute; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6);
-        border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
       }
+
       #joystickHandle {
-        position: absolute; width: 60px; height: 60px; background: rgba(255, 204, 0, 0.9);
-        border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 50%; top: 50%; left: 50%;
-        transform: translate(-50%, -50%); box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 204, 0, 0.9);
+        border: 2px solid rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
       }
 
-      /* Animations */
-      @keyframes introFadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-      @keyframes loadingFadeIn { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-      @keyframes pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+      /* ANIMATIONS */
+      @keyframes introFadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.9);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
 
-      /* Mobile Optimizations */
+      @keyframes loadingFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.7;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      /* --- KRİTİK MOBİL OPTİMİZASYON (FIT TO SCREEN) --- */
       @media (max-width: 600px) and (max-height: 850px) {
-        #overlay { justify-content: space-evenly; padding: 10px; gap: 0; padding-bottom: max(env(safe-area-inset-bottom), 10px); }
-        .header { margin-top: 0; margin-bottom: 0; }
-        .game-title { font-size: 18px; margin: 2px 0; }
-        .tranium-circle { width: 65px; height: 65px; margin: 5px auto; border-width: 2px; }
-        .tranium-val { font-size: 20px; }
-        .tranium-lbl { font-size: 8px; }
-        .btn-help-open { padding: 4px 12px; font-size: 10px; margin-bottom: 2px; min-height: 25px; }
-        .reset-link { padding: 5px; min-height: 30px; font-size: 10px; margin: 2px 0; max-width: 200px; }
-        .resource-section { gap: 8px; margin: 2px 0; }
-        .res-card { padding: 8px; min-height: 60px; }
-        .res-name { font-size: 10px; }
-        .res-amount { font-size: 16px; margin: 2px 0; }
-        .res-info { font-size: 9px; }
-        .btn-refine { padding: 10px; min-height: 45px; font-size: 12px; margin: 8px 0; }
-        .footer { padding: 5px; margin-bottom: 5px; }
-        .energy-info { font-size: 12px; margin-bottom: 5px; }
-        .btn-start { padding: 10px; min-height: 50px; font-size: 16px; }
-        
-        #howToPlayScreen { justify-content: center; padding: 10px; overflow: hidden; }
-        #howToPlayScreen .header { margin-top: 0; margin-bottom: 5px; }
-        #howToPlayScreen .game-title { font-size: 16px; margin: 0; }
-        #howToPlayScreen .close-btn { font-size: 30px; top: 10px; right: 15px; z-index: 302; }
-        .help-container { margin-top: 5px; width: 100%; }
-        .help-card { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-        .warning-text { font-size: 11px; padding: 5px; margin-top: 0; margin-bottom: 5px; }
-        .help-title { font-size: 11px; margin-bottom: 2px; padding-bottom: 2px; border-bottom-width: 1px; }
-        .help-text { font-size: 10px; line-height: 1.2; margin-bottom: 4px; }
-        .help-text:last-child { margin-bottom: 0; }
-        
-        #joystickContainer { width: 90px; height: 90px; left: 15px; bottom: 15px; }
-        #joystickHandle { width: 45px; height: 45px; }
+        #overlay {
+          justify-content: space-evenly;
+          padding: 10px;
+          gap: 0;
+          padding-bottom: max(env(safe-area-inset-bottom), 10px);
+        }
+        .header {
+          margin-top: 0;
+          margin-bottom: 0;
+        }
+        .game-title {
+          font-size: 18px;
+          margin: 2px 0;
+        }
+        .tranium-circle {
+          width: 65px;
+          height: 65px;
+          margin: 5px auto;
+          border-width: 2px;
+        }
+        .tranium-val {
+          font-size: 20px;
+        }
+        .tranium-lbl {
+          font-size: 8px;
+        }
+        .btn-help-open {
+          padding: 4px 12px;
+          font-size: 10px;
+          margin-bottom: 2px;
+          min-height: 25px;
+        }
+        .reset-link {
+          padding: 5px;
+          min-height: 30px;
+          font-size: 10px;
+          margin: 2px 0;
+          max-width: 200px;
+        }
+        .resource-section {
+          gap: 8px;
+          margin: 2px 0;
+        }
+        .res-card {
+          padding: 8px;
+          min-height: 60px; 
+        }
+        .res-name {
+          font-size: 10px;
+        }
+        .res-amount {
+          font-size: 16px;
+          margin: 2px 0;
+        }
+        .res-info {
+          font-size: 9px;
+        }
+        .btn-refine {
+          padding: 10px;
+          min-height: 45px;
+          font-size: 12px;
+          margin: 8px 0;
+        }
+        .footer {
+          padding: 5px;
+          margin-bottom: 5px;
+        }
+        .energy-info {
+          font-size: 12px;
+          margin-bottom: 5px;
+        }
+        .btn-start {
+          padding: 10px;
+          min-height: 50px;
+          font-size: 16px;
+        }
+        #howToPlayScreen {
+          justify-content: center;
+          padding: 10px;
+          overflow: hidden;
+        }
+        #howToPlayScreen .header {
+          margin-top: 0;
+          margin-bottom: 5px;
+        }
+        #howToPlayScreen .game-title {
+          font-size: 16px;
+          margin: 0;
+        }
+        #howToPlayScreen .close-btn {
+          font-size: 30px;
+          top: 10px;
+          right: 15px;
+          z-index: 302;
+        }
+        .help-container {
+          margin-top: 5px;
+          width: 100%;
+        }
+        .help-card {
+          padding: 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+        .warning-text {
+          font-size: 11px;
+          padding: 5px;
+          margin-top: 0;
+          margin-bottom: 5px;
+        }
+        .help-title {
+          font-size: 11px;
+          margin-bottom: 2px;
+          padding-bottom: 2px;
+          border-bottom-width: 1px;
+        }
+        .help-text {
+          font-size: 10px;
+          line-height: 1.2;
+          margin-bottom: 4px;
+        }
+        .help-text:last-child {
+          margin-bottom: 0;
+        }
+        #joystickContainer {
+          width: 90px;
+          height: 90px;
+          left: 15px;
+          bottom: 15px;
+        }
+        #joystickHandle {
+          width: 45px;
+          height: 45px;
+        }
       }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js"></script>
@@ -570,11 +915,16 @@
     <div id="endGameModal" class="custom-modal">
       <h2 style="color: var(--neon); margin: 0">FINISH & SUBMIT</h2>
       <p style="font-size: 13px; margin: 15px 0; color: #ddd">
-        Your current Tranium will be submitted as your score. You can start again with energy.
+        Your current Tranium will be submitted as your score.
+        You can start again with energy.
       </p>
       <div class="modal-btn-row">
-        <button class="modal-btn" style="background: #333; color: white" onclick="closeEndGameConfirmation()">CANCEL</button>
-        <button class="modal-btn" style="background: var(--neon); color: black" onclick="triggerManualEndGame()">SUBMIT</button>
+        <button class="modal-btn" style="background: #333; color: white" onclick="closeEndGameConfirmation()">
+          CANCEL
+        </button>
+        <button class="modal-btn" style="background: var(--neon); color: black" onclick="triggerManualEndGame()">
+          SUBMIT
+        </button>
       </div>
     </div>
 
@@ -586,6 +936,7 @@
           <span class="fac-header">METAL FACTORY</span>
           <span id="metalFacLevel" style="font-size: 9px; text-align: center; margin-bottom: 3px">Lvl 1</span>
           <span id="metalBuildTime" style="font-size: 8px; text-align: center; margin-bottom: 5px; color: #888">⏱️ 2h</span>
+        
           <button id="upMetalFac" class="btn-upgrade" onclick="upgradeFactory('metal')">
             UPGRADE <span id="costMetalFac"></span>
           </button>
@@ -607,13 +958,16 @@
     <div id="swapModal" class="custom-modal">
       <h2 style="color: var(--gold); margin: 0; font-size: 18px">TRANIUM REFINERY</h2>
       <p style="font-size: 11px; margin: 10px 0; color: #aaa">Refine Metal & Crystal into Tranium (1:1)</p>
+
       <div class="percentage-row">
         <button class="pct-btn" onclick="setSwapPct(0.25)">25%</button>
         <button class="pct-btn" onclick="setSwapPct(0.50)">50%</button>
         <button class="pct-btn" onclick="setSwapPct(0.75)">75%</button>
         <button class="pct-btn" onclick="setSwapPct(1.00)">100%</button>
       </div>
+
       <input type="number" id="swapAmountInput" class="modal-input" placeholder="Enter amount..." min="1" />
+
       <div class="modal-btn-row">
         <button class="modal-btn" style="background: #333; color: white" onclick="closeSwapModal()">BACK</button>
         <button class="modal-btn" style="background: var(--gold); color: black" onclick="executeSwap()">REFINE</button>
@@ -622,22 +976,44 @@
 
     <div id="howToPlayScreen">
       <button class="close-btn" onclick="closeHowToPlay()">&times;</button>
+
       <div class="header">
         <h1 class="game-title">HOW TO PLAY</h1>
       </div>
+
       <div class="help-container">
         <div class="help-card">
           <div class="warning-text">⚠️ DON'T FORGET:<br />TRANIUM = SCORE</div>
+
           <span class="help-title">🎯 MISSION OBJECTIVE</span>
-          <p class="help-text">Collect resources and refine Tranium to dominate the Verse. Survive against the infected swarm.</p>
+      
+          <p class="help-text">
+            Collect resources and refine Tranium to dominate the Verse. Survive against the infected swarm.
+          </p>
+
           <span class="help-title">⛏️ RESOURCES</span>
-          <p class="help-text"><span class="help-icon">⚙️</span> <b>Metal & Crystal:</b> Produced automatically by miners. Find miners in the world to increase production.<br /><span class="help-icon">🟡</span> <b>Tranium:</b> The ultimate currency. Use the "REFINE" button to convert Metal and Crystal into Tranium.</p>
+          <p class="help-text">
+            <span class="help-icon">⚙️</span> <b>Metal & Crystal:</b> Produced automatically by miners. Find miners in
+            the world to increase production.<br />
+            <span class="help-icon">🟡</span> <b>Tranium:</b> The ultimate currency. Use the "REFINE" button to convert
+            Metal and Crystal into Tranium.
+          </p>
+
           <span class="help-title">🏭 FACTORIES</span>
-          <p class="help-text">Upgrade your Metal and Crystal factories to boost miner efficiency. Higher levels mean faster production speeds per miner.</p>
+          <p class="help-text">
+            Upgrade your Metal and Crystal factories to boost miner efficiency. Higher levels mean faster production
+            speeds per miner.
+          </p>
+
           <span class="help-title">⚠️ ENEMIES</span>
-          <p class="help-text">Avoid the infected (Red Circles). They will chase you. If they touch you 3 times, the mission fails.</p>
+          <p class="help-text">
+            Avoid the infected (Red Circles). They will chase you. If they touch you 3 times, the mission fails.
+          </p>
+
           <span class="help-title">⚡ ENERGY SYSTEM</span>
-          <p class="help-text">Every mission costs 1 Energy. Energy regenerates over time (1 per hour) even when you are offline.</p>
+          <p class="help-text">
+            Every mission costs 1 Energy. Energy regenerates over time (1 per hour) even when you are offline.
+          </p>
         </div>
       </div>
     </div>
@@ -651,6 +1027,7 @@
         </div>
         <button class="btn-help-open" onclick="openHowToPlay()">HOW TO PLAY</button>
       </div>
+  
       <div class="resource-section">
         <div class="res-card">
           <span class="res-name">⚙️ METAL</span>
@@ -660,6 +1037,7 @@
         <div class="res-card">
           <span class="res-name">💎 CRYSTAL</span>
           <span id="kristalCount" class="res-amount">0</span>
+      
           <span id="kristalWorkers" class="res-info">0 Miners</span>
         </div>
       </div>
@@ -667,6 +1045,7 @@
       <button id="swapBtn" class="btn-refine" onclick="openSwapModal()">Refine Tranium (1:1)</button>
       <div style="height: 50px;"></div>
       <button class="btn-refine btn-upgrade-menu" onclick="openUpgradeModal()">🏭 FACTORY UPGRADES</button>
+
       <div class="footer">
         <span id="energyStatus" class="energy-info">⚡ ENERGY: 10/10</span>
         <button class="btn-start" onclick="attemptStart()">START MISSION</button>
@@ -685,7 +1064,7 @@
       const JOYSTICK_RADIUS = 60;
       const JOYSTICK_HANDLE_RADIUS = 30;
       
-      // TURBO MODE SETTINGS MERGED HERE
+      // TURBO MODE SETTINGS MERGED HERE (Patch V4.0 Integrated)
       const PLAYER_SPEED = 7.0; // Increased from 3.5 to 7.0
       const ENEMY_MAX_SPEED = 6.6; // Capped for balance
       const BASE_WORKER_SPEED = 0.001; // Mining speed
@@ -701,7 +1080,7 @@
       let player = {
         x: WORLD_SIZE / 2,
         y: WORLD_SIZE / 2,
-        speed: PLAYER_SPEED,
+        speed: PLAYER_SPEED, // Patch Speed applied
         targetX: WORLD_SIZE / 2,
         targetY: WORLD_SIZE / 2,
         flipX: false,
@@ -720,7 +1099,7 @@
       let totalAssets = 0, loadedAssets = 0, loadingInterval = null;
       let metalFacUpgradeEndTime = 0, kristalFacUpgradeEndTime = 0;
 
-      // Assets
+      // Assets (Original links preserved)
       const imgBG = new Image();
       imgBG.src = "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/bg-H8I42XFyjR45PCLXsG4fQp7B323kKw.webp?37vf";
       const imgDayi = new Image();
@@ -738,7 +1117,7 @@
       let isMiniApp = false;
 
       // ============================================
-      // INITIALIZATION & FARCASTER SDK
+      // INITIALIZATION & FARCASTER SDK (Fixed Splash Bug)
       // ============================================
       async function initFarcasterSDK() {
         try {
@@ -1074,7 +1453,7 @@
       // GAME INITIALIZATION (Hub)
       // ============================================
       function initHub() {
-        // Safe Canvas Resize
+        // Safe Canvas Resize (Patch'ten entegre edildi)
         let targetWidth = window.innerWidth;
         let targetHeight = window.innerHeight;
         // Limit aspect ratio for ultra-wide monitors if on PC
@@ -1112,7 +1491,7 @@
         // Show FPS if configured
         document.getElementById("fps-counter").style.display = "block";
 
-        // Hide Joystick on PC (non-touch)
+        // Hide Joystick on PC (non-touch) - Patch'ten gelen özellik
         if (!('ontouchstart' in window) && navigator.maxTouchPoints === 0) {
            document.getElementById("joystickContainer").style.display = "none";
         }
@@ -1344,7 +1723,7 @@
           
           if (en.isChasing) {
             en.currentSpeed += 0.005;
-            // Apply Speed Cap (Turbo Mode logic)
+            // Apply Speed Cap (Turbo Mode logic integrated)
             if (en.currentSpeed > ENEMY_MAX_SPEED) en.currentSpeed = ENEMY_MAX_SPEED;
             
             en.x += ((player.x - en.x) / d) * en.currentSpeed;
@@ -1408,7 +1787,7 @@
         ctx.restore();
       }
 
-      // FPS Control
+      // FPS Control (Patch Integrated)
       let fpsLastTime = performance.now();
       let frameCount = 0;
       let lastFpsCheck = performance.now();
