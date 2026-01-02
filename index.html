@@ -9,11 +9,13 @@
     />
     <meta name="theme-color" content="#000000" />
     
+    <!-- Farcaster Frame Meta Tags -->
     <meta property="fc:frame" content="vNext" />
     <meta property="fc:frame:image" content="https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/dayi-removebg-preview-9XEJ3aO8Iwnas0qrRC6kST14YUZeab.webp?yQ69" />
     <meta property="fc:frame:button:1" content="Start Mining" />
     <meta property="fc:frame:button:1:action" content="post" />
     
+    <!-- Farcaster Mini App Meta Tag -->
     <meta name="fc:miniapp" content="hosted" />
     <meta property="fc:miniapp:version" content="0.0.1" />
     <meta property="fc:miniapp:name" content="Tranium Verse" />
@@ -538,73 +540,34 @@
       }
     </style>
     
-    <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js"></script>
-    <script>
-      // ==========================================
-      // ROBUST SDK INITIALIZATION (FIXED)
-      // ==========================================
-      window.isSDKReady = false;
-      window.farcasterContext = null;
-
-      // Bu fonksiyonu birden çok kez çağıracağız
-      const signalReady = async () => {
-        if (window.isSDKReady) return;
-
-        const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
-        if (sdk) {
-          try {
-            // Sinyal gönder: v2 (actions) veya v1
-            if (sdk.actions && sdk.actions.ready) {
-              await sdk.actions.ready();
-              console.log("✅ SDK Ready sent (actions)");
-            } else if (sdk.ready) {
-              await sdk.ready();
-              console.log("✅ SDK Ready sent (legacy)");
-            }
-            
-            // Context yükle (Arkaplanda)
-            if (sdk.context && !window.farcasterContext) {
-              sdk.context.then(ctx => {
-                 window.farcasterContext = ctx;
-                 console.log("👤 Context Loaded");
-              });
-            }
-            
-            window.isSDKReady = true;
-          } catch(e) {
-            console.warn("SDK signal attempt failed:", e);
-          }
-        }
-      };
-
-      // 1. Hemen dene
-      signalReady();
-
-      // 2. DOM yüklendiğinde dene (En güvenli an)
-      document.addEventListener("DOMContentLoaded", () => {
-        signalReady();
-        // Fallback: 500ms sonra tekrar dene
-        setTimeout(signalReady, 500);
-      });
-
-      // 3. Her şey yüklendiğinde son kez dene
-      window.addEventListener("load", () => {
-        signalReady();
-      });
+    <!-- SDK MODULE INIT (SPLASH FIX) -->
+    <script type="module">
+      import sdk from 'https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js';
       
-      // 4. FAILSAFE: Eğer SDK yanıt vermezse oyunu manuel aç (3 saniye sonra)
-      setTimeout(() => {
-        if (!window.isSDKReady) {
-            console.log("⚠️ SDK timeout - Forcing game start");
-            // Intro ekranı varsa kaldırılabilir veya oyun başlatılabilir
-            // (Aşağıdaki startIntro fonksiyonu bunu halledecek)
-        }
-      }, 3000);
+      // 1. ANINDA HAZIR OL (Resimleri bekleme)
+      try {
+        sdk.actions.ready();
+        console.log("✅ SDK Ready sent via Module");
+      } catch(e) { console.error("SDK ready error:", e); }
+
+      // 2. Global'e ata ki oyunun geri kalanı erişebilsin
+      window.farcasterSDK = sdk;
+      
+      // 3. Context yükle
+      try {
+        const context = await sdk.context;
+        window.farcasterContext = context;
+        console.log("Context loaded", context);
+      } catch(e) {
+        console.warn("Context error", e);
+      }
     </script>
 
+    <!-- Ethers.js for Base ETH payments -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
   </head>
   <body>
+    <!-- FPS Counter -->
     <div id="fps-counter">FPS: ...</div>
 
     <div id="introOverlay">
@@ -808,9 +771,8 @@
       // ============================================
       // INTRO & LOADING LOGIC
       // ============================================
-      async function startIntro() {
-        // SDK logic handled in HEAD for speed.
-        // We focus on visuals here.
+      function startIntro() {
+        // SDK ready handled in <head>
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "flex";
         
@@ -833,7 +795,7 @@
       
       function triggerManualEndGame() {
         closeEndGameConfirmation();
-        const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
+        const sdk = window.farcasterSDK; // Use module export
         
         if (sdk) {
           alert("Game Over! Score submitted: " + Math.floor(tranium));
@@ -1522,7 +1484,7 @@
         startEnergyCountdown();
       }
 
-      // Start Entry Point (SDK logic handles itself above, visuals triggered here)
+      // Start Entry Point (Visuals Only)
       window.onload = startIntro;
     </script>
   </body>
