@@ -797,6 +797,214 @@
       }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <script src="import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { sdk } from '@farcaster/miniapp-sdk';
+
+/**
+ * Farcaster Robust Game Wrapper (FRGW)
+ * 
+ * Bu bileşen, Farcaster Mini-App'lerinin en yaygın çökme ve donma senaryolarına karşı
+ * güçlendirilmiş bir başlatma ve yaşam döngüsü yöneticisidir.
+ * 
+ * Çözülen Sorunlar:
+ * 1. Splash Lock (Sonsuz Yükleme Ekranı): Timeout mekanizması ile engellendi.
+ * 2. Black Screen (Siyah Ekran): WebGL Context yönetimi ve CSS GPU zorlama ile çözüldü.
+ * 3. Intro Donması: Medya politikalarına uygun kullanıcı etkileşimi eklendi.
+ * 4. Gesture Çakışmaları: SDK üzerinden native jestler devre dışı bırakıldı.
+ */
+
+// Oyunun ana bileşeni (veya Canvas'ı içeren kapsayıcı)
+const GameContainer = () => {
+  const canvasRef = useRef(null);
+  const [contextLost, setContextLost] = useState(false);
+
+  // Android Siyah Ekran Fix: WebGL Context Kaybı ve Restorasyonu Yönetimi
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleContextLost = (e) => {
+      e.preventDefault();
+      console.warn(' WebGL Context Kaybedildi - Oyun Duraklatılıyor');
+      setContextLost(true);
+      // Burada oyun motorunuzun (Phaser/Pixi) "pause" fonksiyonunu çağırabilirsiniz.
+    };
+
+    const handleContextRestored = () => {
+      console.log(' WebGL Context Geri Yüklendi - Oyun Devam Ediyor');
+      setContextLost(false);
+      // Burada oyun motorunuzun "resume" veya "re-init" fonksiyonunu çağırabilirsiniz.
+      // Ayrıca siyah ekranı temizlemek için canvas'ı zorla yeniden boyatıyoruz:
+      if (canvas) {
+        canvas.style.opacity = '0.99';
+        requestAnimationFrame(() => canvas.style.opacity = '1');
+      }
+    };
+
+    canvas.addEventListener('webglcontextlost', handleContextLost, false);
+    canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
+
+    return () => {
+      canvas.removeEventListener('webglcontextlost', handleContextLost);
+      canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+    };
+  },);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {/* 
+        Adreno GPU Bug Fix: 
+        transform: translate3d(0,0,0) -> Elementi kendi GPU katmanına (Compositor Layer) alır.
+        -webkit-backface-visibility: hidden -> Render hatalarını (flickering) azaltır.
+      */}
+      <canvas
+        ref={canvasRef}
+        id="game-canvas"
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          backgroundColor: '#000', // Yüklenirken beyaz parlamayı önler
+          transform: 'translate3d(0,0,0)', 
+          WebkitTransform: 'translate3d(0,0,0)',
+          WebkitBackfaceVisibility: 'hidden',
+          touchAction: 'none', // Tarayıcı zoom/pan işlemlerini engeller
+        }}
+      />
+      
+      {contextLost && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backgroundColor: 'rgba(0,0,0,0.8)', color: '#fff', flexDirection: 'column'
+        }}>
+          <h3>Grafik Bağlamı Kayboldu</h3>
+          <p>Lütfen uygulamayı yeniden başlatın.</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Ana Uygulama Sarmalayıcısı
+export default function App() {
+  const = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState(null);
+
+  // 1. SDK İlk Kurulumu (Initialization)
+  useEffect(() => {
+    const initSDK = async () => {
+      try {
+        // Native kaydırma hareketlerini kapatarak oyunun yanlışlıkla kapanmasını önle
+        // Bu özellik, kullanıcı deneyimi (UX) için kritiktir.
+        await sdk.actions.disableNativeGestures();
+        console.log(' Native gestures disabled');
+      } catch (err) {
+        console.warn(' SDK gesture ayarı başarısız (Localhost olabilir):', err);
+      }
+    };
+    initSDK();
+  },);
+
+  // 2. Güvenli Yükleme Stratejisi (Safety Valve Pattern)
+  useEffect(() => {
+    let isMounted = true;
+
+    // Farcaster İstemcisine "Ben Hazırım" Sinyali Gönderme Fonksiyonu
+    const signalReady = async () => {
+      if (!isMounted) return;
+      
+      try {
+        // DOM'un boyandığından emin olmak için çift rAF kullanıyoruz.
+        // Bu, "Flash of White" veya siyah ekran riskini minimize eder.
+        requestAnimationFrame(async () => {
+          requestAnimationFrame(async () => {
+            // Splash ekranını kaldır
+            await sdk.actions.ready();
+            setIsReady(true);
+            console.log(' Farcaster SDK Ready Signal Sent successfully.');
+          });
+        });
+      } catch (err) {
+        console.error(' Ready signal failed:', err);
+        // Hata olsa bile UI'ı göstermeye çalış
+        setIsReady(true); 
+      }
+    };
+
+    // Varlık Yükleme Simülasyonu (Gerçek oyun yükleme mantığınız buraya)
+    const loadGameAssets = async () => {
+      // Örnek: Resimlerin, seslerin ve WASM modüllerinin yüklenmesi
+      // Gerçek senaryoda: await gameEngine.loadAssets();
+      await new Promise(resolve => setTimeout(resolve, 800)); // Hızlı yükleme simülasyonu
+      return "Assets Loaded";
+    };
+
+    // Zaman Aşımı Koruyucusu (3 Saniye)
+    // Eğer ağ yavaşsa veya bir varlık yüklenemezse, 3 saniye sonra uygulamayı zorla açar.
+    // Bu, kullanıcının sonsuza kadar splash ekranında kalmasını (Splash Lock) engeller.
+    const safetyTimeout = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Loading Timeout")), 3000);
+    });
+
+    // Yarış Başlasın: Varlıklar mı önce yüklenecek, süre mi dolacak?
+    Promise.race()
+     .then(() => {
+        setIsLoaded(true);
+        signalReady();
+      })
+     .catch((err) => {
+        console.warn(' Yükleme uyarısı (Timeout veya Hata):', err);
+        // Hata durumunda bile 'isLoaded' true yapılarak hata ekranının görünmesi sağlanır
+        setIsLoaded(true);
+        signalReady();
+      });
+
+    return () => { isMounted = false; };
+  },);
+
+  // Hata Yakalama Sınırı (Error Boundary Fallback)
+  if (error) {
+    return (
+      <div style={{ padding: 20, color: 'white', background: '#1a1a1a', height: '100vh' }}>
+        <h2>Başlatma Hatası</h2>
+        <p>Oyun yüklenirken bir sorun oluştu.</p>
+        <button onClick={() => window.location.reload()} style={{ padding: '10px 20px' }}>
+          Tekrar Dene
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <main style={{
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: '#000000',
+      overflow: 'hidden',
+      position: 'fixed', // iOS Safari bounce efektini engeller
+      top: 0, 
+      left: 0
+    }}>
+      {/* Oyun İçeriği - Sadece yüklendiğinde (veya timeout olduğunda) render edilir */}
+      {isLoaded && <GameContainer />}
+
+      {/* Intro / Yükleme Göstergesi (Splash kaldırıldıktan sonra oyun motoru açılana kadar görünür) */}
+      {!isReady && (
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          color: '#666', fontFamily: 'sans-serif'
+        }}>
+          Yükleniyor...
+        </div>
+      )}
+    </main>
+  );
+}></script>
+    <script src="//cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
   </head>
   <body>
     <div id="introOverlay">
@@ -2042,5 +2250,6 @@ Energy regenerates over time (1 per hour) even when you are offline.
     </script>
   </body>
 </html>
+
 
 
