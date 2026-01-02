@@ -877,6 +877,33 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <script>
+      // Call ready() as early as possible to hide splash screen
+      (function() {
+        function callReady() {
+          try {
+            const sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
+            if (sdk && sdk.actions && typeof sdk.actions.ready === 'function') {
+              sdk.actions.ready().catch(console.error);
+            } else if (sdk && typeof sdk.ready === 'function') {
+              sdk.ready().catch(console.error);
+            }
+          } catch (e) {
+            console.error('Farcaster ready error:', e);
+          }
+        }
+        
+        // Try immediately
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', callReady);
+        } else {
+          callReady();
+        }
+        
+        // Also try after a short delay in case SDK loads late
+        setTimeout(callReady, 100);
+      })();
+    </script>
   </head>
   <body>
     <div id="introOverlay">
