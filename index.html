@@ -1265,47 +1265,9 @@
       }
 
       // INTRO VE LOADING SİSTEMİ
-      // Initialize Farcaster SDK (GÜNCELLENMİŞ VERSİYON)
-      async function initFarcasterSDK() {
-        try {
-          // SDK'nın yüklenmesi için kısa bir süre bekleme döngüsü (Retry Logic)
-          let attempts = 0;
-          let sdk = null;
-          
-          while (attempts < 20) { // Yaklaşık 2 saniye boyunca dener
-             sdk = window.sdk || window.FarcasterFrameSDK || window.Farcaster;
-             if (sdk) break;
-             await new Promise(r => setTimeout(r, 100));
-             attempts++;
-          }
-
-          if (sdk) {
-            farcasterSDK = sdk;
-            isMiniApp = true;
-            console.log("Farcaster SDK bulundu.");
-            
-            // Context bilgisini al (isteğe bağlı, hata verirse devam et)
-            try {
-              if (sdk.context) {
-                farcasterContext = await sdk.context;
-              }
-            } catch (e) { console.log("Context alınamadı:", e); }
-            
-            // KRİTİK NOKTA: Ready sinyalini hemen gönder
-            try {
-              if (sdk.actions && sdk.actions.ready) {
-                await sdk.actions.ready();
-                console.log("Farcaster Ready Sinyali Gönderildi!");
-              }
-            } catch (e) { console.log("Ready çağrısı hatası:", e); }
-
-          } else {
-            console.log("SDK bulunamadı, standalone modda çalışıyor.");
-          }
-        } catch (error) {
-          console.log("SDK init hatası:", error);
-        }
-      }
+      async function startIntro() {
+        // Initialize Farcaster SDK first
+        await initFarcasterSDK();
         
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "flex";
@@ -2143,19 +2105,7 @@
       }
 
       // Sayfa yüklendiğinde intro'yu başlat
-      // window.onload = startIntro;  <-- BU ESKİ SATIRI SİLİN VEYA YORUMA ALIN
-      
-      // YENİ KOD BLOĞU:
-      
-      // 1. Farcaster'a hemen "Ben hazırım" de (Resimleri bekleme!)
-      initFarcasterSDK(); 
-
-      // 2. Oyun introsunu görseller hazır olunca başlat
-      if (document.readyState === 'complete') {
-        startIntro();
-      } else {
-        window.addEventListener('load', startIntro);
-      }
+      window.onload = startIntro;
     </script>
     <script>
       /**
