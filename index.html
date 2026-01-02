@@ -35,7 +35,7 @@
       body {
         margin: 0;
         padding: 0;
-        background-color: var(--dark); /* Ensures bg is dark immediately */
+        background-color: var(--dark);
         overflow: hidden;
         touch-action: none;
         font-family: "Segoe UI", sans-serif;
@@ -988,40 +988,36 @@ Energy regenerates over time (1 per hour) even when you are offline.
     <script type="module">
         import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk@0.0.14';
 
+        // Make SDK available globally safely
         window.farcasterSDK = sdk;
         window.isMiniApp = false;
 
-        window.initFarcasterSDK = async function() {
+        // Immediate Ready Call - Fixes Splash Error
+        // We don't wait for context here to ensure the splash screen goes away instantly.
+        try {
+            sdk.actions.ready();
+            window.isMiniApp = true;
+            console.log("✅ SDK Ready called immediately");
+        } catch (e) {
+            console.error("⚠️ SDK Ready call failed:", e);
+        }
+
+        // Helper to get context if needed later
+        window.loadFarcasterContext = async () => {
             try {
-                // Ensure the context is loaded before calling ready
-                // This prevents the 'Splash Error' in developer mode
                 const context = await sdk.context;
                 window.farcasterContext = context;
-                window.isMiniApp = true;
-                console.log("✅ Farcaster SDK loaded & Context received:", context);
-
-                // CRITICAL: Signal readiness to the host client
-                // This removes the native splash screen overlay
-                sdk.actions.ready();
-                console.log("✅ Ready signal sent - Splash hidden!");
-            } catch (error) {
-                console.error("⚠️ Farcaster SDK Init Error (Likely not in Frame):", error);
-                // Fallback: If we are not in Farcaster (e.g. browser testing), we still want the game to load
-                // preventing the 'Black Screen' issue.
-                window.isMiniApp = false;
+                console.log("✅ Context loaded:", context);
+            } catch (e) {
+                console.error("Context load error:", e);
             }
         };
-
-        // Start the game logic globally
-        if (window.startIntro) {
-            window.startIntro();
-        }
+        
+        // Start fetching context in background
+        window.loadFarcasterContext();
     </script>
 
     <script>
-      // Removed the old 'initFarcasterSDK' which caused polling loops
-      // The logic is now handled in the module script above.
-
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
       const WORLD_SIZE = 2500;
@@ -1149,27 +1145,13 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       if (localStorage.getItem("w_last_time")) {
-        metal = parseFloat(localStorage.getItem("w_metal")) |
-
-| 0;
-        kristal = parseFloat(localStorage.getItem("w_kristal")) |
-
-| 0;
-        tranium = parseInt(localStorage.getItem("w_tranium")) |
-
-| 0;
-        metalWorkers = parseInt(localStorage.getItem("w_mw")) |
-
-| 0;
-        kristalWorkers = parseInt(localStorage.getItem("w_kw")) |
-
-| 0;
-        metalFacLvl = parseInt(localStorage.getItem("w_mfl")) |
-
-| 1;
-        kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) |
-
-| 1;
+        metal = parseFloat(localStorage.getItem("w_metal")) || 0;
+        kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
+        tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
+        metalWorkers = parseInt(localStorage.getItem("w_mw")) || 0;
+        kristalWorkers = parseInt(localStorage.getItem("w_kw")) || 0;
+        metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
+        kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
 
         let savedEnergy = localStorage.getItem("w_energy");
         if (savedEnergy!== null) {
@@ -1178,40 +1160,27 @@ Energy regenerates over time (1 per hour) even when you are offline.
           energy = 10;
         }
 
-        lastTime = parseInt(localStorage.getItem("w_last_time")) |
+        lastTime = parseInt(localStorage.getItem("w_last_time")) || Date.now();
 
-| Date.now();
+        nextEnergyTime = parseInt(localStorage.getItem("w_next_energy_time")) || 0;
+        energyRegenerationStartTime = parseInt(localStorage.getItem("w_energy_reg_start")) || 0;
 
-        nextEnergyTime = parseInt(localStorage.getItem("w_next_energy_time")) |
-
-| 0;
-        energyRegenerationStartTime = parseInt(localStorage.getItem("w_energy_reg_start")) |
-
-| 0;
-
-        metalFacUpgradeEndTime = parseInt(localStorage.getItem("w_mfue")) |
-
-| 0;
-        kristalFacUpgradeEndTime = parseInt(localStorage.getItem("w_kfue")) |
-
-| 0;
+        metalFacUpgradeEndTime = parseInt(localStorage.getItem("w_mfue")) || 0;
+        kristalFacUpgradeEndTime = parseInt(localStorage.getItem("w_kfue")) || 0;
 
         updateOfflineEnergyRegeneration();
       }
 
-      async function startIntro() {
-        // Wait for the new initFarcasterSDK from module script
-        if (window.initFarcasterSDK) {
-            await window.initFarcasterSDK();
-        }
-        
+      function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "flex";
 
+        // FALLBACK: Force start game if SDK hangs
+        // This fixes the "Stuck on Intro" bug
         setTimeout(() => {
           introOverlay.style.display = "none";
           startLoading();
-        }, 3000);
+        }, 1500); // Reduced to 1.5s for faster entry
       }
 
       function startLoading() {
@@ -1430,14 +1399,10 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       async function sendETHPayment(amountETH) {
-        // FIX: In Mini App environment, window.ethereum might not be available directly.
-        // We check SDK provider first, then window.ethereum.
         let provider;
         
         if (window.farcasterSDK && window.farcasterSDK.wallet) {
-             // Fallback to Farcaster Wallet provider if available (Base App etc)
-             // Note: Normally you'd use Wagmi here, but we are keeping it vanilla JS as requested.
-             // We will try window.ethereum first as usual, but don't error out immediately.
+             // Fallback to Farcaster Wallet provider if available
         }
 
         if (typeof window.ethereum === "undefined") {
@@ -1480,9 +1445,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
           return true;
         } catch (error) {
           console.error("Payment error:", error);
-          alert("Payment failed: " + (error.message |
-
-| "Unknown error"));
+          alert("Payment failed: " + (error.message || "Unknown error"));
           return false;
         }
       }
@@ -2078,3 +2041,4 @@ Energy regenerates over time (1 per hour) even when you are offline.
     </script>
   </body>
 </html>
+
