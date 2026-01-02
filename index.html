@@ -14,6 +14,7 @@
     
     <title>TRANIUM VERSE - Strategy Hub</title>
     <style>
+      /* [ALL YOUR EXISTING STYLES - UNCHANGED] */
       :root {
         --gold: #ffcc00;
         --neon: #00ffcc;
@@ -30,7 +31,7 @@
         margin: 0;
         padding: 0;
         background-color: var(--dark);
-        overflow: hidden; /* Tüm sayfa kaydırmasını engelle */
+        overflow: hidden;
         touch-action: none;
         font-family: "Segoe UI", sans-serif;
         color: white;
@@ -47,8 +48,6 @@
         touch-action: none;
         image-rendering: pixelated;
       }
-
-      /* INTRO SCREEN */
       #introOverlay {
         position: fixed;
         top: 0;
@@ -63,14 +62,12 @@
         z-index: 1000;
         overflow: hidden;
       }
-
       .intro-container {
         text-align: center;
         position: relative;
         z-index: 2;
         animation: introFadeIn 1.5s ease-out;
       }
-
       .disease-logo {
         font-size: min(60px, 12vw);
         font-weight: 900;
@@ -83,7 +80,6 @@
           0 0 40px rgba(255, 34, 34, 0.5);
         position: relative;
       }
-
       .disease-logo::after {
         content: "";
         position: absolute;
@@ -94,7 +90,6 @@
         height: 4px;
         background: linear-gradient(90deg, transparent, var(--disease-red), transparent);
       }
-
       .presents-text {
         font-size: min(18px, 4vw);
         color: rgba(255, 255, 255, 0.7);
@@ -103,7 +98,6 @@
         letter-spacing: 4px;
         animation: pulse 2s infinite;
       }
-
       .game-title-intro {
         font-size: min(48px, 10vw);
         font-weight: 900;
@@ -113,7 +107,6 @@
         text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
         letter-spacing: 4px;
       }
-
       .game-subtitle {
         font-size: min(16px, 3.5vw);
         color: rgba(255, 255, 255, 0.6);
@@ -121,8 +114,6 @@
         font-weight: 300;
         letter-spacing: 2px;
       }
-
-      /* LOADING SCREEN */
       #loadingOverlay {
         position: fixed;
         top: 0;
@@ -136,14 +127,12 @@
         justify-content: center;
         z-index: 999;
       }
-
       .loading-container {
         text-align: center;
         width: 90%;
         max-width: 400px;
         animation: loadingFadeIn 1s ease;
       }
-
       .loading-logo {
         font-size: min(32px, 7vw);
         font-weight: 900;
@@ -153,12 +142,10 @@
         letter-spacing: 3px;
         position: relative;
       }
-
       .loading-logo::before {
         content: "⛏️";
         margin-right: 10px;
       }
-
       .loading-spinner {
         width: 80px;
         height: 80px;
@@ -168,7 +155,6 @@
         margin: 0 auto 30px;
         animation: spin 1s linear infinite;
       }
-
       .loading-progress-container {
         width: 100%;
         height: 6px;
@@ -177,7 +163,6 @@
         overflow: hidden;
         margin-bottom: 15px;
       }
-
       .loading-progress-bar {
         height: 100%;
         width: 0%;
@@ -186,7 +171,6 @@
         transition: width 0.3s ease;
         box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
       }
-
       .loading-text {
         font-size: min(18px, 4vw);
         color: var(--neon);
@@ -195,7 +179,6 @@
         text-transform: uppercase;
         letter-spacing: 2px;
       }
-
       .loading-percentage {
         font-size: min(24px, 5vw);
         font-weight: 900;
@@ -203,7 +186,6 @@
         margin-bottom: 20px;
         text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
       }
-
       .loading-tip {
         font-size: min(12px, 2.5vw);
         color: rgba(255, 255, 255, 0.5);
@@ -212,8 +194,6 @@
         max-width: 300px;
         line-height: 1.4;
       }
-
-      /* MAIN OVERLAY - PC DEFAULT */
       #overlay {
         position: fixed;
         top: 0;
@@ -227,13 +207,10 @@
         z-index: 100;
         padding: 20px;
         justify-content: space-evenly;
-        /* MOBİLDE KAYDIRMAYI ENGELLEMEK İÇİN: */
         overflow: hidden;
         gap: 0;
         display: none;
       }
-
-      /* HOW TO PLAY SCREEN (FULL OVERLAY) */
       #howToPlayScreen {
         position: fixed;
         top: 0;
@@ -251,7 +228,6 @@
         touch-action: pan-y;
         overscroll-behavior: contain;
       }
-
       .close-btn {
         position: absolute;
         top: max(env(safe-area-inset-top), 15px);
@@ -265,7 +241,6 @@
         font-weight: bold;
         line-height: 1;
       }
-
       .btn-help-open {
         background: transparent;
         border: 1px solid var(--gold);
@@ -294,14 +269,11 @@
         line-height: 16px;
         font-size: 10px;
       }
-
-      /* How to Play Styles */
       .help-container {
         width: 100%;
         max-width: 500px;
         margin-top: 40px;
       }
-
       .help-card {
         background: var(--panel);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -340,8 +312,6 @@
         border-radius: 8px;
         margin-top: 20px;
       }
-
-      /* Modal responsive düzenlemeleri */
       .custom-modal {
         display: none;
         position: fixed;
@@ -368,7 +338,6 @@
       #upgradeModal {
         border-color: var(--neon);
       }
-
       .modal-input {
         width: 100%;
         padding: 15px;
@@ -381,7 +350,6 @@
         font-size: 16px;
         min-height: 50px;
       }
-
       .percentage-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -403,7 +371,6 @@
         background: var(--gold);
         color: #000;
       }
-
       .modal-btn-row {
         display: flex;
         gap: 10px;
@@ -419,8 +386,6 @@
         text-transform: uppercase;
         min-height: 50px;
       }
-
-      /* UI ELEMENTS - PC DEFAULT */
       .header {
         text-align: center;
         margin-top: env(safe-area-inset-top);
@@ -461,7 +426,6 @@
         font-size: 9px;
         font-weight: bold;
       }
-
       .resource-section {
         width: 100%;
         max-width: 380px;
@@ -469,7 +433,7 @@
         grid-template-columns: 1fr 1fr;
         gap: 12px;
         padding: 0 10px;
-        flex-shrink: 1; /* Küçülmesine izin ver */
+        flex-shrink: 1;
       }
       .res-card {
         background: var(--panel);
@@ -499,7 +463,6 @@
         color: var(--neon);
         opacity: 0.9;
       }
-
       .btn-refine {
         width: 100%;
         max-width: 380px;
@@ -523,14 +486,12 @@
         box-shadow: none;
         transform: translateY(4px);
       }
-
       .btn-upgrade-menu {
         background: var(--neon);
         color: #000;
         box-shadow: 0 4px 0 #00b894;
         margin-top: 10px;
       }
-
       .factory-modal-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -565,8 +526,6 @@
         min-height: 44px;
         margin-top: auto;
       }
-
-      /* FOOTER */
       .footer {
         width: 100%;
         max-width: 380px;
@@ -596,8 +555,6 @@
         min-height: 70px;
         box-shadow: 0 6px 0 #b89600;
       }
-
-      /* Oyun içi UI */
       #ui {
         position: absolute;
         top: max(env(safe-area-inset-top), 15px);
@@ -612,7 +569,6 @@
         text-shadow: 2px 2px 4px black;
         font-size: min(14px, 3.5vw);
       }
-
       .reset-link {
         color: var(--neon);
         font-size: 12px;
@@ -630,8 +586,6 @@
         min-height: 44px;
         flex-shrink: 0;
       }
-
-      /* Joystick Stilleri */
       #joystickContainer {
         position: fixed;
         left: 25px;
@@ -642,7 +596,6 @@
         display: none;
         pointer-events: auto;
       }
-
       #joystickBase {
         position: absolute;
         width: 100%;
@@ -652,7 +605,6 @@
         border-radius: 50%;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
       }
-
       #joystickHandle {
         position: absolute;
         width: 60px;
@@ -665,8 +617,6 @@
         transform: translate(-50%, -50%);
         box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
       }
-
-      /* ANIMATIONS */
       @keyframes introFadeIn {
         from {
           opacity: 0;
@@ -677,7 +627,6 @@
           transform: scale(1);
         }
       }
-
       @keyframes loadingFadeIn {
         from {
           opacity: 0;
@@ -686,7 +635,6 @@
           opacity: 1;
         }
       }
-
       @keyframes spin {
         0% {
           transform: rotate(0deg);
@@ -695,7 +643,6 @@
           transform: rotate(360deg);
         }
       }
-
       @keyframes pulse {
         0%,
         100% {
@@ -705,28 +652,21 @@
           opacity: 1;
         }
       }
-
-      /* --- KRİTİK MOBİL OPTİMİZASYON (FIT TO SCREEN) --- */
-      /* Özellikle kısa ekranlı telefonlar (iPhone 6/7/8 gibi 667px yüksekliğinde) için */
       @media (max-width: 600px) and (max-height: 850px) {
-        /* ANA MENÜ OPTİMİZASYONU */
         #overlay {
-          justify-content: space-evenly; /* Öğeleri dikeyde eşit dağıt */
+          justify-content: space-evenly;
           padding: 10px;
-          gap: 0; /* Gap yerine space-evenly kullan */
+          gap: 0;
           padding-bottom: max(env(safe-area-inset-bottom), 10px);
         }
-
         .header {
           margin-top: 0;
           margin-bottom: 0;
         }
-
         .game-title {
           font-size: 18px;
           margin: 2px 0;
         }
-
         .tranium-circle {
           width: 65px;
           height: 65px;
@@ -739,14 +679,12 @@
         .tranium-lbl {
           font-size: 8px;
         }
-
         .btn-help-open {
           padding: 4px 12px;
           font-size: 10px;
           margin-bottom: 2px;
           min-height: 25px;
         }
-
         .reset-link {
           padding: 5px;
           min-height: 30px;
@@ -754,15 +692,13 @@
           margin: 2px 0;
           max-width: 200px;
         }
-
         .resource-section {
           gap: 8px;
           margin: 2px 0;
         }
-
         .res-card {
           padding: 8px;
-          min-height: 60px; /* Kart yüksekliğini düşür */
+          min-height: 60px;
         }
         .res-name {
           font-size: 10px;
@@ -774,14 +710,12 @@
         .res-info {
           font-size: 9px;
         }
-
         .btn-refine {
           padding: 10px;
-          min-height: 45px; /* Butonları küçült */
+          min-height: 45px;
           font-size: 12px;
           margin: 8px 0;
         }
-
         .footer {
           padding: 5px;
           margin-bottom: 5px;
@@ -795,68 +729,55 @@
           min-height: 50px;
           font-size: 16px;
         }
-
-        /* HOW TO PLAY EKRANI OPTİMİZASYONU (NO SCROLL) */
         #howToPlayScreen {
-          justify-content: center; /* Ortala */
+          justify-content: center;
           padding: 10px;
-          overflow: hidden; /* Kaydırmayı kapat */
+          overflow: hidden;
         }
-
         #howToPlayScreen .header {
           margin-top: 0;
           margin-bottom: 5px;
         }
-
         #howToPlayScreen .game-title {
-          font-size: 16px; /* Başlığı küçült */
+          font-size: 16px;
           margin: 0;
         }
-
         #howToPlayScreen .close-btn {
           font-size: 30px;
           top: 10px;
           right: 15px;
           z-index: 302;
         }
-
         .help-container {
           margin-top: 5px;
           width: 100%;
         }
-
         .help-card {
           padding: 10px;
           display: flex;
           flex-direction: column;
-          gap: 5px; /* Öğeler arası boşluk */
+          gap: 5px;
         }
-
         .warning-text {
           font-size: 11px;
           padding: 5px;
           margin-top: 0;
           margin-bottom: 5px;
         }
-
         .help-title {
           font-size: 11px;
           margin-bottom: 2px;
           padding-bottom: 2px;
           border-bottom-width: 1px;
         }
-
         .help-text {
           font-size: 10px;
           line-height: 1.2;
-          margin-bottom: 4px; /* Paragraf boşluğunu azalt */
+          margin-bottom: 4px;
         }
-        /* Son elemanın marginini sıfırla */
         .help-text:last-child {
           margin-bottom: 0;
         }
-
-        /* Joystick mobilde biraz daha küçük olsun */
         #joystickContainer {
           width: 90px;
           height: 90px;
@@ -869,12 +790,13 @@
         }
       }
     </style>
-    <!-- Farcaster Mini App SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.26/dist/index.min.js"></script>
+    <!-- CRITICAL FIX: Updated Farcaster Mini App SDK to latest version -->
+    <script src="https://cdn.jsdelivr.net/npm/@farcaster/miniapp-sdk/dist/index.min.js"></script>
     <!-- Ethers.js for Base ETH payments -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
   </head>
   <body>
+    <!-- [ALL YOUR EXISTING HTML - UNCHANGED] -->
     <div id="introOverlay">
       <div class="intro-container">
         <div class="disease-logo">DISEASES GAMES</div>
@@ -2238,4 +2160,5 @@
     </script>
   </body>
 </html>
+
 
