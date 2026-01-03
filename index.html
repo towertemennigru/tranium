@@ -30,18 +30,32 @@
     window.isMiniApp = true;
 
     const triggerReady = async () => {
-        try {
-            // SDK'nın yüklenmesini bekle
-            await sdk.context;
-            sdk.actions.ready();
-            console.log("✅ SDK Ready");
+    try {
+        // SDK'nın context (bağlam) bilgisini bekle
+        const context = await sdk.context;
+
+        // Eğer context gelirse (yani Farcaster içindeysek)
+        if (context) {
+            console.log("✅ Farcaster Environment Detected");
             
+            // Engelleyici ekranı kaldır
+            document.getElementById("desktop-blocker").style.display = "none";
+            
+            // SDK'ya hazır olduğumuzu bildir
+            sdk.actions.ready();
+
             // Varsa intro'yu başlat
             if(window.startIntro) window.startIntro();
-        } catch (e) {
-            console.error("SDK Init Error:", e);
+        } else {
+            // Context yoksa (Normal tarayıcı)
+            console.warn("❌ Not in Farcaster");
+            // Engelleyici ekran kalmaya devam eder
         }
-    };
+    } catch (e) {
+        console.error("SDK Init Error:", e);
+        // Hata olursa da engelleyici ekran kalır
+    }
+};
 
     document.addEventListener('DOMContentLoaded', triggerReady);
 </script>
@@ -914,6 +928,10 @@
     </style>
   </head>
    <body>
+     <div id="desktop-blocker" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:red; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+    <h1>ERİŞİM ENGELLENDİ</h1>
+    <p>This game can only be played through Farcaster</p>
+</div>
     <div id="introOverlay">
       <div class="intro-container">
         <div class="disease-logo">DISEASES GAMES</div>
@@ -2318,6 +2336,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
