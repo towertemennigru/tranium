@@ -3,11 +3,19 @@
   <head>
     <meta name="base:app_id" content="6957083ec63ad876c9081cd6" />
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     
-    <meta property="og:title" content="TRANIUM VERSE" />
+    <meta property="og:title" content="TRANIUM VERSE - Strategy Hub" />
+    <meta property="og:description" content="Collect resources and refine Tranium to dominate the Verse. A strategic mining game on Farcaster." />
+    <meta property="og:type" content="website" />
     <meta property="og:image" content="https://tranium-xi.vercel.app/preview.jpg" />
-    <meta property="fc:frame" content='{"version": "next", "imageUrl": "https://tranium-xi.vercel.app/preview.jpg", "button": {"title": "Play", "action": {"type": "launch_frame", "name": "Tranium Verse", "url": "https://tranium-xi.vercel.app", "splashImageUrl": "https://tranium-xi.vercel.app/preview.jpg", "splashBackgroundColor": "#0a0a00"}}}' />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    
+    <meta property="fc:frame" content='{"version": "next", "imageUrl": "https://tranium-xi.vercel.app/preview.jpg", "button": {"title": "Start Mining", "action": {"type": "launch_frame", "name": "Tranium Verse", "url": "https://tranium-xi.vercel.app", "splashImageUrl": "https://tranium-xi.vercel.app/preview.jpg", "splashBackgroundColor": "#0a0a00"}}}' />
     <meta name="fc:miniapp" content="hosted" />
     
     <title>TRANIUM VERSE - Strategy Hub</title>
@@ -55,29 +63,7 @@
 
         safeLaunch();
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@farcaster/miniapp-sdk@0.2.1/dist/index.min.js"></script>
-    <style>
-      body { margin: 0; background-color: #0a0a00; overflow: hidden; touch-action: none; font-family: sans-serif; color: white; -webkit-user-select: none; user-select: none; }
-      #gameCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-      
-      /* Yükleme Ekranı */
-      #loader {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: #0a0a00; z-index: 9999;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-      }
-      .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid #ffcc00; border-radius: 50%; animation: spin 1s infinite linear; }
-      .text { margin-top: 20px; color: #00ffcc; font-weight: bold; letter-spacing: 2px; }
-      
-      @keyframes spin { 100% { transform: rotate(360deg); } }
 
-      /* Diğer UI elementleri (Başlangıçta gizli değil, oyun başlayınca görünecek) */
-      #ui, #joystickContainer { display: none; }
-      #ui { position: absolute; top: 15px; left: 15px; right: 15px; z-index: 10; display: flex; justify-content: space-between; font-weight: bold; text-shadow: 2px 2px 4px black; }
-      #joystickContainer { position: fixed; bottom: 30px; left: 30px; width: 100px; height: 100px; z-index: 20; }
-      #joystickBase { width: 100%; height: 100%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; }
-      #joystickHandle { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: #ffcc00; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px #ffcc00; }
-    </style>
     <style>
       :root {
         --gold: #ffcc00;
@@ -892,173 +878,6 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
   </head>
   <body>
-    <div id="loader">
-      <div class="spinner"></div>
-      <div class="text">INITIALIZING VERSE...</div>
-    </div>
-
-    <div id="ui">
-      <div id="resUI">⚙️: 0 | 💎: 0</div>
-      <div id="healthUI" style="color: #ff4444">❤️: 3</div>
-    </div>
-
-    <div id="joystickContainer">
-      <div id="joystickBase"></div>
-      <div id="joystickHandle"></div>
-    </div>
-
-    <canvas id="gameCanvas"></canvas>
-
-    <script>
-      // 1. SDK BAŞLATMA (Modern Yöntem)
-      // Sayfa yüklendiği an Farcaster'a hazırız diyoruz.
-      window.onload = function() {
-        console.log("🚀 App Loaded. Triggering SDK...");
-        
-        // Context yüklenmesini beklemeden sinyal gönder (En hızlı açılış için)
-        // Yeni SDK versiyonu bunu daha iyi yönetir.
-        if (window.farcaster && window.farcaster.sdk) {
-            window.farcaster.sdk.actions.ready();
-        } else {
-            // CDN yüklenmemişse bile manuel tetiklemeyi dene (Fallback)
-            console.warn("SDK not found on window, checking imports...");
-        }
-        
-        // Oyunu başlat
-        startGame();
-      };
-
-      // --- OYUN KODLARI ---
-      const canvas = document.getElementById("gameCanvas");
-      const ctx = canvas.getContext("2d");
-      const WORLD_SIZE = 2500;
-      let isStarted = false;
-      
-      // Oyuncu ve Kamera
-      let player = { x: 1250, y: 1250, speed: 8, flip: false };
-      let camera = { x: 0, y: 0 };
-      
-      // Basit Varlıklar (Resim yerine renkli daireler - Hızlı yükleme için)
-      let workers = [];
-      for(let i=0; i<40; i++) workers.push({x: Math.random()*WORLD_SIZE, y: Math.random()*WORLD_SIZE, color: Math.random()>0.5 ? '#ffcc00' : '#00ffcc'});
-
-      function startGame() {
-        if(isStarted) return;
-        isStarted = true;
-
-        // Loader'ı kaldır
-        document.getElementById("loader").style.display = "none";
-        document.getElementById("ui").style.display = "flex";
-        document.getElementById("joystickContainer").style.display = "block";
-
-        // Canvas Boyutla
-        resize();
-        window.addEventListener('resize', resize);
-
-        // Döngüyü Başlat
-        requestAnimationFrame(loop);
-        
-        // Joystick olaylarını dinle
-        initJoystick();
-      }
-
-      function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
-
-      function loop() {
-        update();
-        draw();
-        requestAnimationFrame(loop);
-      }
-
-      function update() {
-        // Joystick mantığı buraya gelecek
-        if(joystickData.active) {
-            player.x += joystickData.x * player.speed;
-            player.y += joystickData.y * player.speed;
-        }
-        
-        // Kamera Takip
-        camera.x = player.x - canvas.width/2;
-        camera.y = player.y - canvas.height/2;
-        
-        // Sınırlar
-        camera.x = Math.max(0, Math.min(camera.x, WORLD_SIZE - canvas.width));
-        camera.y = Math.max(0, Math.min(camera.y, WORLD_SIZE - canvas.height));
-      }
-
-      function draw() {
-        ctx.fillStyle = "#0a0a00";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.save();
-        ctx.translate(-camera.x, -camera.y);
-
-        // Grid (Zemin)
-        ctx.strokeStyle = "rgba(255,255,255,0.05)";
-        ctx.lineWidth = 2;
-        for(let i=0; i<WORLD_SIZE; i+=100) {
-            ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,WORLD_SIZE); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(WORLD_SIZE,i); ctx.stroke();
-        }
-
-        // İşçiler
-        workers.forEach(w => {
-            ctx.fillStyle = w.color;
-            ctx.beginPath(); ctx.arc(w.x, w.y, 15, 0, Math.PI*2); ctx.fill();
-        });
-
-        // Oyuncu
-        ctx.fillStyle = "white";
-        ctx.shadowColor = "#00ffcc";
-        ctx.shadowBlur = 20;
-        ctx.fillRect(player.x-20, player.y-30, 40, 60);
-        ctx.shadowBlur = 0;
-
-        ctx.restore();
-      }
-
-      // --- BASİT JOYSTICK ---
-      let joystickData = { active: false, x: 0, y: 0 };
-      function initJoystick() {
-        const zone = document.getElementById("joystickContainer");
-        const handle = document.getElementById("joystickHandle");
-        const rect = zone.getBoundingClientRect();
-        const center = { x: rect.width/2, y: rect.height/2 };
-
-        const move = (cx, cy) => {
-            let dx = cx - rect.left - center.x;
-            let dy = cy - rect.top - center.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-            let max = 50;
-            
-            if(dist > max) { dx = (dx/dist)*max; dy = (dy/dist)*max; }
-            
-            handle.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-            joystickData.active = true;
-            joystickData.x = dx/max;
-            joystickData.y = dy/max;
-        };
-
-        zone.addEventListener('touchstart', e => { e.preventDefault(); move(e.touches[0].clientX, e.touches[0].clientY); });
-        zone.addEventListener('touchmove', e => { e.preventDefault(); move(e.touches[0].clientX, e.touches[0].clientY); });
-        zone.addEventListener('touchend', e => { 
-            joystickData.active = false; 
-            handle.style.transform = `translate(-50%, -50%)`;
-        });
-        
-        // PC Testi için Mouse
-        zone.addEventListener('mousedown', e => { move(e.clientX, e.clientY); });
-        window.addEventListener('mousemove', e => { if(joystickData.active) move(e.clientX, e.clientY); });
-        window.addEventListener('mouseup', e => { 
-            joystickData.active = false; 
-            handle.style.transform = `translate(-50%, -50%)`;
-        });
-      }
-    </script>
-  
     <div id="introOverlay">
       <div class="intro-container">
         <div class="disease-logo">DISEASES GAMES</div>
@@ -2280,4 +2099,3 @@ Energy regenerates over time (1 per hour) even when you are offline.
     </script>
   </body>
 </html>
-
