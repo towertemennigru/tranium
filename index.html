@@ -22,37 +22,55 @@
     <title>TRANIUM VERSE - Strategy Hub</title>
     
    <script type="module">
-    // En güncel Frame SDK'sını çekiyoruz
-    import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
+      // En güncel Frame SDK'sı
+      import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
 
-    // SDK'yı global değişkene atıyoruz ki her yerden erişelim
-    window.farcasterSDK = sdk;
-    window.isMiniApp = true;
+      // SDK'yı global yapıyoruz
+      window.farcasterSDK = sdk;
+      window.isMiniApp = true;
 
-    const triggerReady = async () => {
-        try {
-            await sdk.context;
-            
-            // --- EKLENEN KISIM BAŞLANGIÇ ---
-            const context = await sdk.context;
-            if (context && context.user) {
-                // Kullanıcı ID'sini global bir değişkene atıyoruz ki aşağıdan erişelim
-                window.userFID = context.user.fid; 
-                console.log("👤 Oyuncu Tanındı, FID:", window.userFID);
-            }
-            // --- EKLENEN KISIM BİTİŞ ---
+      const triggerReady = async () => {
+          try {
+              // 1. SDK Context'i bekle
+              const context = await sdk.context;
 
-            sdk.actions.ready();
-            console.log("✅ SDK Ready");
-            
-            if(window.startIntro) window.startIntro();
-        } catch (e) {
-            console.error("SDK Init Error:", e);
-        }
-    };
+              // --- DÜZELTME BURADA ---
+              // Context geldiyse veya SDK hazırsa, kesinlikle Farcaster içindeyizdir.
+              // "context.user" şartını kaldırdık ki veri gecikse bile oyun açılsın.
+              if (context) {
+                  console.log("✅ Farcaster Ortamı Algılandı");
+                  
+                  // Kırmızı Engelleyici Ekranı Kaldır
+                  const blocker = document.getElementById("desktop-blocker");
+                  if (blocker) blocker.style.display = "none";
 
-    document.addEventListener('DOMContentLoaded', triggerReady);
-</script>
+                  // Kullanıcı verisi varsa kaydet (Supabase için)
+                  if (context.user && context.user.fid) {
+                      window.userFID = context.user.fid;
+                      console.log("👤 Kullanıcı FID:", window.userFID);
+                  }
+
+                  // SDK'ya hazırım de
+                  sdk.actions.ready();
+                  
+                  // Intro'yu başlat
+                  if(window.startIntro) window.startIntro();
+
+              } else {
+                  // Sadece Context tamamen boşsa uyarıda kal
+                  console.warn("❌ Farcaster Context Bulunamadı (Tarayıcı?)");
+              }
+          } catch (e) {
+              console.error("SDK Hatası:", e);
+              // Hata olsa bile Farcaster içinde olabiliriz, risk alıp ekranı açıyoruz:
+              const blocker = document.getElementById("desktop-blocker");
+              if (blocker) blocker.style.display = "none";
+              sdk.actions.ready();
+          }
+      };
+
+      document.addEventListener('DOMContentLoaded', triggerReady);
+    </script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
 
@@ -2462,6 +2480,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
