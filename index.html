@@ -1888,7 +1888,18 @@ async function executeTransaction(signer, amountETH, toAddress) {
     requestAnimationFrame(gameLoop);
     
     // Hem LocalStorage hem de Cloud'a kaydet (3 saniyede bir)
-    setInterval(saveData, 3000);
+    setInterval(saveData, 30000);
+      // Kullanıcı sekmeyi kapatırsa veya yenilerse ANINDA kaydet
+    window.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === 'hidden') {
+            saveData();
+        }
+    });
+    
+    // Mobil tarayıcılar için ek güvenlik (Sayfa kapanırken tetiklenir)
+    window.addEventListener("pagehide", () => {
+        saveData();
+    });
     
     setInterval(checkUpgradeProgress, 1000);
     initJoystick();
@@ -2451,6 +2462,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
