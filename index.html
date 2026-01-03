@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    sdk.actions.ready()
     <meta name="base:app_id" content="6957083ec63ad876c9081cd6" />
     <meta charset="UTF-8" />
     <meta
@@ -68,13 +67,16 @@
         z-index: 1000;
         overflow: hidden;
       }
-     .intro-container {
+      .intro-container {
         text-align: center;
         position: relative;
         z-index: 2;
         animation: introFadeIn 1.5s ease-out;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
-     .disease-logo {
+      .disease-logo {
         font-size: min(60px, 12vw);
         font-weight: 900;
         color: var(--disease-red);
@@ -86,7 +88,7 @@
           0 0 40px rgba(255, 34, 34, 0.5);
         position: relative;
       }
-     .disease-logo::after {
+      .disease-logo::after {
         content: "";
         position: absolute;
         bottom: -10px;
@@ -96,7 +98,7 @@
         height: 4px;
         background: linear-gradient(90deg, transparent, var(--disease-red), transparent);
       }
-     .presents-text {
+      .presents-text {
         font-size: min(18px, 4vw);
         color: rgba(255, 255, 255, 0.7);
         margin: 20px 0;
@@ -104,7 +106,7 @@
         letter-spacing: 4px;
         animation: pulse 2s infinite;
       }
-     .game-title-intro {
+      .game-title-intro {
         font-size: min(48px, 10vw);
         font-weight: 900;
         color: var(--gold);
@@ -113,13 +115,41 @@
         text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
         letter-spacing: 4px;
       }
-     .game-subtitle {
+      .game-subtitle {
         font-size: min(16px, 3.5vw);
         color: rgba(255, 255, 255, 0.6);
         margin-top: 10px;
         font-weight: 300;
         letter-spacing: 2px;
       }
+      /* NEW ENTER BUTTON STYLE */
+      #enterBtn {
+        margin-top: 40px;
+        background: transparent;
+        color: var(--neon);
+        border: 2px solid var(--neon);
+        padding: 15px 40px;
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 3px;
+        cursor: pointer;
+        text-transform: uppercase;
+        box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+        transition: all 0.3s ease;
+        animation: btnPulse 2s infinite;
+        display: none; /* Hidden initially */
+      }
+      #enterBtn:active {
+        background: var(--neon);
+        color: #000;
+        transform: scale(0.95);
+      }
+      @keyframes btnPulse {
+        0% { box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); opacity: 0.8; }
+        50% { box-shadow: 0 0 30px rgba(0, 255, 204, 0.6); opacity: 1; }
+        100% { box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); opacity: 0.8; }
+      }
+
       #loadingOverlay {
         position: fixed;
         top: 0;
@@ -133,13 +163,13 @@
         justify-content: center;
         z-index: 999;
       }
-     .loading-container {
+      .loading-container {
         text-align: center;
         width: 90%;
         max-width: 400px;
         animation: loadingFadeIn 1s ease;
       }
-     .loading-logo {
+      .loading-logo {
         font-size: min(32px, 7vw);
         font-weight: 900;
         color: var(--neon);
@@ -148,11 +178,11 @@
         letter-spacing: 3px;
         position: relative;
       }
-     .loading-logo::before {
+      .loading-logo::before {
         content: "⛏️";
         margin-right: 10px;
       }
-     .loading-spinner {
+      .loading-spinner {
         width: 80px;
         height: 80px;
         border: 4px solid rgba(0, 255, 204, 0.1);
@@ -161,7 +191,7 @@
         margin: 0 auto 30px;
         animation: spin 1s linear infinite;
       }
-     .loading-progress-container {
+      .loading-progress-container {
         width: 100%;
         height: 6px;
         background: rgba(255, 255, 255, 0.1);
@@ -169,7 +199,7 @@
         overflow: hidden;
         margin-bottom: 15px;
       }
-     .loading-progress-bar {
+      .loading-progress-bar {
         height: 100%;
         width: 0%;
         background: linear-gradient(90deg, var(--neon), #00ff88);
@@ -177,7 +207,7 @@
         transition: width 0.3s ease;
         box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
       }
-     .loading-text {
+      .loading-text {
         font-size: min(18px, 4vw);
         color: var(--neon);
         margin-bottom: 20px;
@@ -185,14 +215,14 @@
         text-transform: uppercase;
         letter-spacing: 2px;
       }
-     .loading-percentage {
+      .loading-percentage {
         font-size: min(24px, 5vw);
         font-weight: 900;
         color: var(--gold);
         margin-bottom: 20px;
         text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
       }
-     .loading-tip {
+      .loading-tip {
         font-size: min(12px, 2.5vw);
         color: rgba(255, 255, 255, 0.5);
         margin-top: 30px;
@@ -234,7 +264,7 @@
         touch-action: pan-y;
         overscroll-behavior: contain;
       }
-     .close-btn {
+      .close-btn {
         position: absolute;
         top: max(env(safe-area-inset-top), 15px);
         right: 20px;
@@ -247,7 +277,7 @@
         font-weight: bold;
         line-height: 1;
       }
-     .btn-help-open {
+      .btn-help-open {
         background: transparent;
         border: 1px solid var(--gold);
         color: var(--gold);
@@ -263,7 +293,7 @@
         gap: 5px;
         flex-shrink: 0;
       }
-     .btn-help-open:before {
+      .btn-help-open:before {
         content: "?";
         display: inline-block;
         width: 16px;
@@ -275,12 +305,12 @@
         line-height: 16px;
         font-size: 10px;
       }
-     .help-container {
+      .help-container {
         width: 100%;
         max-width: 500px;
         margin-top: 40px;
       }
-     .help-card {
+      .help-card {
         background: var(--panel);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
@@ -289,7 +319,7 @@
         text-align: left;
         margin-bottom: 20px;
       }
-     .help-title {
+      .help-title {
         color: var(--gold);
         font-size: 18px;
         font-weight: 900;
@@ -298,16 +328,16 @@
         border-bottom: 1px solid rgba(255, 204, 0, 0.3);
         padding-bottom: 8px;
       }
-     .help-text {
+      .help-text {
         color: #ccc;
         font-size: 14px;
         line-height: 1.6;
         margin-bottom: 15px;
       }
-     .help-icon {
+      .help-icon {
         margin-right: 5px;
       }
-     .warning-text {
+      .warning-text {
         color: var(--disease-red);
         font-weight: bold;
         font-size: 16px;
@@ -318,7 +348,7 @@
         border-radius: 8px;
         margin-top: 20px;
       }
-     .custom-modal {
+      .custom-modal {
         display: none;
         position: fixed;
         top: 50%;
@@ -344,7 +374,7 @@
       #upgradeModal {
         border-color: var(--neon);
       }
-     .modal-input {
+      .modal-input {
         width: 100%;
         padding: 15px;
         margin: 15px 0;
@@ -356,13 +386,13 @@
         font-size: 16px;
         min-height: 50px;
       }
-     .percentage-row {
+      .percentage-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 8px;
         margin-bottom: 15px;
       }
-     .pct-btn {
+      .pct-btn {
         background: #222;
         border: 1px solid #444;
         color: var(--gold);
@@ -373,16 +403,16 @@
         font-size: 14px;
         min-height: 44px;
       }
-     .pct-btn:active {
+      .pct-btn:active {
         background: var(--gold);
         color: #000;
       }
-     .modal-btn-row {
+      .modal-btn-row {
         display: flex;
         gap: 10px;
         margin-top: 15px;
       }
-     .modal-btn {
+      .modal-btn {
         flex: 1;
         padding: 15px;
         border-radius: 10px;
@@ -392,7 +422,7 @@
         text-transform: uppercase;
         min-height: 50px;
       }
-     .header {
+      .header {
         text-align: center;
         margin-top: env(safe-area-inset-top);
         width: 100%;
@@ -401,7 +431,7 @@
         align-items: center;
         flex-shrink: 0;
       }
-     .game-title {
+      .game-title {
         color: var(--gold);
         font-size: 22px;
         font-weight: 900;
@@ -409,7 +439,7 @@
         text-transform: uppercase;
         margin: 10px 0;
       }
-     .tranium-circle {
+      .tranium-circle {
         margin: 15px auto 10px auto;
         width: 85px;
         height: 85px;
@@ -423,16 +453,16 @@
         box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
         flex-shrink: 0;
       }
-     .tranium-val {
+      .tranium-val {
         font-size: 28px;
         font-weight: 900;
         color: var(--gold);
       }
-     .tranium-lbl {
+      .tranium-lbl {
         font-size: 9px;
         font-weight: bold;
       }
-     .resource-section {
+      .resource-section {
         width: 100%;
         max-width: 380px;
         display: grid;
@@ -441,7 +471,7 @@
         padding: 0 10px;
         flex-shrink: 1;
       }
-     .res-card {
+      .res-card {
         background: var(--panel);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
@@ -452,24 +482,24 @@
         flex-direction: column;
         justify-content: center;
       }
-     .res-name {
+      .res-name {
         font-size: 11px;
         color: var(--gold);
         font-weight: bold;
         display: block;
       }
-     .res-amount {
+      .res-amount {
         font-size: 20px;
         font-weight: 800;
         display: block;
         margin: 5px 0;
       }
-     .res-info {
+      .res-info {
         font-size: 10px;
         color: var(--neon);
         opacity: 0.9;
       }
-     .btn-refine {
+      .btn-refine {
         width: 100%;
         max-width: 380px;
         background: var(--gold);
@@ -486,25 +516,25 @@
         margin: 10px 0;
         flex-shrink: 0;
       }
-     .btn-refine:disabled {
+      .btn-refine:disabled {
         background: #333;
         color: #666;
         box-shadow: none;
         transform: translateY(4px);
       }
-     .btn-upgrade-menu {
+      .btn-upgrade-menu {
         background: var(--neon);
         color: #000;
         box-shadow: 0 4px 0 #00b894;
         margin-top: 10px;
       }
-     .factory-modal-grid {
+      .factory-modal-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
         width: 100%;
       }
-     .fac-card {
+      .fac-card {
         background: rgba(0, 255, 204, 0.03);
         border: 1px solid rgba(0, 255, 204, 0.3);
         border-radius: 12px;
@@ -513,14 +543,14 @@
         flex-direction: column;
         min-height: 120px;
       }
-     .fac-header {
+      .fac-header {
         font-size: 10px;
         font-weight: bold;
         color: var(--neon);
         text-align: center;
         margin-bottom: 8px;
       }
-     .btn-upgrade {
+      .btn-upgrade {
         background: var(--neon);
         color: #000;
         border: none;
@@ -532,7 +562,7 @@
         min-height: 44px;
         margin-top: auto;
       }
-     .footer {
+      .footer {
         width: 100%;
         max-width: 380px;
         text-align: center;
@@ -541,14 +571,14 @@
         margin-bottom: max(env(safe-area-inset-bottom), 20px);
         flex-shrink: 0;
       }
-     .energy-info {
+      .energy-info {
         font-size: 16px;
         font-weight: bold;
         color: var(--gold);
         margin-bottom: 15px;
         display: block;
       }
-     .btn-start {
+      .btn-start {
         width: 100%;
         background: var(--gold);
         color: #000;
@@ -575,7 +605,7 @@
         text-shadow: 2px 2px 4px black;
         font-size: min(14px, 3.5vw);
       }
-     .reset-link {
+      .reset-link {
         color: var(--neon);
         font-size: 12px;
         text-decoration: none;
@@ -665,72 +695,72 @@
           gap: 0;
           padding-bottom: max(env(safe-area-inset-bottom), 10px);
         }
-       .header {
+        .header {
           margin-top: 0;
           margin-bottom: 0;
         }
-       .game-title {
+        .game-title {
           font-size: 18px;
           margin: 2px 0;
         }
-       .tranium-circle {
+        .tranium-circle {
           width: 65px;
           height: 65px;
           margin: 5px auto;
           border-width: 2px;
         }
-       .tranium-val {
+        .tranium-val {
           font-size: 20px;
         }
-       .tranium-lbl {
+        .tranium-lbl {
           font-size: 8px;
         }
-       .btn-help-open {
+        .btn-help-open {
           padding: 4px 12px;
           font-size: 10px;
           margin-bottom: 2px;
           min-height: 25px;
         }
-       .reset-link {
+        .reset-link {
           padding: 5px;
           min-height: 30px;
           font-size: 10px;
           margin: 2px 0;
           max-width: 200px;
         }
-       .resource-section {
+        .resource-section {
           gap: 8px;
           margin: 2px 0;
         }
-       .res-card {
+        .res-card {
           padding: 8px;
           min-height: 60px;
         }
-       .res-name {
+        .res-name {
           font-size: 10px;
         }
-       .res-amount {
+        .res-amount {
           font-size: 16px;
           margin: 2px 0;
         }
-       .res-info {
+        .res-info {
           font-size: 9px;
         }
-       .btn-refine {
+        .btn-refine {
           padding: 10px;
           min-height: 45px;
           font-size: 12px;
           margin: 8px 0;
         }
-       .footer {
+        .footer {
           padding: 5px;
           margin-bottom: 5px;
         }
-       .energy-info {
+        .energy-info {
           font-size: 12px;
           margin-bottom: 5px;
         }
-       .btn-start {
+        .btn-start {
           padding: 10px;
           min-height: 50px;
           font-size: 16px;
@@ -754,34 +784,34 @@
           right: 15px;
           z-index: 302;
         }
-       .help-container {
+        .help-container {
           margin-top: 5px;
           width: 100%;
         }
-       .help-card {
+        .help-card {
           padding: 10px;
           display: flex;
           flex-direction: column;
           gap: 5px;
         }
-       .warning-text {
+        .warning-text {
           font-size: 11px;
           padding: 5px;
           margin-top: 0;
           margin-bottom: 5px;
         }
-       .help-title {
+        .help-title {
           font-size: 11px;
           margin-bottom: 2px;
           padding-bottom: 2px;
           border-bottom-width: 1px;
         }
-       .help-text {
+        .help-text {
           font-size: 10px;
           line-height: 1.2;
           margin-bottom: 4px;
         }
-       .help-text:last-child {
+        .help-text:last-child {
           margin-bottom: 0;
         }
         #joystickContainer {
@@ -805,6 +835,8 @@
         <div class="presents-text">PRESENTS</div>
         <div class="game-title-intro">TRANIUM VERSE</div>
         <div class="game-subtitle">TRANIUM VERSE</div>
+        
+        <button id="enterBtn" onclick="userEnterGame()">START SIMULATION</button>
       </div>
     </div>
 
@@ -992,16 +1024,17 @@ Energy regenerates over time (1 per hour) even when you are offline.
         // Make SDK available globally safely
         window.farcasterSDK = sdk;
         window.isMiniApp = false;
-
-        // Immediate Ready Call - Fixes Splash Error
-        // We don't wait for context here to ensure the splash screen goes away instantly.
-        try {
-            sdk.actions.ready();
-            window.isMiniApp = true;
-            console.log("✅ SDK Ready called immediately");
-        } catch (e) {
-            console.error("⚠️ SDK Ready call failed:", e);
-        }
+        
+        // Expose SDK Ready trigger for manual button
+        window.triggerSdkReady = () => {
+             try {
+                sdk.actions.ready();
+                window.isMiniApp = true;
+                console.log("✅ SDK Ready called via interaction");
+            } catch (e) {
+                console.error("⚠️ SDK Ready call failed:", e);
+            }
+        };
 
         // Helper to get context if needed later
         window.loadFarcasterContext = async () => {
@@ -1048,8 +1081,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
         isMoving: false,
       };
       let lastUpdate = Date.now();
-      let workers =,
-        enemies =;
+      let workers = [],
+        enemies = [];
       let joystickActive = false;
       let joystickCenterX = 0;
       let joystickCenterY = 0;
@@ -1155,7 +1188,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
         kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
 
         let savedEnergy = localStorage.getItem("w_energy");
-        if (savedEnergy!== null) {
+        if (savedEnergy !== null) {
           energy = parseInt(savedEnergy);
         } else {
           energy = 10;
@@ -1175,13 +1208,27 @@ Energy regenerates over time (1 per hour) even when you are offline.
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "flex";
-
-        // FALLBACK: Force start game if SDK hangs
-        // This fixes the "Stuck on Intro" bug
+        
+        // Show the Enter button after a short delay
         setTimeout(() => {
-          introOverlay.style.display = "none";
-          startLoading();
-        }, 1500); // Reduced to 1.5s for faster entry
+           const btn = document.getElementById("enterBtn");
+           if(btn) btn.style.display = "block";
+        }, 800);
+      }
+
+      // NEW: User Interaction to start the flow
+      function userEnterGame() {
+        // 1. Trigger SDK Ready (critical for Farcaster splash removal)
+        if (window.triggerSdkReady) {
+            window.triggerSdkReady();
+        }
+        
+        // 2. Hide Intro
+        const introOverlay = document.getElementById("introOverlay");
+        introOverlay.style.display = "none";
+        
+        // 3. Start Loading
+        startLoading();
       }
 
       function startLoading() {
@@ -1193,7 +1240,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
         loadingOverlay.style.display = "flex";
 
         let progress = 0;
-        const loadingMessages =;
+        const loadingMessages = ["Initializing...", "Connecting to Verse...", "Loading Assets...", "Syncing Energy..."];
         let messageIndex = 0;
 
         loadingInterval = setInterval(() => {
@@ -1215,7 +1262,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
       function loadAssets() {
         totalAssets = 5;
-        const images =;
+        const images = [imgBG, imgDayi, imgMiner1, imgMiner2, imgInfected];
 
         images.forEach((img) => {
           if (img.complete) {
@@ -1313,7 +1360,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
       function updateEnergyCountdown() {
         const energyStatus = document.getElementById("energyStatus");
         const energyUI = document.getElementById("energyUI");
-        if (!energyStatus ||!energyUI) return;
+        if (!energyStatus || !energyUI) return;
 
         const now = Date.now();
         if (energy >= 10) {
@@ -1415,7 +1462,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
           await window.ethereum.request({ method: "eth_requestAccounts" });
           const provider = new ethers.BrowserProvider(window.ethereum);
           const network = await provider.getNetwork();
-          if (Number(network.chainId)!== BASE_CHAIN_ID) {
+          if (Number(network.chainId) !== BASE_CHAIN_ID) {
             try {
               await window.ethereum.request({
                 method: "wallet_switchEthereumChain",
@@ -1425,7 +1472,15 @@ Energy regenerates over time (1 per hour) even when you are offline.
               if (switchError.code === 4902) {
                 await window.ethereum.request({
                   method: "wallet_addEthereumChain",
-                  params:,
+                  params: [{
+                    chainId: "0x2105",
+                    chainName: "Base",
+                    nativeCurrency: {
+                      name: "ETH",
+                      symbol: "ETH",
+                      decimals: 18
+                    },
+                    rpcUrls: ["https://mainnet.base.org"],
                     blockExplorerUrls: ["https://basescan.org"]
                   }]
                 });
@@ -1567,8 +1622,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
       function updateJoystickPosition(e) {
         let clientX, clientY;
         if (e.type.includes("touch")) {
-          clientX = e.touches.clientX;
-          clientY = e.touches.clientY;
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
         } else {
           clientX = e.clientX;
           clientY = e.clientY;
@@ -1583,8 +1638,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
         joystickHandleX = joystickCenterX + Math.cos(angle) * limitedDistance;
         joystickHandleY = joystickCenterY + Math.sin(angle) * limitedDistance;
 
-        joystickDirection.x = limitedDistance > 0? dx / distance : 0;
-        joystickDirection.y = limitedDistance > 0? dy / distance : 0;
+        joystickDirection.x = limitedDistance > 0 ? dx / distance : 0;
+        joystickDirection.y = limitedDistance > 0 ? dy / distance : 0;
 
         updateJoystickVisual();
         player.isMoving = true;
@@ -1696,8 +1751,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
         workers.push({
           x: 100 + Math.random() * (WORLD_SIZE - 200),
           y: 100 + Math.random() * (WORLD_SIZE - 200),
-          img: isM? imgMiner1 : imgMiner2,
-          type: isM? "metal" : "kristal",
+          img: isM ? imgMiner1 : imgMiner2,
+          type: isM ? "metal" : "kristal",
         });
       }
 
@@ -1787,7 +1842,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
             return;
           }
           let d = Math.hypot(player.x - en.x, player.y - en.y);
-          if (d < 400 &&!en.isChasing) {
+          if (d < 400 && !en.isChasing) {
             en.isChasing = true;
             en.chaseStartTime = now;
           }
@@ -1818,7 +1873,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
         workers.forEach((w) => {
           ctx.save();
           ctx.shadowBlur = 10;
-          ctx.shadowColor = w.type === "metal"? "#ffcc00" : "#00ffff";
+          ctx.shadowColor = w.type === "metal" ? "#ffcc00" : "#00ffff";
           ctx.drawImage(w.img, w.x - 40, w.y - 40, 80, 80);
           ctx.restore();
         });
@@ -1838,7 +1893,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
           ctx.restore();
         });
         ctx.save();
-        let bounce = player.isMoving? Math.abs(Math.sin(walkCycle)) * 14 : 0;
+        let bounce = player.isMoving ? Math.abs(Math.sin(walkCycle)) * 14 : 0;
         ctx.translate(player.x, player.y - bounce);
         if (player.flipX) ctx.scale(-1, 1);
         ctx.drawImage(imgDayi, -50, -60, 100, 120);
@@ -1858,8 +1913,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
       const setTarget = (e) => {
         if (joystickActive) return;
         const rect = canvas.getBoundingClientRect();
-        const cx = e.touches? e.touches.clientX - rect.left : e.clientX - rect.left;
-        const cy = e.touches? e.touches.clientY - rect.top : e.clientY - rect.top;
+        const cx = e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+        const cy = e.touches ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
 
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
@@ -1884,7 +1939,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
         setTarget(e);
       });
       window.addEventListener("mousemove", (e) => {
-        if (isTouching &&!joystickActive) setTarget(e);
+        if (isTouching && !joystickActive) setTarget(e);
       });
       window.addEventListener("mouseup", () => {
         isTouching = false;
@@ -1894,8 +1949,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
         "touchstart",
         (e) => {
           const joystickRect = document.getElementById("joystickContainer").getBoundingClientRect();
-          const touchX = e.touches.clientX;
-          const touchY = e.touches.clientY;
+          const touchX = e.touches[0].clientX;
+          const touchY = e.touches[0].clientY;
 
           if (
             touchX >= joystickRect.left &&
@@ -1915,7 +1970,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
         "touchmove",
         (e) => {
           e.preventDefault();
-          if (isTouching &&!joystickActive) setTarget(e);
+          if (isTouching && !joystickActive) setTarget(e);
         },
         { passive: false },
       );
@@ -1937,7 +1992,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
         console.log("Game Over! Score: " + Math.floor(tranium));
       }
 
-      // No longer need window.onload here as it is handled by the module script calling startIntro()
+      // Initial call to setup the intro screen
+      window.onload = startIntro;
     </script>
     <script>
       (function () {
@@ -1950,7 +2006,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
         function lockPlayerSpeed() {
           try {
-            if (typeof player!== "undefined" && player.speed!== 7.0) {
+            if (typeof player !== "undefined" && player.speed !== 7.0) {
               player.speed = 7.0;
               Object.defineProperty(player, "speed", {
                 value: 7.0,
@@ -2011,11 +2067,11 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
           if (elapsed < frameDelay) return;
           lastTime = now - (elapsed % frameDelay);
-          if (typeof player!== "undefined") {
-            if (player.speed!== 7.0) player.speed = 7.0;
+          if (typeof player !== "undefined") {
+            if (player.speed !== 7.0) player.speed = 7.0;
           }
 
-          if (typeof enemies!== "undefined" && Array.isArray(enemies)) {
+          if (typeof enemies !== "undefined" && Array.isArray(enemies)) {
             enemies.forEach((en) => {
               if (en.currentSpeed > 6.6) {
                 en.currentSpeed = 6.6;
@@ -2042,4 +2098,3 @@ Energy regenerates over time (1 per hour) even when you are offline.
     </script>
   </body>
 </html>
-
