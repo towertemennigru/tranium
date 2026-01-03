@@ -21,30 +21,7 @@
     
     <title>TRANIUM VERSE - Strategy Hub</title>
     
-   <script type="module">
-    // En güncel Frame SDK'sını çekiyoruz
-    import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
-
-    // SDK'yı global değişkene atıyoruz ki her yerden erişelim
-    window.farcasterSDK = sdk;
-    window.isMiniApp = true;
-
-    const triggerReady = async () => {
-        try {
-            // SDK'nın yüklenmesini bekle
-            await sdk.context;
-            sdk.actions.ready();
-            console.log("✅ SDK Ready");
-            
-            // Varsa intro'yu başlat
-            if(window.startIntro) window.startIntro();
-        } catch (e) {
-            console.error("SDK Init Error:", e);
-        }
-    };
-
-    document.addEventListener('DOMContentLoaded', triggerReady);
-</script>
+  
     
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
 
@@ -2213,8 +2190,166 @@ Energy regenerates over time (1 per hour) even when you are offline.
         }
     }, 2000);
 </script>
+  <script type="module">
+    // --- 1. İTHALATLAR (IMPORTS) ---
+    // Farcaster SDK ve Reown AppKit (QR Kod ve Cüzdan için) kütüphanelerini yüklüyoruz
+    import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
+    import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
+    import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@1.6.0';
+    import { base } from 'https://esm.sh/@reown/appkit/networks';
+    
+    // Ethers.js'i globalden alıyoruz (zaten senin head kısmında yüklü)
+    const ethers = window.ethers;
+
+    // --- 2. AYARLAR ---
+    // BURAYA Reown Cloud'dan aldığın ID'yi yapıştır:
+    const PROJECT_ID = 'BURAYA_PROJECT_ID_YAZ'; 
+
+    // AppKit (QR Kod Modülü) Kurulumu
+    const appKit = createAppKit({
+        adapters: [new EthersAdapter()],
+        networks: [base],
+        projectId: PROJECT_ID,
+        features: {
+            analytics: true,
+            email: false, // Sadece cüzdan istiyoruz
+            socials:   // Google ile giriş vs kapatıyoruz
+        },
+        metadata: {
+            name: 'Tranium Verse',
+            description: 'Refine Tranium to dominate the Verse.',
+            url: window.location.origin,
+            icons: ['https://tranium-xi.vercel.app/preview.jpg']
+        }
+    });
+
+    // --- 3. GLOBAL DEĞİŞKENLER ---
+    window.farcasterSDK = sdk;
+    window.isMiniApp = false; // Başlangıçta false, SDK yüklenince true olacak
+    window.appKit = appKit;   // Konsoldan erişebilmek için
+
+    // --- 4. BAŞLATMA (INIT) ---
+    const triggerReady = async () => {
+        try {
+            console.log("🛠️ SDK Başlatılıyor...");
+            const context = await sdk.context;
+            
+            // Eğer context varsa, Warpcast içindeyiz demektir
+            if (context && context.client) {
+                console.log("✅ Farcaster (Warpcast) Ortamı Algılandı");
+                window.isMiniApp = true;
+                sdk.actions.ready();
+            } else {
+                console.log("🌍 Tarayıcı (PC/Chrome) Ortamı Algılandı");
+                window.isMiniApp = false;
+                // PC'de splash ekranını kaldırmak için manuel ready
+                if(window.startIntro) window.startIntro(); 
+            }
+        } catch (e) {
+            console.error("SDK Init Error:", e);
+            // Hata olsa bile oyunu başlat (PC modu varsay)
+            window.isMiniApp = false;
+            if(window.startIntro) window.startIntro();
+        }
+    };
+
+    // Sayfa yüklenince başlat
+    // Not: DOMContentLoaded yerine doğrudan çağırıyoruz çünkü module script zaten defer çalışır
+    triggerReady();
+
+    // --- 5. ÖDEME FONKSİYONU (YENİLENMİŞ) ---
+    // Bu fonksiyonu global scope'a ekliyoruz ki HTML butonları (onclick) erişebilsin
+    window.sendETHPayment = async function(amountETH) {
+        console.log(`💰 Ödeme Başlatılıyor: ${amountETH} ETH`);
+        const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
+
+        try {
+            let signer;
+
+            // SENARYO A: WARPCAST İÇİNDEYİZ (Native)
+            if (window.isMiniApp && window.farcasterSDK.wallet && window.farcasterSDK.wallet.ethProvider) {
+                console.log("⚡ Yöntem: Warpcast Native Provider");
+                const provider = new ethers.BrowserProvider(window.farcasterSDK.wallet.ethProvider);
+                signer = await provider.getSigner();
+            } 
+            
+            // SENARYO B: PC VEYA DIŞ TARAYICI (WalletConnect / AppKit)
+            else {
+                console.log("🌐 Yöntem: Reown AppKit (QR/DeepLink)");
+                
+                // 1. Cüzdan bağlı mı kontrol et
+                if (!appKit.getIsConnected()) {
+                    console.log("🔌 Cüzdan bağlı değil, modulu açıyorum...");
+                    await appKit.open(); // QR Kod penceresini açar
+                    
+                    // Kullanıcının bağlamasını bekle (Basit bir polling mekanizması)
+                    // Gerçek hayatta event listener kullanılır ama senin yapın için bu yeterli
+                    return new Promise((resolve) => {
+                        const checkInterval = setInterval(async () => {
+                            if (appKit.getIsConnected()) {
+                                clearInterval(checkInterval);
+                                console.log("✅ Cüzdan bağlandı! İşleme devam ediliyor...");
+                                // Rekürsif olarak fonksiyonu tekrar çağır
+                                resolve(await window.sendETHPayment(amountETH));
+                            }
+                        }, 1000);
+                    });
+                }
+
+                // 2. Bağlı cüzdandan Signer al
+                const provider = appKit.getProvider(); // Ethers adapter provider'ı verir
+                if (!provider) {
+                    alert("Cüzdan sağlayıcısı alınamadı. Lütfen sayfayı yenileyin.");
+                    return false;
+                }
+                
+                // Reown provider'ı ethers v6 ile sarmala
+                const ethersProvider = new ethers.BrowserProvider(provider);
+                signer = await ethersProvider.getSigner();
+                
+                // Ağ kontrolü (Base Network: 8453)
+                const network = await ethersProvider.getNetwork();
+                if (Number(network.chainId)!== 8453) {
+                    try {
+                        await appKit.switchNetwork(base); // Otomatik ağ değiştirme isteği
+                    } catch (e) {
+                        alert("Lütfen cüzdanınızdan Base ağını seçin.");
+                        return false;
+                    }
+                }
+            }
+
+            // --- ORTAK İŞLEM GÖNDERME KISMI ---
+            if (!signer) {
+                alert("İmzalayıcı (Wallet) bulunamadı!");
+                return false;
+            }
+
+            console.log("💸 İşlem gönderiliyor...");
+            const tx = await signer.sendTransaction({
+                to: PAYMENT_ADDRESS,
+                value: ethers.parseEther(amountETH.toString())
+            });
+
+            console.log("✅ İşlem Başarılı! Hash:", tx.hash);
+            return true;
+
+        } catch (error) {
+            console.error("❌ Ödeme Hatası:", error);
+            
+            // Kullanıcı iptal ettiyse sessiz kal, değilse hata göster
+            if (!error.message.includes("rejected") &&!error.message.includes("User denied")) {
+                alert("Ödeme başarısız: " + (error.shortMessage |
+
+| error.message));
+            }
+            return false;
+        }
+    };
+</script>
   </body>
 </html>
+
 
 
 
