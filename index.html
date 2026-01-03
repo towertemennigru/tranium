@@ -9,8 +9,6 @@
     <meta property="og:description" content="Collect resources and refine Tranium to dominate the Verse. A strategic mining game on Farcaster." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://tranium-xi.vercel.app/preview.jpg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
     
     <meta property="fc:frame" content='{"version": "next", "imageUrl": "https://tranium-xi.vercel.app/preview.jpg", "button": {"title": "Start Mining", "action": {"type": "launch_frame", "name": "Tranium Verse", "url": "https://tranium-xi.vercel.app", "splashImageUrl": "https://tranium-xi.vercel.app/preview.jpg", "splashBackgroundColor": "#0a0a00"}}}' />
     <meta name="fc:miniapp" content="hosted" />
@@ -94,7 +92,6 @@
         image-rendering: pixelated;
       }
 
-      /* --- LOADER STİLLERİ --- */
       #loader {
         position: fixed; 
         top: 0; 
@@ -123,7 +120,6 @@
         letter-spacing: 2px; 
       }
 
-      /* --- INTRO/OVERLAY STİLLERİ --- */
       #introOverlay {
         position: fixed;
         top: 0;
@@ -220,7 +216,6 @@
         100% { box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); opacity: 0.8; }
       }
 
-      /* --- LOADING STİLLERİ --- */
       #loadingOverlay {
         position: fixed;
         top: 0;
@@ -302,7 +297,6 @@
         line-height: 1.4;
       }
 
-      /* --- ANA OYUN UI --- */
       #overlay {
         position: fixed;
         top: 0;
@@ -321,21 +315,19 @@
         display: none;
       }
       
-      /* --- JOYSTICK & UI BİRLEŞTİRME --- */
       #ui { 
         position: absolute; 
         top: 15px; 
         left: 15px; 
         right: 15px; 
         z-index: 10; 
-        display: none; /* Varsayılan olarak gizli */
+        display: none; 
         justify-content: space-between; 
         font-weight: bold; 
         text-shadow: 2px 2px 4px black;
         font-size: min(14px, 3.5vw);
-        pointer-events: none; /* Tıklamaları alta geçir */
+        pointer-events: none; 
       }
-      /* UI içindeki butonların tıklanabilir olması için */
       #ui > * { pointer-events: auto; }
 
       #joystickContainer { 
@@ -345,7 +337,7 @@
         width: 100px; 
         height: 100px; 
         z-index: 20; 
-        display: none; /* Varsayılan olarak gizli */
+        display: none; 
         pointer-events: auto;
       }
       #joystickBase { 
@@ -368,7 +360,6 @@
         box-shadow: 0 0 15px #ffcc00; 
       }
 
-      /* --- MODAL ve DİĞER PENCERELER --- */
       #howToPlayScreen {
         position: fixed;
         top: 0;
@@ -1133,11 +1124,16 @@ async function loadCloudData(fid) {
         return null;
     }
 }
-// Buluta Veri Kaydetme (SAVE)
+// Buluta Veri Kaydetme (SAVE) - GÜNCELLENMİŞ
 function saveCloudData(fid) {
-    // Kaydedilecek veri paketi
+    // PROFESYONEL DÜZELTME:
+    // Sadece eğer enerji dolumu başlamışsa ve şu anki kayıt verisinde yoksa yenisini yolla.
+    // Ancak daha önemlisi, CLOUD'daki veya LOCAL'deki en eski "başlangıç zamanını" koru.
+    // Burada, eğer energyRegenerationStartTime 0 ise (yani enerji full veya yeni bitti),
+    // o zaman sıfır göndeririz. Değilse, MEVCUT değeri göndeririz (Date.now() DEĞİL).
+    
     const payload = {
-        fid: String(fid), // String garantiye al
+        fid: String(fid),
         metal: Math.floor(metal),
         kristal: Math.floor(kristal),
         tranium: Math.floor(tranium),
@@ -1147,7 +1143,8 @@ function saveCloudData(fid) {
         metal_workers: metalWorkers,
         kristal_workers: kristalWorkers,
         last_save_time: Date.now(),
-        energy_reg_start: energyRegenerationStartTime // YENİ EKLENEN KRİTİK VERİ
+        // BURASI KRİTİK: Asla Date.now() gönderme, var olan başlangıcı gönder!
+        energy_reg_start: energyRegenerationStartTime 
     };
 
     fetch(GOOGLE_SCRIPT_URL, {
@@ -1417,90 +1414,70 @@ async function completeLoading() {
     }, 500);
 }
 
+      // --- PROFESYONEL ENERJİ SENKRONİZASYONU ---
+      // Eski karmaşık if/else yapısı yerine saf matematiksel zaman hesabı.
       function updateOfflineEnergyRegeneration() {
         const now = Date.now();
-        if (energy < 10 && energyRegenerationStartTime > 0) {
-          const timePassed = now - energyRegenerationStartTime;
-          const energyToAdd = Math.floor(timePassed / 3600000);
-
-          if (energyToAdd > 0) {
-            const newEnergy = Math.min(10, energy + energyToAdd);
-            const addedEnergy = newEnergy - energy;
-
-            if (addedEnergy > 0) {
-              energy = newEnergy;
-              energyRegenerationStartTime = now - (timePassed % 3600000);
-              if (energy >= 10) {
-                energyRegenerationStartTime = 0;
-                nextEnergyTime = 0;
-              } else {
-                nextEnergyTime = energyRegenerationStartTime + 3600000;
-              }
-
-              saveData();
-              updateUI();
-            }
-          } else if (nextEnergyTime > 0 && nextEnergyTime <= now) {
-            if (energy < 10) {
-              energy++;
-              updateEnergyTimers();
-              saveData();
-              updateUI();
-            }
-          }
-        } else if (energy < 10 && energyRegenerationStartTime === 0) {
-          updateEnergyTimers();
-        }
-      }
-
-      function updateEnergyTimers() {
-        const now = Date.now();
-        if (energy < 10) {
-          if (energyRegenerationStartTime === 0) {
-            energyRegenerationStartTime = now;
-          }
-
-          const timeSinceStart = now - energyRegenerationStartTime;
-          const energyGained = Math.floor(timeSinceStart / 3600000);
-          const nextEnergyIn = 3600000 - (timeSinceStart % 3600000);
-          nextEnergyTime = now + nextEnergyIn;
-          if (energy >= 10) {
+        
+        // Eğer enerji 10 veya daha fazlaysa, zamanlayıcıyı sıfırla.
+        if (energy >= 10) {
             energyRegenerationStartTime = 0;
             nextEnergyTime = 0;
-          }
-        } else {
-          energyRegenerationStartTime = 0;
-          nextEnergyTime = 0;
+            return;
         }
 
-        saveData();
+        // Eğer başlangıç zamanı yoksa (0 ise), şu anı başlangıç yap.
+        if (energyRegenerationStartTime === 0) {
+            energyRegenerationStartTime = now;
+        }
+
+        // --- MATEMATİKSEL HESAP ---
+        // Geçen toplam süre
+        const timePassed = now - energyRegenerationStartTime;
+        
+        // 1 Saatlik (3600000ms) dilimlerde kaç enerji kazanıldığını bul
+        const energyGained = Math.floor(timePassed / 3600000);
+        
+        if (energyGained > 0) {
+            const potentialEnergy = energy + energyGained;
+            if (potentialEnergy >= 10) {
+                // Enerji dolduysa
+                energy = 10;
+                energyRegenerationStartTime = 0;
+                nextEnergyTime = 0;
+            } else {
+                // Enerji arttı ama dolmadı. 
+                energy = potentialEnergy;
+                // Başlangıç zamanını ileri al (kazanılan enerjiler kadar)
+                energyRegenerationStartTime += (energyGained * 3600000);
+                // Bir sonraki enerji zamanı = Başlangıç + 1 saat
+                nextEnergyTime = energyRegenerationStartTime + 3600000;
+            }
+            saveData();
+            updateUI();
+        } else {
+            // Henüz 1 saat dolmamış
+            nextEnergyTime = energyRegenerationStartTime + 3600000;
+        }
       }
 
+      // Bu fonksiyon sadece anlık geri sayım gösterimi içindir, mantığı değiştirmez.
       function updateEnergyCountdown() {
         const energyStatus = document.getElementById("energyStatus");
         const energyUI = document.getElementById("energyUI");
         if (!energyStatus || !energyUI) return;
 
-        const now = Date.now();
         if (energy >= 10) {
           energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (FULL)`;
           energyUI.innerHTML = `⚡: ${energy}/10`;
-          energyRegenerationStartTime = 0;
-          nextEnergyTime = 0;
           return;
         }
 
-        if (energyRegenerationStartTime === 0) {
-          updateEnergyTimers();
-        }
-
+        const now = Date.now();
+        // Eğer bir sonraki enerji zamanı geldiyse, ana fonksiyonu çağırıp hesaplat
         if (nextEnergyTime > 0 && now >= nextEnergyTime) {
-          if (energy < 10) {
-            energy++;
-            updateEnergyTimers();
-            saveData();
-            updateUI();
-          }
+            updateOfflineEnergyRegeneration();
+            return;
         }
 
         if (nextEnergyTime > now) {
@@ -1515,7 +1492,7 @@ async function completeLoading() {
           energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (Next ${currentEnergyBeingRegenerated}/10 in ${formattedMinutes}:${formattedSeconds})`;
           energyUI.innerHTML = `⚡: ${energy}/10`;
         } else {
-          energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (Next energy ready!)`;
+          energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (Calculating...)`;
           energyUI.innerHTML = `⚡: ${energy}/10`;
         }
       }
@@ -1525,7 +1502,7 @@ async function completeLoading() {
           clearInterval(energyTimer);
         }
 
-        updateOfflineEnergyRegeneration();
+        updateOfflineEnergyRegeneration(); // İlk açılışta hesapla
         updateEnergyCountdown();
         energyTimer = setInterval(updateEnergyCountdown, 1000);
       }
@@ -2108,6 +2085,11 @@ async function executeTransaction(signer, amountETH, toAddress) {
           energy--;
           health = 3;
 
+          // Enerji 10'dan 9'a düşünce zamanlayıcıyı başlat
+          if (energyRegenerationStartTime === 0) {
+              energyRegenerationStartTime = Date.now();
+          }
+          
           updateEnergyTimers();
 
           saveData();
@@ -2466,4 +2448,3 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
-
