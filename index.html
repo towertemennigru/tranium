@@ -1494,49 +1494,59 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       async function sendETHPayment(amountETH) {
-        console.log("⚡ Farcaster (Warpcast) Protokolü Başlatılıyor...");
+        // DEBUG: Adım 1
+        alert("Adım 1: Fonksiyon Başladı. SDK Kontrol ediliyor...");
 
-        // 1. SDK Kontrolü: Farcaster ortamında mıyız?
-        // Bu kontrol hem mobilde hem de warpcast.com (PC) üzerinde çalışır.
         if (!window.farcasterSDK || !window.farcasterSDK.actions) {
-            alert("Hata: Farcaster bağlantısı kurulamadı!\n\nPC'de iseniz: Oyunu warpcast.com üzerinden açın.\nMobilde iseniz: Warpcast uygulamasını kullanın.");
+            alert("HATA: Farcaster SDK bulunamadı! Oyunu Warpcast içinden açtığınıza emin olun.");
             return false;
         }
 
         try {
-            // Miktarı Wei cinsine çevir (Hesaplama için ethers kullanıyoruz, bağlantı için değil)
-            const amountWei = ethers.parseEther(amountETH.toString()).toString();
+            // DEBUG: Adım 2
+            alert("Adım 2: SDK var. Context kontrol ediliyor...");
             
-            console.log("📤 İşlem Warpcast'e iletiliyor...");
+            // Context'i bekle (Bağlantı testi)
+            const context = await window.farcasterSDK.context;
+            // alert("Context OK: " + (context ? "Evet" : "Hayır")); // Gerekirse açılabilir
 
-            // SADECE VE SADECE SDK KULLANIYORUZ
-            // Bu komut Zerion'u, Metamask'ı vs. pas geçer.
-            // PC'de ise Warpcast Web arayüzünü, Mobilde ise Warpcast Uygulamasını tetikler.
+            // DEBUG: Adım 3
+            alert("Adım 3: Değer hesaplanıyor...");
+
+            // Ethers ile BigInt hesapla
+            const amountBigInt = ethers.parseEther(amountETH.toString());
+            // ÖNEMLİ: Değeri Hex String'e çevir (0x...)
+            const amountHex = "0x" + amountBigInt.toString(16);
+
+            alert("Gidecek Tutar (Hex): " + amountHex);
+
+            // DEBUG: Adım 4
+            alert("Adım 4: İşlem Warpcast'e gönderiliyor...");
+
             const result = await window.farcasterSDK.actions.sendTransaction({
                 transaction: {
                     to: PAYMENT_ADDRESS,
-                    value: amountWei,
-                    data: "0x", 
-                    chainId: 8453 // Base Network
+                    value: amountHex, // Düzeltme: Hex gönderiyoruz
+                    data: "0x",
+                    chainId: 8453 // Base Chain ID
                 }
             });
 
-            console.log("✅ SDK Yanıtı:", result);
+            // DEBUG: Adım 5
+            alert("Adım 5: Yanıt Geldi! " + JSON.stringify(result));
 
-            // Başarılı işlem kontrolü (Hash veya Transaction ID)
             if (result && (result.hash || result.transactionId)) {
-                const txHash = result.hash || result.transactionId;
-                console.log("🔗 TX Hash:", txHash);
+                console.log("TX Hash:", result.hash || result.transactionId);
                 return true; 
             }
             
-            // Eğer buraya düşerse kullanıcı pencereyi kapatmış veya işlem başarısız olmuştur
+            alert("İşlem gönderildi ama Hash dönmedi (İptal edilmiş olabilir).");
             return false;
 
         } catch (e) {
-            console.error("🚨 Farcaster Hatası:", e);
-            // Hata mesajını kullanıcıya gösterelim ki ne olduğunu anlasın
-            alert("İşlem gerçekleştirilemedi. Warpcast hesabınızın bağlı olduğundan emin olun.");
+            console.error("Farcaster SDK Hatası:", e);
+            // Hatayı tam olarak ekrana yazdıralım
+            alert("KRİTİK HATA: " + (e.message || e));
             return false;
         }
       }
@@ -1563,36 +1573,25 @@ Energy regenerates over time (1 per hour) even when you are offline.
         const ethCost = getUpgradeCost(currentLevel);
         const upgradeTime = getUpgradeTime(currentLevel);
         
-        const btn = document.getElementById(btnId);
-        if (!btn) return;
-
-        const originalText = btn.innerHTML;
-        // Kullanıcıya işlemin Warpcast üzerinden yürüdüğünü belirten mesaj
-        btn.innerHTML = "⚡ WARPCAST..."; 
-        btn.disabled = true; 
-
         // Ödeme fonksiyonunu çağır
         const paymentSuccess = await sendETHPayment(ethCost);
         
         if (!paymentSuccess) {
-          // Başarısız olursa butonu eski haline getir
-          btn.innerHTML = originalText;
-          btn.disabled = false;
+          // Başarısızsa dur
           return;
         }
 
-        // Başarılı olursa (Hash geldiyse) geliştirmeyi başlat
+        // Başarılıysa (Hash geldiyse) geliştirmeyi başlat
         if (type === "metal") {
           metalFacUpgradeEndTime = Date.now() + upgradeTime;
         } else if (type === "kristal") {
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        alert("✅ İşlem Warpcast tarafından teslim alındı! İnşaat başlıyor.");
+        alert("✅ Ödeme Başarılı! İnşaat başlıyor.");
         updateUI();
         saveData();
       }
-
       function formatTime(ms) {
         if (ms <= 0) return "00:00";
         const minutes = Math.floor(ms / 60000);
@@ -2173,6 +2172,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
 
 
 
