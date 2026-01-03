@@ -58,6 +58,14 @@
 };
 
     document.addEventListener('DOMContentLoaded', triggerReady);
+     // MEVCUT DEĞİŞKENLERİNİN ALTINA EKLE:
+let userWalletAddress = null; // Giriş yapan kullanıcının adresi
+
+// Helper: Cüzdan adresine özel key oluşturur
+function getStorageKey(key) {
+    if (!userWalletAddress) return key; // Giriş yoksa eski usul (dev mode)
+    return `${userWalletAddress}_${key}`;
+}
 </script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
@@ -1258,32 +1266,41 @@ Energy regenerates over time (1 per hour) even when you are offline.
         }
       }
 
-      if (localStorage.getItem("w_last_time")) {
-        metal = parseFloat(localStorage.getItem("w_metal")) || 0;
-        kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
-        tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
-        metalWorkers = parseInt(localStorage.getItem("w_mw")) || 0;
-        kristalWorkers = parseInt(localStorage.getItem("w_kw")) || 0;
-        metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
-        kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
+     // BU FONKSİYONU script içine ekle
+function loadGameData(address) {
+    userWalletAddress = address; // Adresi globale set et
+    
+    // Key'leri adrese göre kontrol et
+    const keyLastTime = getStorageKey("w_last_time");
 
-        let savedEnergy = localStorage.getItem("w_energy");
+    if (localStorage.getItem(keyLastTime)) {
+        metal = parseFloat(localStorage.getItem(getStorageKey("w_metal"))) || 0;
+        kristal = parseFloat(localStorage.getItem(getStorageKey("w_kristal"))) || 0;
+        tranium = parseInt(localStorage.getItem(getStorageKey("w_tranium"))) || 0;
+        metalWorkers = parseInt(localStorage.getItem(getStorageKey("w_mw"))) || 0;
+        kristalWorkers = parseInt(localStorage.getItem(getStorageKey("w_kw"))) || 0;
+        metalFacLvl = parseInt(localStorage.getItem(getStorageKey("w_mfl"))) || 1;
+        kristalFacLvl = parseInt(localStorage.getItem(getStorageKey("w_kfl"))) || 1;
+
+        let savedEnergy = localStorage.getItem(getStorageKey("w_energy"));
         if (savedEnergy !== null) {
-          energy = parseInt(savedEnergy);
+            energy = parseInt(savedEnergy);
         } else {
-          energy = 10;
+            energy = 10;
         }
 
-        lastTime = parseInt(localStorage.getItem("w_last_time")) || Date.now();
-
-        nextEnergyTime = parseInt(localStorage.getItem("w_next_energy_time")) || 0;
-        energyRegenerationStartTime = parseInt(localStorage.getItem("w_energy_reg_start")) || 0;
-
-        metalFacUpgradeEndTime = parseInt(localStorage.getItem("w_mfue")) || 0;
-        kristalFacUpgradeEndTime = parseInt(localStorage.getItem("w_kfue")) || 0;
+        lastTime = parseInt(localStorage.getItem(keyLastTime)) || Date.now();
+        nextEnergyTime = parseInt(localStorage.getItem(getStorageKey("w_next_energy_time"))) || 0;
+        energyRegenerationStartTime = parseInt(localStorage.getItem(getStorageKey("w_energy_reg_start"))) || 0;
+        metalFacUpgradeEndTime = parseInt(localStorage.getItem(getStorageKey("w_mfue"))) || 0;
+        kristalFacUpgradeEndTime = parseInt(localStorage.getItem(getStorageKey("w_kfue"))) || 0;
 
         updateOfflineEnergyRegeneration();
-      }
+    } else {
+        console.log("🆕 Yeni kullanıcı veya yeni cüzdan adresi. Sıfırdan başlanıyor.");
+    }
+}
+}
 
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
@@ -1297,17 +1314,49 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       // NEW: User Interaction to start the flow
-      function userEnterGame() {
-        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
-        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
+     async function userEnterGame() {
+    // 1. SDK Kontrolü
+    if (!window.farcasterSDK || !window.farcasterSDK.wallet) {
+        alert("Farcaster Cüzdanı bulunamadı! Lütfen mobil uygulamadan açın.");
+        // Test için (PC'deysen) bunu bypass edebilirsin ama prodüksiyonda kapalı tut.
+        return;
+    }
+
+    const btn = document.getElementById("enterBtn");
+    btn.innerHTML = "📝 IMZALANIYOR...";
+    btn.disabled = true;
+
+    try {
+        // 2. Provider ve Signer Oluştur
+        const provider = new ethers.BrowserProvider(window.farcasterSDK.wallet.ethProvider);
         
-        // 2. Hide Intro
-        const introOverlay = document.getElementById("introOverlay");
-        introOverlay.style.display = "none";
+        // Hesaplara erişim iste
+        await provider.send("eth_requestAccounts", []);
         
-        // 3. Start Loading
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        console.log("Cüzdan Adresi:", address);
+
+        // 3. İmza İste (Zorunlu kıldık)
+        const message = `Tranium Verse Login\nUser: ${address}\nTimestamp: ${Date.now()}`;
+        const signature = await signer.signMessage(message);
+        
+        console.log("İmza Alındı:", signature);
+
+        // 4. Giriş Başarılı: Verileri Yükle ve Oyunu Başlat
+        loadGameData(address);
+        
+        // Intro'yu kapat ve Yüklemeyi Başlat
+        document.getElementById("introOverlay").style.display = "none";
         startLoading();
-      }
+
+    } catch (error) {
+        console.error("Giriş Hatası:", error);
+        alert("Giriş Başarısız: " + (error.message || "İmza reddedildi."));
+        btn.innerHTML = "START SIMULATION";
+        btn.disabled = false;
+    }
+}
 
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
@@ -1942,20 +1991,22 @@ async function executeTransaction(signer, amountETH, toAddress) {
       }
 
       function saveData() {
-        localStorage.setItem("w_metal", metal);
-        localStorage.setItem("w_kristal", kristal);
-        localStorage.setItem("w_tranium", tranium);
-        localStorage.setItem("w_mw", metalWorkers);
-        localStorage.setItem("w_kw", kristalWorkers);
-        localStorage.setItem("w_mfl", metalFacLvl);
-        localStorage.setItem("w_kfl", kristalFacLvl);
-        localStorage.setItem("w_energy", energy);
-        localStorage.setItem("w_last_time", Date.now());
-        localStorage.setItem("w_next_energy_time", nextEnergyTime);
-        localStorage.setItem("w_energy_reg_start", energyRegenerationStartTime);
-        localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
-        localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
-      }
+    if (!userWalletAddress) return; // Giriş yapmadan kayıt alma
+
+    localStorage.setItem(getStorageKey("w_metal"), metal);
+    localStorage.setItem(getStorageKey("w_kristal"), kristal);
+    localStorage.setItem(getStorageKey("w_tranium"), tranium);
+    localStorage.setItem(getStorageKey("w_mw"), metalWorkers);
+    localStorage.setItem(getStorageKey("w_kw"), kristalWorkers);
+    localStorage.setItem(getStorageKey("w_mfl"), metalFacLvl);
+    localStorage.setItem(getStorageKey("w_kfl"), kristalFacLvl);
+    localStorage.setItem(getStorageKey("w_energy"), energy);
+    localStorage.setItem(getStorageKey("w_last_time"), Date.now());
+    localStorage.setItem(getStorageKey("w_next_energy_time"), nextEnergyTime);
+    localStorage.setItem(getStorageKey("w_energy_reg_start"), energyRegenerationStartTime);
+    localStorage.setItem(getStorageKey("w_mfue"), metalFacUpgradeEndTime);
+    localStorage.setItem(getStorageKey("w_kfue"), kristalFacUpgradeEndTime);
+}
 
       function spawnWorker() {
         const isM = Math.random() > 0.5;
@@ -2336,6 +2387,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
