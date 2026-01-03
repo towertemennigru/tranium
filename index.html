@@ -19,45 +19,6 @@
     <meta name="fc:miniapp" content="hosted" />
     
     <title>TRANIUM VERSE - Strategy Hub</title>
-    
-    <script type="module">
-        import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk@0.0.14';
-
-        // 1. Agresif Başlatma Fonksiyonu
-        const triggerReady = async () => {
-            try {
-                // Context'i en fazla 500ms bekle (hızlı açılış için)
-                await Promise.race([
-                    sdk.context,
-                    new Promise(resolve => setTimeout(resolve, 500))
-                ]);
-                
-                // READY sinyalini gönder (Splash ekranını kaldırır)
-                sdk.actions.ready();
-                console.log("✅ SDK Ready Signal Sent (Auto)");
-                
-            } catch (e) {
-                console.error("SDK Error:", e);
-                // Hata olsa bile sinyali gönder, kullanıcı takılı kalmasın
-                sdk.actions.ready();
-            }
-        };
-
-        // Sayfa yüklenir yüklenmez çalıştır
-        triggerReady();
-
-        // 2. Yedek Tetikleme (Fallback)
-        // Eğer ilk sinyal kaçarsa, 1 saniye sonra tekrar dene
-        setTimeout(() => {
-            sdk.actions.ready();
-            console.log("✅ Fallback Ready Signal Sent");
-        }, 1000);
-
-        // Global değişkenler
-        window.farcasterSDK = sdk;
-        window.isMiniApp = true;
-    </script>
-
     <style>
       :root {
         --gold: #ffcc00;
@@ -867,7 +828,7 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
   </head>
-   <body>
+  <body>
     <div id="introOverlay">
       <div class="intro-container">
         <div class="disease-logo">DISEASES GAMES</div>
@@ -1057,6 +1018,39 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
     <canvas id="gameCanvas"></canvas>
 
+    <script type="module">
+        import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk@0.0.14';
+
+        // Make SDK available globally safely
+        window.farcasterSDK = sdk;
+        window.isMiniApp = false;
+        
+        // Expose SDK Ready trigger for manual button
+        window.triggerSdkReady = () => {
+             try {
+                sdk.actions.ready();
+                window.isMiniApp = true;
+                console.log("✅ SDK Ready called via interaction");
+            } catch (e) {
+                console.error("⚠️ SDK Ready call failed:", e);
+            }
+        };
+
+        // Helper to get context if needed later
+        window.loadFarcasterContext = async () => {
+            try {
+                const context = await sdk.context;
+                window.farcasterContext = context;
+                console.log("✅ Context loaded:", context);
+            } catch (e) {
+                console.error("Context load error:", e);
+            }
+        };
+        
+        // Start fetching context in background
+        window.loadFarcasterContext();
+    </script>
+
     <script>
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
@@ -1224,8 +1218,10 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
       // NEW: User Interaction to start the flow
       function userEnterGame() {
-        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
-        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
+        // 1. Trigger SDK Ready (critical for Farcaster splash removal)
+        if (window.triggerSdkReady) {
+            window.triggerSdkReady();
+        }
         
         // 2. Hide Intro
         const introOverlay = document.getElementById("introOverlay");
@@ -2100,12 +2096,5 @@ Energy regenerates over time (1 per hour) even when you are offline.
         secureGameLoop();
       })();
     </script>
-     <script> 
-       'import { sdk } from “ @farcaster /frame-sdk /src /sdk ”`
-       frame.sdk.actions.ready(); 
-     </script>
   </body>
 </html>
-
-
-
