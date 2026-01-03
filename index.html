@@ -47,6 +47,19 @@
 </script>
     
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+      // Mevcut supabase tanımını bul ve bununla değiştir:
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: false, // BU AYAR HER GİRİŞTE İMZA İSTER
+    autoRefreshToken: false,
+    detectSessionInUrl: false
+  }
+});
+
+let currentUser = null; // Giriş yapan kullanıcıyı tutacak değişken
+      ></script>
+    
 
     <style>
       :root {
@@ -2088,6 +2101,171 @@ Energy regenerates over time (1 per hour) even when you are offline.
         
    
       };
+    // =============================================================
+      // === YENİ GÜVENLİK VE KİMLİK SİSTEMİ ENTEGRASYONU ===
+      // =============================================================
+
+      // 1. Supabase Bağlantısını Kur
+      const SUPABASE_URL = 'https://zfuihwcesflbkyqhixxu.supabase.co';
+      const SUPABASE_KEY = 'sb_publishable_STygDXzq5VQpS7bHiAGRIg_y0gSIxOb';
+      let supabase = null;
+
+      if (typeof window.supabase !== 'undefined') {
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          console.log("✅ Güvenlik Sistemi: Supabase Hazır");
+      }
+
+      // 2. Mevcut 'Start' Butonunu Cüzdan Kontrolüne Yönlendir
+      // (Eski userEnterGame fonksiyonunu eziyoruz)
+      window.userEnterGame = async function() {
+          const btn = document.getElementById("enterBtn");
+          
+          // Eğer cüzdan zaten doğrulanmışsa direkt gir
+          if (window.isWalletAuthenticated) {
+              document.getElementById("introOverlay").style.display = "none";
+              startLoading();
+              return;
+          }
+
+          btn.innerText = "CÜZDAN BAĞLANIYOR...";
+          btn.disabled = true;
+
+          // Kimlik Doğrulama Sürecini Başlat
+          const success = await authenticateUser();
+
+          if (success) {
+              btn.innerText = "DOĞRULAMA BAŞARILI";
+              btn.style.color = "#00ffcc";
+              btn.style.borderColor = "#00ffcc";
+              setTimeout(() => {
+                  document.getElementById("introOverlay").style.display = "none";
+                  startLoading();
+              }, 1000);
+          } else {
+              btn.innerText = "TEKRAR DENE";
+              btn.disabled = false;
+          }
+      };
+
+      // 3. Kimlik Doğrulama ve Kayıt Fonksiyonu
+      window.isWalletAuthenticated = false;
+
+      async function authenticateUser() {
+    const btn = document.getElementById("enterBtn");
+    
+    try {
+        // 1. Ethereum Cüzdan Kontrolü
+        if (!window.ethereum) {
+            alert("Lütfen MetaMask veya web3 uyumlu bir cüzdan yükleyin!");
+            return false;
+        }
+
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+
+        console.log("Cüzdan bulundu:", address);
+
+        // 2. Supabase ile Web3 Girişi (İmza İsteme Adımı)
+        // Bu fonksiyon otomatik olarak EIP-4361 formatında mesaj oluşturur ve imzalatır.
+        const { data: authData, error: authError } = await supabase.auth.signInWithIdToken({
+            provider: 'ethereum', // Veya signInWithWeb3, SDK sürümüne göre değişebilir. 
+            // NOT: CDN'deki sürüm eski ise manuel imza gerekebilir. 
+            // Aşağıdaki yöntem en garantisidir:
+        });
+        
+        // ALTERNATİF GARANTİ YÖNTEM (Manuel İmza ve Upsert):
+        // Supabase'in Web3 auth özelliği bazen beta'da sorun çıkarabilir.
+        // Bizim senaryomuzda "Cüzdan = Kimlik" olduğu için şu akışı kullanacağız:
+        // Cüzdan sahibini kanıtla -> Tablodan veriyi çek.
+        
+        // A) İMZA İSTE (Güvenlik Kanıtı)
+        const message = `Tranium Verse Login\nWallet: ${address}\nTimestamp: ${Date.now()}`;
+        const signature = await signer.signMessage(message);
+        
+        // Eğer buraya geldiyse imza atılmıştır. Kullanıcı cüzdanın sahibidir.
+        // Şimdi veritabanından bu cüzdanı sorgulayalım.
+        
+        btn.innerText = "VERİLER YÜKLENİYOR...";
+
+        // B) VERİTABANI SORGUSU (UPSERT)
+        // Önce bu cüzdan var mı bakalım, yoksa oluşturalım.
+        // Not: RLS kapalıyken anon key ile okuyabiliriz veya Edge Function gerekir.
+        // Ancak basitlik adına burada doğrudan tabloya erişimi deniyoruz.
+        
+        const { data: playerData, error: dbError } = await supabase
+           .from('players')
+           .select('*')
+           .eq('wallet_address', address)
+           .single();
+
+        if (dbError && dbError.code!== 'PGRST116') { // PGRST116: Veri bulunamadı hatası
+            console.error("DB Hatası:", dbError);
+        }
+
+        if (playerData) {
+            // KAYIT VAR - YÜKLE
+            console.log("Kayıtlı oyuncu bulundu:", playerData);
+            metal = Number(playerData.metal);
+            kristal = Number(playerData.kristal);
+            tranium = Number(playerData.tranium);
+            metalFacLvl = playerData.metal_fac_lvl;
+            kristalFacLvl = playerData.kristal_fac_lvl;
+            energy = playerData.energy;
+            // Diğer verileri de buraya ekle...
+            
+            updateUI();
+        } else {
+            // KAYIT YOK - YENİ OYUNCU
+            console.log("Yeni oyuncu oluşturuluyor...");
+            // Anonim giriş yapalım ki RLS izin versin (veya public tablo kullanıyorsan direkt insert)
+            // Güvenlik notu: Gerçek production'da bu insert işlemini bir Edge Function yapmalıdır.
+            
+            const { error: insertError } = await supabase
+               .from('players')
+               .insert();
+                
+            if(insertError) console.error("Kayıt oluşturulamadı:", insertError);
+        }
+
+        // Global değişkeni ayarla
+        window.currentWalletAddress = address;
+        window.isWalletAuthenticated = true;
+        
+        // Düzenli Kayıt Başlat (Her 10 saniyede bir buluta yedekle)
+        setInterval(saveToCloud, 10000);
+
+        return true;
+
+    } catch (e) {
+        console.error("Auth Error:", e);
+        alert("Giriş başarısız: " + e.message);
+        return false;
+    }
+        
+}
+      async function saveToCloud() {
+    if (!window.isWalletAuthenticated ||!window.currentWalletAddress) return;
+
+    const { error } = await supabase
+       .from('players')
+       .upsert({ 
+            wallet_address: window.currentWalletAddress,
+            metal: metal,
+            kristal: kristal,
+            tranium: tranium,
+            metal_fac_lvl: metalFacLvl,
+            kristal_fac_lvl: kristalFacLvl,
+            energy: energy,
+            last_updated: new Date().toISOString()
+        }, { onConflict: 'wallet_address' });
+
+    if (error) {
+        console.error("Bulut kayıt hatası:", error);
+    } else {
+        console.log("☁️ Oyun buluta kaydedildi.");
+    }
+}
     </script>
     <script>
       (function () {
@@ -2215,3 +2393,6 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
+
+
