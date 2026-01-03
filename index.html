@@ -69,6 +69,7 @@ function getStorageKey(key) {
 </script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script type="module">
     import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
@@ -220,22 +221,11 @@ function getStorageKey(key) {
         font-weight: 300;
         letter-spacing: 2px;
       }
-      #enterBtn {
-        margin-top: 40px;
-        background: transparent;
-        color: var(--neon);
-        border: 2px solid var(--neon);
-        padding: 15px 40px;
-        font-size: 18px;
-        font-weight: 900;
-        letter-spacing: 3px;
-        cursor: pointer;
-        text-transform: uppercase;
-        box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
-        transition: all 0.3s ease;
-        animation: btnPulse 2s infinite;
-        display: none; 
-      }
+     #enterBtn {
+    /* ...diğer ayarlar... */
+    display: block; /* Eskiden 'none' idi, bunu 'block' yap */
+    margin: 40px auto 0 auto; /* Ortalamak için */
+}
       #enterBtn:active {
         background: var(--neon);
         color: #000;
@@ -2387,6 +2377,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
