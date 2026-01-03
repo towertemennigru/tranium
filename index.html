@@ -22,28 +22,46 @@
     <title>TRANIUM VERSE - Strategy Hub</title>
     
    <script type="module">
-    // En güncel Frame SDK'sını çekiyoruz
-    import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
+    import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
+    import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@1.6.0';
+    import { base } from 'https://esm.sh/@reown/appkit/networks@1.6.0';
 
-    // SDK'yı global değişkene atıyoruz ki her yerden erişelim
-    window.farcasterSDK = sdk;
-    window.isMiniApp = true;
+    // Global kütüphane
+    window.AppKitLib = { createAppKit, EthersAdapter, networks: [base] };
 
-    const triggerReady = async () => {
+    // GLOBAL CÜZDAN DEĞİŞKENİ (ÖNEMLİ)
+    window.appKitModal = null;
+
+    async function initWalletSystem() {
+        if (!window.AppKitLib) { setTimeout(initWalletSystem, 1000); return; }
+        if (window.appKitModal) return;
+
         try {
-            // SDK'nın yüklenmesini bekle
-            await sdk.context;
-            sdk.actions.ready();
-            console.log("✅ SDK Ready");
+            const { createAppKit, EthersAdapter, networks } = window.AppKitLib;
             
-            // Varsa intro'yu başlat
-            if(window.startIntro) window.startIntro();
+            // Modal'ı oluşturup WINDOW'a atıyoruz
+            window.appKitModal = createAppKit({
+                adapters: [new EthersAdapter()],
+                networks,
+                metadata: {
+                    name: 'Tranium Verse',
+                    description: 'Mining Game',
+                    url: 'https://tranium-xi.vercel.app',
+                    icons: ['https://tranium-xi.vercel.app/preview.jpg']
+                },
+                projectId: '2c7a5c244856e6edb4c52e0d4e61fadb',
+                features: { analytics: true }
+            });
+            console.log("✅ Cüzdan Sistemi Global Olarak Hazır");
         } catch (e) {
-            console.error("SDK Init Error:", e);
+            console.error("AppKit Hatası:", e);
         }
-    };
-
-    document.addEventListener('DOMContentLoaded', triggerReady);
+    }
+    
+    // Başlatıcılar
+    window.initWalletSystem = initWalletSystem;
+    document.addEventListener('DOMContentLoaded', initWalletSystem);
+    window.addEventListener('load', initWalletSystem);
 </script>
     
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
@@ -2334,8 +2352,90 @@ Energy regenerates over time (1 per hour) even when you are offline.
         }
     }, 2000);
 </script>
-  </body>
+<script>
+    // --- GÜVENLİK VE GİRİŞ SİSTEMİ ---
+    
+    // 1. Supabase Bağlantısı
+    const S_URL = 'https://zfuihwcesflbkyqhixxu.supabase.co';
+    const S_KEY = 'sb_publishable_STygDXzq5VQpS7bHiAGRIg_y0gSIxOb';
+    let mySupabase = null;
+    if (typeof window.supabase !== 'undefined') mySupabase = window.supabase.createClient(S_URL, S_KEY);
+
+    // 2. Start Butonunu Eziyoruz
+    window.userEnterGame = async function() {
+        const btn = document.getElementById("enterBtn");
+        
+        // Zaten girişliyse direkt aç
+        if (window.isWalletAuthenticated) {
+            document.getElementById("introOverlay").style.display = "none";
+            startLoading();
+            return;
+        }
+
+        const oldText = btn.innerText;
+        btn.innerText = "CÜZDAN BAĞLANIYOR...";
+        btn.disabled = true;
+        btn.style.opacity = "0.7";
+
+        try {
+            // AppKit kontrolü
+            if (!window.appKitModal) {
+                if(window.initWalletSystem) window.initWalletSystem(); // Zorla başlat
+                await new Promise(r => setTimeout(r, 2000)); // 2sn bekle
+                if(!window.appKitModal) throw new Error("Cüzdan sistemi yüklenemedi. Sayfayı yenileyin.");
+            }
+
+            // A) Bağlan
+            if (!window.appKitModal.getIsConnected()) {
+                await window.appKitModal.open();
+                await new Promise(r => {
+                    const i = setInterval(() => {
+                        if(window.appKitModal.getIsConnected()) { clearInterval(i); r(); }
+                    }, 500);
+                });
+            }
+
+            // B) İmzala
+            const provider = new ethers.BrowserProvider(window.appKitModal.getProvider());
+            const signer = await provider.getSigner();
+            const address = await signer.getAddress();
+            
+            btn.innerText = "İMZA İSTENİYOR...";
+            const msg = `Tranium Verse Login\nFID: ${window.userFID || 'Guest'}\nWallet: ${address}`;
+            await signer.signMessage(msg);
+
+            // C) Kaydet
+            if (mySupabase && window.userFID) {
+                await mySupabase.from('players').upsert({
+                    fid: window.userFID,
+                    wallet_address: address,
+                    last_login: new Date().toISOString()
+                }, { onConflict: 'fid' });
+            }
+
+            // D) Başlat
+            window.isWalletAuthenticated = true;
+            btn.innerText = "BAŞARILI ✅";
+            btn.style.color = "#00ff00";
+            btn.style.borderColor = "#00ff00";
+            
+            setTimeout(() => {
+                document.getElementById("introOverlay").style.display = "none";
+                startLoading();
+            }, 800);
+
+        } catch (e) {
+            console.error(e);
+            alert("Giriş başarısız: " + (e.message || "İptal edildi."));
+            btn.innerText = oldText;
+            btn.disabled = false;
+            btn.style.opacity = "1";
+        }
+    };
+</script>  
+</body>
 </html>
+
 
 
 
