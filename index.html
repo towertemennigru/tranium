@@ -23,45 +23,39 @@
     <script type="module">
         import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk@0.0.14';
 
-        // SDK'yı global yap
-        window.farcasterSDK = sdk;
-        window.isMiniApp = true;
-
-        const safeLaunch = async () => {
-            console.log("🚀 Starting Safe Launch Sequence...");
-
-            // 1. DOM'un tamamen hazır olduğundan emin ol
-            if (document.readyState === 'loading') {
-                await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
-            }
-
-            // 2. Kritik UI elementinin (Intro) varlığını kontrol et
-            const intro = document.getElementById("introOverlay");
-            if (intro) {
-                console.log("✅ UI Detected");
-            }
-
-            // 3. Context'i bekle (Timeoutlu - maks 500ms)
-            // Bu adım context gelmese bile oyunun açılmasını sağlar
+        // 1. Agresif Başlatma Fonksiyonu
+        const triggerReady = async () => {
             try {
+                // Context'i en fazla 500ms bekle (hızlı açılış için)
                 await Promise.race([
                     sdk.context,
-                    new Promise(r => setTimeout(r, 500))
+                    new Promise(resolve => setTimeout(resolve, 500))
                 ]);
-            } catch (e) { console.warn("Context wait", e); }
-
-            // 4. EKRAN BOYAMASINI BEKLE (En Önemli Kısım)
-            // Tarayıcının 'paint' işlemini yapması için bir frame atlatıyoruz.
-            // Bu, "SDK ready called too early" hatasının kesin çözümüdür.
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    sdk.actions.ready();
-                    console.log("✅ SDK READY SENT (After UI Paint)");
-                }, 50); // 50ms ekstra tampon süre
-            });
+                
+                // READY sinyalini gönder (Splash ekranını kaldırır)
+                sdk.actions.ready();
+                console.log("✅ SDK Ready Signal Sent (Auto)");
+                
+            } catch (e) {
+                console.error("SDK Error:", e);
+                // Hata olsa bile sinyali gönder, kullanıcı takılı kalmasın
+                sdk.actions.ready();
+            }
         };
 
-        safeLaunch();
+        // Sayfa yüklenir yüklenmez çalıştır
+        triggerReady();
+
+        // 2. Yedek Tetikleme (Fallback)
+        // Eğer ilk sinyal kaçarsa, 1 saniye sonra tekrar dene
+        setTimeout(() => {
+            sdk.actions.ready();
+            console.log("✅ Fallback Ready Signal Sent");
+        }, 1000);
+
+        // Global değişkenler
+        window.farcasterSDK = sdk;
+        window.isMiniApp = true;
     </script>
 
     <style>
@@ -98,8 +92,6 @@
         touch-action: none;
         image-rendering: pixelated;
       }
-      
-      /* GÜNCELLEME: Intro Overlay varsayılan olarak görünür (Siyah ekranı önler) */
       #introOverlay {
         position: fixed;
         top: 0;
@@ -107,14 +99,13 @@
         width: 100%;
         height: 100%;
         background: linear-gradient(45deg, #000000 0%, #1a0000 50%, #000000 100%);
-        display: flex; /* Flex olarak başlatıyoruz */
+        display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         z-index: 1000;
         overflow: hidden;
       }
-      
       .intro-container {
         text-align: center;
         position: relative;
@@ -170,8 +161,7 @@
         font-weight: 300;
         letter-spacing: 2px;
       }
-      
-      /* Start Button */
+      /* NEW ENTER BUTTON STYLE */
       #enterBtn {
         margin-top: 40px;
         background: transparent;
@@ -186,7 +176,7 @@
         box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
         transition: all 0.3s ease;
         animation: btnPulse 2s infinite;
-        display: block; /* Buton her zaman görünür olsun */
+        display: none; /* Hidden initially */
       }
       #enterBtn:active {
         background: var(--neon);
@@ -877,7 +867,7 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
   </head>
-  <body>
+   <body>
     <div id="introOverlay">
       <div class="intro-container">
         <div class="disease-logo">DISEASES GAMES</div>
@@ -1221,8 +1211,22 @@ Energy regenerates over time (1 per hour) even when you are offline.
         updateOfflineEnergyRegeneration();
       }
 
+      function startIntro() {
+        const introOverlay = document.getElementById("introOverlay");
+        introOverlay.style.display = "flex";
+        
+        // Show the Enter button after a short delay
+        setTimeout(() => {
+           const btn = document.getElementById("enterBtn");
+           if(btn) btn.style.display = "block";
+        }, 800);
+      }
+
       // NEW: User Interaction to start the flow
       function userEnterGame() {
+        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
+        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
+        
         // 2. Hide Intro
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "none";
@@ -1993,8 +1997,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       // Initial call to setup the intro screen
-      // window.onload yerine artık aşağıdakini kullanmıyoruz çünkü SDK scripti yönetiyor
-      // window.onload = startIntro; 
+      window.onload = startIntro;
     </script>
     <script>
       (function () {
@@ -2097,5 +2100,11 @@ Energy regenerates over time (1 per hour) even when you are offline.
         secureGameLoop();
       })();
     </script>
+     <script> 
+       'import { sdk } from “ @farcaster /frame-sdk /src /sdk ”`
+       frame.sdk.actions.ready(); 
+     </script>
   </body>
 </html>
+
+
