@@ -30,60 +30,23 @@
     window.isMiniApp = true;
 
     const triggerReady = async () => {
-    try {
-        // SDK'nın context (bağlam) bilgisini bekle
-        const context = await sdk.context;
-
-        // Eğer context gelirse (yani Farcaster içindeysek)
-        if (context) {
-            console.log("✅ Farcaster Environment Detected");
-            
-            // Engelleyici ekranı kaldır
-            document.getElementById("desktop-blocker").style.display = "none";
-            
-            // SDK'ya hazır olduğumuzu bildir
+        try {
+            // SDK'nın yüklenmesini bekle
+            await sdk.context;
             sdk.actions.ready();
-
+            console.log("✅ SDK Ready");
+            
             // Varsa intro'yu başlat
             if(window.startIntro) window.startIntro();
-        } else {
-            // Context yoksa (Normal tarayıcı)
-            console.warn("❌ Not in Farcaster");
-            // Engelleyici ekran kalmaya devam eder
+        } catch (e) {
+            console.error("SDK Init Error:", e);
         }
-    } catch (e) {
-        console.error("SDK Init Error:", e);
-        // Hata olursa da engelleyici ekran kalır
-    }
-};
+    };
 
     document.addEventListener('DOMContentLoaded', triggerReady);
-     // MEVCUT DEĞİŞKENLERİNİN ALTINA EKLE:
-let userWalletAddress = null; // Giriş yapan kullanıcının adresi
-
-// Helper: Cüzdan adresine özel key oluşturur
-function getStorageKey(key) {
-    if (!userWalletAddress) return key; // Giriş yoksa eski usul (dev mode)
-    return `${userWalletAddress}_${key}`;
-}
 </script>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script type="module">
-    import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
-    import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@1.6.0';
-    import { base } from 'https://esm.sh/@reown/appkit/networks@1.6.0';
-
-    // Global erişim için window'a atıyoruz
-    window.AppKitLib = {
-        createAppKit,
-        EthersAdapter,
-        networks: [base]
-    };
-    console.log("AppKit Kütüphaneleri Yüklendi");
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
 
     <style>
       :root {
@@ -221,11 +184,22 @@ function getStorageKey(key) {
         font-weight: 300;
         letter-spacing: 2px;
       }
-     #enterBtn {
-    /* ...diğer ayarlar... */
-    display: block; /* Eskiden 'none' idi, bunu 'block' yap */
-    margin: 40px auto 0 auto; /* Ortalamak için */
-}
+      #enterBtn {
+        margin-top: 40px;
+        background: transparent;
+        color: var(--neon);
+        border: 2px solid var(--neon);
+        padding: 15px 40px;
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 3px;
+        cursor: pointer;
+        text-transform: uppercase;
+        box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+        transition: all 0.3s ease;
+        animation: btnPulse 2s infinite;
+        display: none; 
+      }
       #enterBtn:active {
         background: var(--neon);
         color: #000;
@@ -926,10 +900,6 @@ function getStorageKey(key) {
     </style>
   </head>
    <body>
-     <div id="desktop-blocker" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:red; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
-    <h1>ONLY FOR FARCASTER</h1>
-    <p>This game can only be played through Farcaster</p>
-</div>
     <div id="introOverlay">
       <div class="intro-container">
         <div class="disease-logo">DISEASES GAMES</div>
@@ -1256,41 +1226,32 @@ Energy regenerates over time (1 per hour) even when you are offline.
         }
       }
 
-     // BU FONKSİYONU script içine ekle
-function loadGameData(address) {
-    userWalletAddress = address; // Adresi globale set et
-    
-    // Key'leri adrese göre kontrol et
-    const keyLastTime = getStorageKey("w_last_time");
+      if (localStorage.getItem("w_last_time")) {
+        metal = parseFloat(localStorage.getItem("w_metal")) || 0;
+        kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
+        tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
+        metalWorkers = parseInt(localStorage.getItem("w_mw")) || 0;
+        kristalWorkers = parseInt(localStorage.getItem("w_kw")) || 0;
+        metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
+        kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
 
-    if (localStorage.getItem(keyLastTime)) {
-        metal = parseFloat(localStorage.getItem(getStorageKey("w_metal"))) || 0;
-        kristal = parseFloat(localStorage.getItem(getStorageKey("w_kristal"))) || 0;
-        tranium = parseInt(localStorage.getItem(getStorageKey("w_tranium"))) || 0;
-        metalWorkers = parseInt(localStorage.getItem(getStorageKey("w_mw"))) || 0;
-        kristalWorkers = parseInt(localStorage.getItem(getStorageKey("w_kw"))) || 0;
-        metalFacLvl = parseInt(localStorage.getItem(getStorageKey("w_mfl"))) || 1;
-        kristalFacLvl = parseInt(localStorage.getItem(getStorageKey("w_kfl"))) || 1;
-
-        let savedEnergy = localStorage.getItem(getStorageKey("w_energy"));
+        let savedEnergy = localStorage.getItem("w_energy");
         if (savedEnergy !== null) {
-            energy = parseInt(savedEnergy);
+          energy = parseInt(savedEnergy);
         } else {
-            energy = 10;
+          energy = 10;
         }
 
-        lastTime = parseInt(localStorage.getItem(keyLastTime)) || Date.now();
-        nextEnergyTime = parseInt(localStorage.getItem(getStorageKey("w_next_energy_time"))) || 0;
-        energyRegenerationStartTime = parseInt(localStorage.getItem(getStorageKey("w_energy_reg_start"))) || 0;
-        metalFacUpgradeEndTime = parseInt(localStorage.getItem(getStorageKey("w_mfue"))) || 0;
-        kristalFacUpgradeEndTime = parseInt(localStorage.getItem(getStorageKey("w_kfue"))) || 0;
+        lastTime = parseInt(localStorage.getItem("w_last_time")) || Date.now();
+
+        nextEnergyTime = parseInt(localStorage.getItem("w_next_energy_time")) || 0;
+        energyRegenerationStartTime = parseInt(localStorage.getItem("w_energy_reg_start")) || 0;
+
+        metalFacUpgradeEndTime = parseInt(localStorage.getItem("w_mfue")) || 0;
+        kristalFacUpgradeEndTime = parseInt(localStorage.getItem("w_kfue")) || 0;
 
         updateOfflineEnergyRegeneration();
-    } else {
-        console.log("🆕 Yeni kullanıcı veya yeni cüzdan adresi. Sıfırdan başlanıyor.");
-    }
-}
-}
+      }
 
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
@@ -1304,49 +1265,17 @@ function loadGameData(address) {
       }
 
       // NEW: User Interaction to start the flow
-     async function userEnterGame() {
-    // 1. SDK Kontrolü
-    if (!window.farcasterSDK || !window.farcasterSDK.wallet) {
-        alert("Farcaster Cüzdanı bulunamadı! Lütfen mobil uygulamadan açın.");
-        // Test için (PC'deysen) bunu bypass edebilirsin ama prodüksiyonda kapalı tut.
-        return;
-    }
-
-    const btn = document.getElementById("enterBtn");
-    btn.innerHTML = "📝 IMZALANIYOR...";
-    btn.disabled = true;
-
-    try {
-        // 2. Provider ve Signer Oluştur
-        const provider = new ethers.BrowserProvider(window.farcasterSDK.wallet.ethProvider);
+      function userEnterGame() {
+        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
+        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
         
-        // Hesaplara erişim iste
-        await provider.send("eth_requestAccounts", []);
+        // 2. Hide Intro
+        const introOverlay = document.getElementById("introOverlay");
+        introOverlay.style.display = "none";
         
-        const signer = await provider.getSigner();
-        const address = await signer.getAddress();
-        console.log("Cüzdan Adresi:", address);
-
-        // 3. İmza İste (Zorunlu kıldık)
-        const message = `Tranium Verse Login\nUser: ${address}\nTimestamp: ${Date.now()}`;
-        const signature = await signer.signMessage(message);
-        
-        console.log("İmza Alındı:", signature);
-
-        // 4. Giriş Başarılı: Verileri Yükle ve Oyunu Başlat
-        loadGameData(address);
-        
-        // Intro'yu kapat ve Yüklemeyi Başlat
-        document.getElementById("introOverlay").style.display = "none";
+        // 3. Start Loading
         startLoading();
-
-    } catch (error) {
-        console.error("Giriş Hatası:", error);
-        alert("Giriş Başarısız: " + (error.message || "İmza reddedildi."));
-        btn.innerHTML = "START SIMULATION";
-        btn.disabled = false;
-    }
-}
+      }
 
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
@@ -1563,189 +1492,100 @@ function loadGameData(address) {
         return `${hours}h ${minutes}m`;
       }
 
-      // --- BU KISMI SCRIPT'İN EN BAŞINA, DEĞİŞKEN TANIMLARININ ALTINA EKLEYİN ---
+      async function sendETHPayment(amountETH) {
+        console.log("Ödeme süreci başlatılıyor...");
 
-// WalletConnect Project ID (Burası ücretsizdir, kendi ID'nizi cloud.reown.com'dan almanız önerilir)
-// Test için bu ID'yi kullanabilirsin ama prodüksiyon için kendi ID'ni al.
-const PROJECT_ID = '2c7a5c244856e6edb4c52e0d4e61fadb'; 
+        // 1. Önce SDK içindeki Provider'ı kontrol et (Farcaster Mobil/Web için Asıl Yöntem)
+        // Farcaster, cüzdanı 'sdk.wallet.ethProvider' içine gizler.
+        let ethProvider = window.ethereum; // Varsayılan (PC tarayıcı için)
 
-let appKitModal = null;
-let appKitAdapter = null;
-
-
-// Sistemi Başlatan Fonksiyon
-async function initWalletSystem() {
-    // 1. Kütüphane kontrolü (Eğer yüklenmediyse 1 saniye sonra tekrar dener)
-    if (!window.AppKitLib) {
-        console.log("⚠️ AppKit kütüphanesi henüz hazır değil, bekleniyor...");
-        setTimeout(initWalletSystem, 1000);
-        return;
-    }
-
-    // 2. Eğer zaten yüklendiyse tekrar yükleme
-    if (appKitModal) return;
-
-    try {
-        const { createAppKit, EthersAdapter, networks } = window.AppKitLib;
-
-        const metadata = {
-            name: 'Tranium Verse',
-            description: 'Resource Mining Game',
-            url: 'https://tranium-xi.vercel.app', 
-            icons: ['https://tranium-xi.vercel.app/preview.jpg']
-        };
-
-        appKitModal = createAppKit({
-            adapters: [new EthersAdapter()],
-            networks,
-            metadata,
-            projectId: PROJECT_ID,
-            features: {
-                analytics: true 
-            }
-        });
-        console.log("✅ PC Cüzdan Sistemi (AppKit) Hazır");
-    } catch (e) {
-        console.error("AppKit Başlatma Hatası:", e);
-    }
-}
-
-// Sayfa yüklenince başlat
-document.addEventListener('DOMContentLoaded', initWalletSystem);
-// Yedek olarak pencere tam yüklendiğinde de tetikle (PC'deki tepkisizliği önlemek için)
-window.addEventListener('load', initWalletSystem);
-
-
-// --- ÖDEME FONKSİYONU ---
-async function sendETHPayment(amountETH) {
-    console.log("🚀 Ödeme süreci başlatılıyor...");
-    const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
-
-    try {
-        let signer;
-        let provider;
-
-        // SENARYO 1: MOBİL MİNİAPP (Farcaster SDK)
         if (window.farcasterSDK && window.farcasterSDK.wallet && window.farcasterSDK.wallet.ethProvider) {
-            console.log("📱 Mobil Ortam: Farcaster Provider");
-            const ethProvider = window.farcasterSDK.wallet.ethProvider;
-            provider = new ethers.BrowserProvider(ethProvider);
+            console.log("✅ Farcaster Dahili Cüzdanı Algılandı");
+            ethProvider = window.farcasterSDK.wallet.ethProvider;
+        }
+
+        // Eğer hiçbir cüzdan sağlayıcısı yoksa hata ver
+        if (!ethProvider) {
+            alert("Cüzdan ortamı bulunamadı. Farcaster uygulamasının güncel olduğundan emin olun.");
+            return false;
+        }
+
+        try {
+            // 2. Ethers Provider'ı, bulduğumuz kaynağa (ethProvider) göre kuruyoruz
+            const provider = new ethers.BrowserProvider(ethProvider);
             
-            // Hesaplara erişim
-            await provider.send("eth_requestAccounts", []);
-            
-            // Ağ Kontrolü (Base: 8453)
+            // 3. İzin İste (Bu satır mobilde çekmeceyi açar)
+            const accounts = await provider.send("eth_requestAccounts", []);
+            if (!accounts || accounts.length === 0) {
+                alert("Cüzdan erişim izni verilmedi.");
+                return false;
+            }
+
+            const signer = await provider.getSigner();
+
+            // 4. Ağ Kontrolü (Base: 8453)
             const network = await provider.getNetwork();
-            if (Number(network.chainId) !== 8453) {
-                 try {
+            const chainId = Number(network.chainId);
+            
+            if (chainId !== 8453) {
+                try {
                     await ethProvider.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: '0x2105' }], 
+                        method: "wallet_switchEthereumChain",
+                        params: [{ chainId: "0x2105" }], // 8453 hex
                     });
-                } catch (e) {
-                    alert("Lütfen cüzdan ağınızı Base Network yapın.");
-                    return false;
-                }
-            }
-            signer = await provider.getSigner();
-        } 
-        
-        // SENARYO 2: PC / TARAYICI (QR Kod)
-        else {
-            console.log("💻 PC Ortamı: AppKit");
-            
-            // Kütüphane yüklenmemişse uyar
-            if (!window.AppKitLib) {
-                alert("Sistem hazırlanıyor, lütfen 3 saniye sonra tekrar deneyin.");
-                initWalletSystem(); // Zorla başlatmayı dene
-                return false;
-            }
-
-            if (!appKitModal) {
-                await initWalletSystem();
-                if(!appKitModal) {
-                    alert("Bağlantı modülü yüklenemedi. Sayfayı yenileyip tekrar deneyin.");
-                    return false;
-                }
-            }
-
-            if (!appKitModal.getIsConnected()) {
-                await appKitModal.open();
-                // Kullanıcı bağlandığında işlemi yakalamak için loop
-                return new Promise((resolve) => {
-                    const checkInterval = setInterval(async () => {
-                        if (appKitModal.getIsConnected()) {
-                            clearInterval(checkInterval);
-                            setTimeout(async () => {
-                                resolve(await proceedWithPayment(amountETH));
-                            }, 1000); // Bağlantı otursun diye 1sn bekle
+                } catch (switchError) {
+                    // Zincir ekleme hatası (4902)
+                    if (switchError.code === 4902) {
+                        try {
+                            await ethProvider.request({
+                                method: "wallet_addEthereumChain",
+                                params: [{
+                                    chainId: "0x2105",
+                                    chainName: "Base",
+                                    nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+                                    rpcUrls: ["https://mainnet.base.org"],
+                                    blockExplorerUrls: ["https://basescan.org"]
+                                }]
+                            });
+                        } catch (addError) {
+                            alert("Base ağına geçiş yapılamadı: " + addError.message);
+                            return false;
                         }
-                    }, 1000);
-                });
+                    } else {
+                        alert("Lütfen ağınızı Base Network olarak değiştirin.");
+                        return false;
+                    }
+                }
             }
+
+            // 5. İşlemi Gönder
+            const amountWei = ethers.parseEther(amountETH.toString());
             
-            const walletProvider = appKitModal.getProvider();
-            if (!walletProvider) {
-                alert("Cüzdan sağlayıcısı bulunamadı. Lütfen tekrar bağlayın.");
-                return false;
+            console.log("İşlem gönderiliyor...");
+            
+            // Cüzdan onay ekranını açar
+            const tx = await signer.sendTransaction({
+                to: PAYMENT_ADDRESS,
+                value: amountWei
+            });
+
+            console.log("TX Hash:", tx.hash);
+            
+            // Hash geldiyse başarılı sayıyoruz, onayı beklemiyoruz (donmayı önlemek için)
+            return true;
+
+        } catch (error) {
+            console.error("Ödeme Hatası:", error);
+            
+            // Kullanıcı reddettiyse
+            if (error.code === 4001 || (error.message && error.message.includes("rejected"))) {
+                alert("İşlem iptal edildi.");
+            } else {
+                alert("Hata: " + (error.shortMessage || error.message || "Bilinmeyen hata"));
             }
-            provider = new ethers.BrowserProvider(walletProvider);
-            signer = await provider.getSigner();
+            return false;
         }
-
-        // --- ORTAK İŞLEM GÖNDERME ---
-        return await executeTransaction(signer, amountETH, PAYMENT_ADDRESS);
-
-    } catch (error) {
-        console.error("Ödeme Başlatma Hatası:", error);
-        alert("Hata: " + (error.message || "Bilinmeyen hata"));
-        return false;
-    }
-}
-
-// Yardımcı Fonksiyon: Recursive çağrı için
-async function proceedWithPayment(amountETH) {
-    return await sendETHPayment(amountETH);
-}
-
-// ASIL İŞLEM FONKSİYONU (DÜZELTİLDİ)
-async function executeTransaction(signer, amountETH, toAddress) {
-    try {
-        const amountWei = ethers.parseEther(amountETH.toString());
-        console.log("💸 İşlem gönderiliyor... Miktar:", amountETH);
-
-        // --- MOBİL HATASI İÇİN KRİTİK DÜZELTME ---
-        // gasLimit: 21000 ekleyerek 'estimateGas' hatasını bypass ediyoruz.
-        // Standart ETH transferi her zaman 21000 gas yer.
-        const tx = await signer.sendTransaction({
-            to: toAddress,
-            value: amountWei,
-            gasLimit: 21000 // <--- BU SATIR "estimateGas" HATASINI ÇÖZER
-        });
-
-        console.log("✅ TX Hash:", tx.hash);
-        alert("İşlem Başarılı! Onay bekleniyor...");
-        return true;
-
-    } catch (error) {
-        console.error("TX Hatası:", error);
-        
-        // Hatayı analiz et ve kullanıcıya düzgün mesaj ver
-        let msg = error.message || "";
-        
-        if (msg.includes("insufficient funds") || error.code === "INSUFFICIENT_FUNDS") {
-            alert("YETERSİZ BAKİYE: Cüzdanınızda işlem ücreti (Gas) ve ödeme için yeterli ETH yok.");
-        } else if (msg.includes("rejected") || error.code === 4001) {
-            alert("İşlemi reddettiniz.");
-        } else if (msg.includes("estimateGas") || msg.includes("missing revert data")) {
-            // Gas limit eklememize rağmen bu hatayı alıyorsa, kesinlikle bakiye yetersizdir.
-            alert("İŞLEM BAŞARISIZ: Lütfen Base ağında ETH bakiyenizi kontrol edin.");
-        } else {
-            alert("Ödeme Hatası: " + msg.slice(0, 50) + "...");
-        }
-        return false;
-    }
-}
+      }
       async function upgradeFactory(type) {
         let currentLevel;
         let btnId; 
@@ -1981,22 +1821,20 @@ async function executeTransaction(signer, amountETH, toAddress) {
       }
 
       function saveData() {
-    if (!userWalletAddress) return; // Giriş yapmadan kayıt alma
-
-    localStorage.setItem(getStorageKey("w_metal"), metal);
-    localStorage.setItem(getStorageKey("w_kristal"), kristal);
-    localStorage.setItem(getStorageKey("w_tranium"), tranium);
-    localStorage.setItem(getStorageKey("w_mw"), metalWorkers);
-    localStorage.setItem(getStorageKey("w_kw"), kristalWorkers);
-    localStorage.setItem(getStorageKey("w_mfl"), metalFacLvl);
-    localStorage.setItem(getStorageKey("w_kfl"), kristalFacLvl);
-    localStorage.setItem(getStorageKey("w_energy"), energy);
-    localStorage.setItem(getStorageKey("w_last_time"), Date.now());
-    localStorage.setItem(getStorageKey("w_next_energy_time"), nextEnergyTime);
-    localStorage.setItem(getStorageKey("w_energy_reg_start"), energyRegenerationStartTime);
-    localStorage.setItem(getStorageKey("w_mfue"), metalFacUpgradeEndTime);
-    localStorage.setItem(getStorageKey("w_kfue"), kristalFacUpgradeEndTime);
-}
+        localStorage.setItem("w_metal", metal);
+        localStorage.setItem("w_kristal", kristal);
+        localStorage.setItem("w_tranium", tranium);
+        localStorage.setItem("w_mw", metalWorkers);
+        localStorage.setItem("w_kw", kristalWorkers);
+        localStorage.setItem("w_mfl", metalFacLvl);
+        localStorage.setItem("w_kfl", kristalFacLvl);
+        localStorage.setItem("w_energy", energy);
+        localStorage.setItem("w_last_time", Date.now());
+        localStorage.setItem("w_next_energy_time", nextEnergyTime);
+        localStorage.setItem("w_energy_reg_start", energyRegenerationStartTime);
+        localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
+        localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
+      }
 
       function spawnWorker() {
         const isM = Math.random() > 0.5;
@@ -2377,6 +2215,13 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
+
+
+
+
+
+
 
 
 
