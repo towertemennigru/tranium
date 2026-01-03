@@ -22,22 +22,21 @@
     <title>TRANIUM VERSE - Strategy Hub</title>
     
    <script type="module">
-    // En kararlı sürüm
+    // En güncel Frame SDK'sını çekiyoruz
     import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
 
-    // Global erişim
+    // SDK'yı global değişkene atıyoruz ki her yerden erişelim
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 
     const triggerReady = async () => {
         try {
-            // SDK'nın hazır olmasını bekle
+            // SDK'nın yüklenmesini bekle
             await sdk.context;
-            
-            // Yükleme ekranını kaldır
             sdk.actions.ready();
             console.log("✅ SDK Ready");
             
+            // Varsa intro'yu başlat
             if(window.startIntro) window.startIntro();
         } catch (e) {
             console.error("SDK Init Error:", e);
@@ -1496,18 +1495,26 @@ Energy regenerates over time (1 per hour) even when you are offline.
       async function sendETHPayment(amountETH) {
         console.log("Ödeme süreci başlatılıyor...");
 
-        // Warpcast Mobil, window.ethereum'u otomatik olarak doldurur.
-        if (typeof window.ethereum === "undefined") {
-            alert("Cüzdan ortamı bulunamadı. Lütfen oyunu Warpcast mobil uygulamasında açın.");
+        // 1. Önce SDK içindeki Provider'ı kontrol et (Farcaster Mobil/Web için Asıl Yöntem)
+        // Farcaster, cüzdanı 'sdk.wallet.ethProvider' içine gizler.
+        let ethProvider = window.ethereum; // Varsayılan (PC tarayıcı için)
+
+        if (window.farcasterSDK && window.farcasterSDK.wallet && window.farcasterSDK.wallet.ethProvider) {
+            console.log("✅ Farcaster Dahili Cüzdanı Algılandı");
+            ethProvider = window.farcasterSDK.wallet.ethProvider;
+        }
+
+        // Eğer hiçbir cüzdan sağlayıcısı yoksa hata ver
+        if (!ethProvider) {
+            alert("Cüzdan ortamı bulunamadı. Farcaster uygulamasının güncel olduğundan emin olun.");
             return false;
         }
 
         try {
-            // 1. Ethers Provider Kurulumu
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            // 2. Ethers Provider'ı, bulduğumuz kaynağa (ethProvider) göre kuruyoruz
+            const provider = new ethers.BrowserProvider(ethProvider);
             
-            // 2. İzin İste
-            // Bu satır mobilde Warpcast çekmecesini, PC'de cüzdanı tetikler
+            // 3. İzin İste (Bu satır mobilde çekmeceyi açar)
             const accounts = await provider.send("eth_requestAccounts", []);
             if (!accounts || accounts.length === 0) {
                 alert("Cüzdan erişim izni verilmedi.");
@@ -1516,21 +1523,21 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
             const signer = await provider.getSigner();
 
-            // 3. Ağ Kontrolü (Base: 8453)
+            // 4. Ağ Kontrolü (Base: 8453)
             const network = await provider.getNetwork();
             const chainId = Number(network.chainId);
             
             if (chainId !== 8453) {
                 try {
-                    await window.ethereum.request({
+                    await ethProvider.request({
                         method: "wallet_switchEthereumChain",
                         params: [{ chainId: "0x2105" }], // 8453 hex
                     });
                 } catch (switchError) {
-                    // Zincir ekleme gerekirse
+                    // Zincir ekleme hatası (4902)
                     if (switchError.code === 4902) {
                         try {
-                            await window.ethereum.request({
+                            await ethProvider.request({
                                 method: "wallet_addEthereumChain",
                                 params: [{
                                     chainId: "0x2105",
@@ -1541,7 +1548,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
                                 }]
                             });
                         } catch (addError) {
-                            alert("Base ağına geçiş yapılamadı.");
+                            alert("Base ağına geçiş yapılamadı: " + addError.message);
                             return false;
                         }
                     } else {
@@ -1551,13 +1558,12 @@ Energy regenerates over time (1 per hour) even when you are offline.
                 }
             }
 
-            // 4. İşlemi Gönder
-            // Ethers.js 'value' parametresini otomatik olarak hex'e çevirir, manuel çeviriye gerek yok.
+            // 5. İşlemi Gönder
             const amountWei = ethers.parseEther(amountETH.toString());
             
             console.log("İşlem gönderiliyor...");
             
-            // BU SATIR CÜZDAN ONAY EKRANINI AÇAR
+            // Cüzdan onay ekranını açar
             const tx = await signer.sendTransaction({
                 to: PAYMENT_ADDRESS,
                 value: amountWei
@@ -1565,15 +1571,14 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
             console.log("TX Hash:", tx.hash);
             
-            // Hash oluştuysa işlem ağa iletilmiştir.
-            // Onaylanmasını beklemek (tx.wait) bazen donma yapar, o yüzden hash gelince başarılı sayıyoruz.
+            // Hash geldiyse başarılı sayıyoruz, onayı beklemiyoruz (donmayı önlemek için)
             return true;
 
         } catch (error) {
             console.error("Ödeme Hatası:", error);
             
-            // Kullanıcı reddettiyse (User rejected)
-            if (error.code === 4001 || error.message.includes("rejected")) {
+            // Kullanıcı reddettiyse
+            if (error.code === 4001 || (error.message && error.message.includes("rejected"))) {
                 alert("İşlem iptal edildi.");
             } else {
                 alert("Hata: " + (error.shortMessage || error.message || "Bilinmeyen hata"));
@@ -1587,14 +1592,14 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
         if (type === "metal") {
           if (metalFacUpgradeEndTime > Date.now()) {
-            alert("Zaten geliştirme yapılıyor!");
+            alert("Şu an zaten geliştirme yapılıyor!");
             return;
           }
           currentLevel = metalFacLvl;
           btnId = "upMetalFac";
         } else if (type === "kristal") {
           if (kristalFacUpgradeEndTime > Date.now()) {
-            alert("Zaten geliştirme yapılıyor!");
+            alert("Şu an zaten geliştirme yapılıyor!");
             return;
           }
           currentLevel = kristalFacLvl;
@@ -1614,21 +1619,19 @@ Energy regenerates over time (1 per hour) even when you are offline.
         // Ödemeyi başlat
         const paymentSuccess = await sendETHPayment(ethCost);
         
-        // Başarısız olursa butonu düzelt
         if (!paymentSuccess) {
           btn.innerHTML = originalText;
           btn.disabled = false;
           return;
         }
 
-        // Başarılı olursa (Hash geldiyse) geliştirmeyi başlat
         if (type === "metal") {
           metalFacUpgradeEndTime = Date.now() + upgradeTime;
         } else if (type === "kristal") {
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        alert("✅ İşlem Ağa Gönderildi! İnşaat başlıyor.");
+        alert("✅ İşlem Gönderildi! İnşaat başlıyor.");
         updateUI();
         saveData();
       }
@@ -2212,6 +2215,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
 
 
 
