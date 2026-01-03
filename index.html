@@ -1820,78 +1820,21 @@ Energy regenerates over time (1 per hour) even when you are offline.
         setDisabled("swapBtn", Math.min(Math.floor(metal), Math.floor(kristal)) <= 0);
       }
 
-      // --- GOOGLE SHEETS AYARLARI ---
-// Google'dan kopyaladığın o uzun linki tırnak içine yapıştır:
-const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzHYb-rbZWOuMazfAyVrIr7GomNk-zqdeJlRbyh-2OyWQeDn9ZD2QaVz2gp-TAMP-M8Qw/exec"; 
-
-let currentFID = null; 
-
-// --- VERİYİ KAYDETME (SAVE) ---
-async function saveData() {
-    // İnternet koparsa diye yine de telefona kaydet
-    localStorage.setItem("w_metal", metal);
-    // ... diğer localstorage satırların kalsın ...
-
-    if (!currentFID || !SHEET_API_URL) return;
-
-    // Veriyi hazırla
-    const playerData = {
-        fid: currentFID,
-        metal: metal,
-        kristal: kristal,
-        tranium: tranium,
-        metal_lvl: metalFacLvl,
-        kristal_lvl: kristalFacLvl,
-        energy: energy
-    };
-
-    // Google Sheets'e gönder (POST)
-    // 'no-cors' kullanmıyoruz, Google Apps Script redirect: 'follow' ile çalışır.
-    try {
-        fetch(SHEET_API_URL, {
-            method: "POST",
-            mode: "no-cors", // Google Script için bu mod en hatasız çalışan yöntemdir (ama cevap dönmez)
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(playerData)
-        });
-        console.log("Veri Google Sheets'e gönderildi...");
-    } catch (e) {
-        console.error("Save Hatası:", e);
-    }
-}
-
-// --- VERİYİ YÜKLEME (LOAD) ---
-async function loadUserData() {
-    if (!currentFID) {
-        console.log("FID yok, yerel kayıttan devam.");
-        return; 
-    }
-
-    try {
-        console.log("Veri çekiliyor...");
-        const response = await fetch(`${SHEET_API_URL}?action=load&fid=${currentFID}`);
-        const data = await response.json();
-
-        if (data.status === "new") {
-            console.log("Yeni oyuncu! Kayıt oluşturulacak.");
-            saveData();
-        } else {
-            // Gelen veriyi değişkenlere ata
-            metal = parseFloat(data.metal) || 0;
-            kristal = parseFloat(data.kristal) || 0;
-            tranium = parseInt(data.tranium) || 0;
-            metalFacLvl = parseInt(data.metal_lvl) || 1;
-            kristalFacLvl = parseInt(data.kristal_lvl) || 1;
-            energy = parseInt(data.energy); // null gelirse aşağıda kontrol ederiz
-            if(isNaN(energy)) energy = 10;
-
-            console.log("Veri yüklendi:", data);
-            updateUI();
-        }
-    } catch (e) {
-        console.error("Load Hatası (İnternet olmayabilir):", e);
-    }
-}
+      function saveData() {
+        localStorage.setItem("w_metal", metal);
+        localStorage.setItem("w_kristal", kristal);
+        localStorage.setItem("w_tranium", tranium);
+        localStorage.setItem("w_mw", metalWorkers);
+        localStorage.setItem("w_kw", kristalWorkers);
+        localStorage.setItem("w_mfl", metalFacLvl);
+        localStorage.setItem("w_kfl", kristalFacLvl);
+        localStorage.setItem("w_energy", energy);
+        localStorage.setItem("w_last_time", Date.now());
+        localStorage.setItem("w_next_energy_time", nextEnergyTime);
+        localStorage.setItem("w_energy_reg_start", energyRegenerationStartTime);
+        localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
+        localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
+      }
 
       function spawnWorker() {
         const isM = Math.random() > 0.5;
@@ -2272,8 +2215,3 @@ async function loadUserData() {
 </script>
   </body>
 </html>
-
-
-
-
-
