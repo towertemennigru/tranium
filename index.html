@@ -2100,8 +2100,12 @@ Energy regenerates over time (1 per hour) even when you are offline.
         secureGameLoop();
       })();
     </script>
-     <script> frame.sdk.actions.ready(); </script>
+     <script> 
+       'import { sdk } from “ @farcaster /frame-sdk /src /sdk ”`
+       frame.sdk.actions.ready(); 
+     </script>
   </body>
 </html>
+
 
 
