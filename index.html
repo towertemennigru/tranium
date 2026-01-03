@@ -1499,13 +1499,13 @@ Energy regenerates over time (1 per hour) even when you are offline.
              // Fallback to Farcaster Wallet provider if available
         }
 
-        // Önce SDK'nın cüzdan sağlayıcısını kontrol et
-if (!sdk.wallet ||!sdk.wallet.ethProvider) {
-    alert("Farcaster Wallet not found!");
-    return false;
-}
-// Ethers'i SDK sağlayıcısı ile başlat
-const provider = new ethers.BrowserProvider(sdk.wallet.ethProvider);}
+        if (typeof window.ethereum === "undefined") {
+          alert("No wallet detected. If you are in a Mini App, ensure your wallet is connected.");
+          return false;
+        }
+
+        try {
+          await window.ethereum.request({ method: "eth_requestAccounts" });
           const provider = new ethers.BrowserProvider(window.ethereum);
           const network = await provider.getNetwork();
           if (Number(network.chainId) !== BASE_CHAIN_ID) {
@@ -2171,9 +2171,6 @@ const provider = new ethers.BrowserProvider(sdk.wallet.ethProvider);}
 </script>
   </body>
 </html>
-
-
-
 
 
 
