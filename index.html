@@ -1823,26 +1823,37 @@ async function executeTransaction(signer, amountETH, toAddress) {
         return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
       }
 
-    window.initHub = async function() {
+    // window.initHub fonksiyonunun baş kısmı:
+
+window.initHub = async function() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     canvas.style.imageRendering = "pixelated";
 
-    // --- FID ALMA MANTIĞI ---
-    let userFID = "local_user"; // Varsayılan (PC'de test için)
+    // --- FID ALMA MANTIĞI (GÜNCELLENDİ) ---
+    let userFID = "local_user"; // Varsayılan
     
-    // Farcaster ortamında mıyız?
-    if (window.farcasterSDK && window.farcasterSDK.context) {
+    // 1. Önce URL Parametresine bak (PC Testi için)
+    // Örnek kullanım: senin-siten.com?fid=2891
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('fid')) {
+        userFID = urlParams.get('fid');
+        console.log("💻 PC Modu: URL'den FID alındı ->", userFID);
+    } 
+    // 2. Yoksa Farcaster SDK'ya bak (Mobil için)
+    else if (window.farcasterSDK && window.farcasterSDK.context) {
         try {
             const context = await window.farcasterSDK.context;
             if (context && context.user && context.user.fid) {
                 userFID = context.user.fid;
-                console.log("🆔 Kullanıcı FID bulundu:", userFID);
+                console.log("📱 Mobil Mod: Farcaster FID bulundu ->", userFID);
             }
         } catch (e) {
             console.error("FID alınamadı:", e);
         }
     }
+    
+    // ... kodun geri kalanı aynı ...
     
     // Global değişkene atayalım ki save fonksiyonu da erişsin
     window.currentUserFID = userFID;
@@ -2462,6 +2473,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
