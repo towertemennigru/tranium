@@ -1494,75 +1494,111 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       async function sendETHPayment(amountETH) {
-        console.log("Ödeme işlemi başlatılıyor...");
+        console.log("💸 Ödeme süreci başlatılıyor...");
 
-        // 1. Standart Cüzdan Kontrolü (Warpcast ve Metamask burayı kullanır)
+        // --- YÖNTEM 1: Standart Web3 (PC, Zerion, Metamask) ---
         if (typeof window.ethereum !== "undefined") {
             try {
-                // Cüzdan erişimi iste
-                await window.ethereum.request({ method: "eth_requestAccounts" });
-                
-                // Ethers v6 Provider kurulumu
                 const provider = new ethers.BrowserProvider(window.ethereum);
+                
+                // 1. Hesap İste
+                console.log("🔓 Cüzdan izni isteniyor...");
+                await provider.send("eth_requestAccounts", []);
                 const signer = await provider.getSigner();
-                
-                // Base Ağı Kontrolü (Chain ID: 8453)
+
+                // 2. Ağ Kontrolü (Base: 8453)
                 const network = await provider.getNetwork();
-                const chainId = Number(network.chainId);
+                console.log("🌍 Mevcut Ağ:", network.chainId);
                 
-                if (chainId !== 8453) {
+                if (Number(network.chainId) !== 8453) {
                     try {
                         await window.ethereum.request({
                             method: "wallet_switchEthereumChain",
-                            params: [{ chainId: "0x2105" }], // 8453 (hex)
+                            params: [{ chainId: "0x2105" }], // 8453 hex
                         });
                     } catch (switchError) {
-                        // Zincir ekleme hatası veya kullanıcı reddi
-                        console.error("Zincir değiştirme hatası:", switchError);
-                        alert("Lütfen cüzdan ağını Base Network (8453) olarak değiştirin.");
-                        return false;
+                        // Zincir ekleme hatası (4902)
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: "wallet_addEthereumChain",
+                                params: [{
+                                    chainId: "0x2105",
+                                    chainName: "Base",
+                                    nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+                                    rpcUrls: ["https://mainnet.base.org"],
+                                    blockExplorerUrls: ["https://basescan.org"]
+                                }]
+                            });
+                        } else {
+                            throw switchError;
+                        }
                     }
                 }
 
-                // Ethers v6 syntax ile Wei çevrimi
+                // 3. İşlemi Hazırla ve Gönder
                 const amountWei = ethers.parseEther(amountETH.toString());
-
-                // İşlemi gönder
-                console.log("İşlem gönderiliyor...");
+                console.log("🚀 İşlem gönderiliyor...");
+                
                 const tx = await signer.sendTransaction({
                     to: PAYMENT_ADDRESS,
                     value: amountWei
                 });
 
-                console.log("TX Hash:", tx.hash);
+                console.log("✅ TX Hash:", tx.hash);
                 
-                // Onaylanmasını bekle (Opsiyonel ama güvenli)
-                alert("İşlem gönderildi! Onay bekleniyor...");
-                await tx.wait();
+                // DONMA ÇÖZÜMÜ: tx.wait() kullanmıyoruz. 
+                // Hash oluştuysa işlem ağa düşmüştür, kullanıcıyı bekletmeye gerek yok.
+                alert("İşlem Ağa Gönderildi!\nOnay bekleniyor, inşaat başlıyor...");
                 
-                return true;
+                return true; 
 
             } catch (error) {
-                console.error("Wallet Error:", error);
-                // Kullanıcı reddettiyse
-                if (error.code === 4001) {
-                    alert("İşlemi reddettiniz.");
-                } else {
-                    alert("Cüzdan hatası: " + (error.message || error));
+                console.error("PC Cüzdan Hatası:", error);
+                // Kullanıcı reddettiyse sessiz kal, hata ise uyar
+                if (error.code !== 4001) {
+                    alert("Hata: " + (error.shortMessage || error.message || "Bilinmeyen hata"));
                 }
                 return false;
             }
-        } else {
-            // Cüzdan yoksa
-            alert("Cüzdan bulunamadı! Lütfen Warpcast veya Web3 tarayıcısı kullanın.");
-            return false;
         }
+
+        // --- YÖNTEM 2: Farcaster Mobil SDK (Yedek) ---
+        // Eğer window.ethereum yoksa (Mobil Warpcast Hatası için)
+        if (window.farcasterSDK && window.farcasterSDK.actions) {
+            try {
+                console.log("📱 Mobil SDK deneniyor...");
+                const amountWei = ethers.parseEther(amountETH.toString()).toString();
+                
+                // SDK üzerinden işlem isteği
+                const result = await window.farcasterSDK.actions.sendTransaction({
+                    transaction: {
+                        to: PAYMENT_ADDRESS,
+                        value: amountWei,
+                        chainId: 8453
+                    }
+                });
+                
+                if (result && (result.hash || result.transactionId)) {
+                    console.log("✅ SDK TX Başarılı");
+                    alert("Mobil işlem başarılı!");
+                    return true;
+                }
+                // SDK bazen null dönebilir ama işlem gerçekleşmiş olabilir
+                return false; 
+            } catch (e) {
+                console.error("SDK Hatası:", e);
+                // Kullanıcıya hata göstermeyelim, belki sadece iptal etmiştir.
+                return false;
+            }
+        }
+
+        alert("❌ Cüzdan bulunamadı! Lütfen Zerion, Metamask veya Warpcast kullanın.");
+        return false;
       }
       async function upgradeFactory(type) {
         let currentLevel;
         let btnId; 
 
-        // Hangi fabrika?
         if (type === "metal") {
           if (metalFacUpgradeEndTime > Date.now()) {
             alert("Zaten geliştirme yapılıyor!");
@@ -1582,35 +1618,32 @@ Energy regenerates over time (1 per hour) even when you are offline.
         const ethCost = getUpgradeCost(currentLevel);
         const upgradeTime = getUpgradeTime(currentLevel);
         
-        // Butonu bul ve durumunu değiştir
+        // Butonu bul
         const btn = document.getElementById(btnId);
-        if (!btn) {
-            console.error("Buton bulunamadı:", btnId);
-            return;
-        }
+        if (!btn) return;
 
         const originalText = btn.innerHTML;
-        btn.innerHTML = "⏳ CÜZDAN AÇILIYOR...";
-        btn.disabled = true;
+        btn.innerHTML = "⏳ WALLET..."; // Buton yazısını değiştir
+        btn.disabled = true; // Butonu kilitle
 
-        // Cüzdan fonksiyonunu çağır (Bekleme süresi koymuyoruz, await ile bekliyoruz)
+        // Ödemeyi başlat
         const paymentSuccess = await sendETHPayment(ethCost);
         
         if (!paymentSuccess) {
-          // Başarısız olursa butonu eski haline getir
+          // Eğer ödeme başarısızsa veya iptal edildiyse butonu eski haline getir
           btn.innerHTML = originalText;
           btn.disabled = false;
           return;
         }
 
-        // Başarılı olursa verileri güncelle
+        // Başarılıysa süreci başlat
         if (type === "metal") {
           metalFacUpgradeEndTime = Date.now() + upgradeTime;
         } else if (type === "kristal") {
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        alert("✅ Ödeme başarılı! İnşaat başladı.");
+        // alert("✅ İnşaat başladı!"); // sendETHPayment zaten uyarı veriyor
         updateUI();
         saveData();
       }
@@ -2195,6 +2228,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
 
 
 
