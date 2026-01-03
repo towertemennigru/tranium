@@ -24,36 +24,27 @@
    <script type="module">
     import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk@0.2.1';
 
-    // 1. Agresif Başlatma Fonksiyonu
+    // BU SATIRLAR ÇOK ÖNEMLİ (Cüzdan için gerekli):
+    window.farcasterSDK = sdk;
+    window.isMiniApp = true;
+
     const triggerReady = async () => {
         try {
-            // Context'i bekleyelim, ancak maksimum 1 saniye bekleyip ready sinyalini gönderelim.
             await Promise.race([
                 sdk.context,
                 new Promise(resolve => setTimeout(resolve, 1000))
             ]);
-            
-            // READY sinyalini gönder (Splash ekranını kaldırır)
             sdk.actions.ready();
-            console.log("✅ SDK Ready Signal Sent (Auto)");
-            
-            // SDK hazır olduktan sonra intro ekranını göster
-            startIntro();
-            
+            // Intro fonksiyonu tanımlıysa başlat
+            if(window.startIntro) window.startIntro();
         } catch (e) {
             console.error("SDK Error:", e);
-            // Hata olsa bile sinyali gönder, kullanıcı takılı kalmasın
             sdk.actions.ready();
-            startIntro();
+            if(window.startIntro) window.startIntro();
         }
     };
 
-    // DOM yüklendiğinde SDK'yı başlat
     document.addEventListener('DOMContentLoaded', triggerReady);
-    
-    // Global değişkenler
-    window.farcasterSDK = sdk;
-    window.isMiniApp = true;
 </script>
     
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
@@ -1212,9 +1203,19 @@ Energy regenerates over time (1 per hour) even when you are offline.
         document.getElementById("swapAmountInput").value = Math.floor(maxRefine * pct);
       }
       function executeSwap() {
-        let amount = parseInt(document.getElementById("swapAmountInput").value);
+        let inputVal = document.getElementById("swapAmountInput").value;
+        
+        // Boş veya geçersiz giriş kontrolü
+        if (!inputVal || inputVal.trim() === "") {
+             alert("Lütfen geçerli bir miktar girin.");
+             return;
+        }
+        
+        let amount = parseInt(inputVal);
         let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
-        if (amount > 0 && amount <= maxRefine) {
+
+        // NaN kontrolü ve bakiye kontrolü
+        if (!isNaN(amount) && amount > 0 && amount <= maxRefine) {
           tranium += amount;
           metal -= amount;
           kristal -= amount;
@@ -1222,7 +1223,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
           saveData();
           closeSwapModal();
         } else {
-          alert("Invalid amount or insufficient resources!");
+          alert("Geçersiz miktar veya yetersiz kaynak!");
         }
       }
 
@@ -1493,14 +1494,31 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       async function sendETHPayment(amountETH) {
-        let provider;
         
-        if (window.farcasterSDK && window.farcasterSDK.wallet) {
-             // Fallback to Farcaster Wallet provider if available
+        // 1. Farcaster Mini App Kontrolü (ÖNCELİKLİ)
+        if (window.farcasterSDK && window.farcasterSDK.actions) {
+            try {
+                // Wei formatına çevir (Ethers.js kullanarak)
+                const amountWei = ethers.parseEther(amountETH.toString()).toString();
+                
+                // SDK üzerinden işlem gönder
+                const result = await window.farcasterSDK.actions.sendTransaction({
+                    to: PAYMENT_ADDRESS,
+                    value: amountWei,
+                    chainId: 8453 // Base Chain ID
+                });
+                
+                console.log("Farcaster TX Sonucu:", result);
+                return true; 
+            } catch (fcError) {
+                console.error("Farcaster Ödeme Hatası:", fcError);
+                return false; 
+            }
         }
 
+        // 2. Normal Tarayıcı (Metamask vb.) Yedeği
         if (typeof window.ethereum === "undefined") {
-          alert("No wallet detected. If you are in a Mini App, ensure your wallet is connected.");
+          alert("Cüzdan bulunamadı. Mini App içindeyseniz cüzdanınızın bağlı olduğundan emin olun.");
           return false;
         }
 
@@ -1508,31 +1526,17 @@ Energy regenerates over time (1 per hour) even when you are offline.
           await window.ethereum.request({ method: "eth_requestAccounts" });
           const provider = new ethers.BrowserProvider(window.ethereum);
           const network = await provider.getNetwork();
-          if (Number(network.chainId) !== BASE_CHAIN_ID) {
+          
+          // Base zincirine geçiş kontrolü
+          if (Number(network.chainId) !== 8453) {
             try {
               await window.ethereum.request({
                 method: "wallet_switchEthereumChain",
-                params: [{ chainId: "0x2105" }],
+                params: [{ chainId: "0x2105" }], // Base Chain ID hex
               });
             } catch (switchError) {
-              if (switchError.code === 4902) {
-                await window.ethereum.request({
-                  method: "wallet_addEthereumChain",
-                  params: [{
-                    chainId: "0x2105",
-                    chainName: "Base",
-                    nativeCurrency: {
-                      name: "ETH",
-                      symbol: "ETH",
-                      decimals: 18
-                    },
-                    rpcUrls: ["https://mainnet.base.org"],
-                    blockExplorerUrls: ["https://basescan.org"]
-                  }]
-                });
-              } else {
-                throw switchError;
-              }
+                alert("Lütfen cüzdanınızı Base Network ağına manuel geçirin.");
+                return false;
             }
           }
 
@@ -1546,8 +1550,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
           await tx.wait();
           return true;
         } catch (error) {
-          console.error("Payment error:", error);
-          alert("Payment failed: " + (error.message || "Unknown error"));
+          console.error("Ödeme hatası:", error);
+          alert("Ödeme başarısız: " + (error.message || "Bilinmeyen hata"));
           return false;
         }
       }
@@ -1598,7 +1602,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
         return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
       }
 
-      function initHub() {
+      window.initHub = function() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         canvas.style.imageRendering = "pixelated";
@@ -1840,7 +1844,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
         if (!isStarted) updateUI();
       }
 
-      function update(dt) {
+      window.update = function(dt) {
         processMining(dt);
         checkUpgradeProgress();
         if (!isStarted) return;
@@ -2171,6 +2175,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
 
 
 
