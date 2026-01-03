@@ -1493,57 +1493,64 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       async function sendETHPayment(amountETH) {
-        // 1. SDK KONTROLÜ (GÜVENLİ ERİŞİM)
-        // Global 'sdk' değişkeni yerine, modül tarafından atanan 'window.farcasterSDK'yı kullanıyoruz.
-        // Bu fonksiyon sadece butona basıldığında çalışacağı için, o zamana kadar SDK yüklenmiş olacaktır.
-        const farcasterSdk = window.farcasterSDK;
         let provider;
+        
+        if (window.farcasterSDK && window.farcasterSDK.wallet) {
+             // Fallback to Farcaster Wallet provider if available
+        }
+
+        if (typeof window.ethereum === "undefined") {
+          alert("No wallet detected. If you are in a Mini App, ensure your wallet is connected.");
+          return false;
+        }
 
         try {
-            // A. Farcaster Ortamı Kontrolü
-            if (farcasterSdk && farcasterSdk.wallet && farcasterSdk.wallet.ethProvider) {
-                // v0.2.1 uyumlu cüzdan sağlayıcısı
-                provider = new ethers.BrowserProvider(farcasterSdk.wallet.ethProvider);
-            } 
-            // B. Standart Tarayıcı (Metamask vb.) Fallback
-            else if (window.ethereum) {
-                provider = new ethers.BrowserProvider(window.ethereum);
-            } 
-            else {
-                alert("Cüzdan bulunamadı. Lütfen Warpcast veya uyumlu bir tarayıcı kullanın.");
-                return false;
+          await window.ethereum.request({ method: "eth_requestAccounts" });
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const network = await provider.getNetwork();
+          if (Number(network.chainId) !== BASE_CHAIN_ID) {
+            try {
+              await window.ethereum.request({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: "0x2105" }],
+              });
+            } catch (switchError) {
+              if (switchError.code === 4902) {
+                await window.ethereum.request({
+                  method: "wallet_addEthereumChain",
+                  params: [{
+                    chainId: "0x2105",
+                    chainName: "Base",
+                    nativeCurrency: {
+                      name: "ETH",
+                      symbol: "ETH",
+                      decimals: 18
+                    },
+                    rpcUrls: ["https://mainnet.base.org"],
+                    blockExplorerUrls: ["https://basescan.org"]
+                  }]
+                });
+              } else {
+                throw switchError;
+              }
             }
+          }
 
-            // 2. Ödeme İşlemi
-            const signer = await provider.getSigner();
-            const amountWei = ethers.parseEther(amountETH.toString());
+          const signer = await provider.getSigner();
+          const amountWei = ethers.parseEther(amountETH.toString());
 
-            // Base Mainnet (Chain ID: 8453) kontrolü eklemek iyi bir pratiktir
-            const network = await provider.getNetwork();
-            if (network.chainId!== 8453n) {
-                 alert("Lütfen Base ağına geçiniz.");
-                 // Burada switchChain mantığı eklenebilir
-                 return false;
-            }
-
-            const tx = await signer.sendTransaction({
-                to: PAYMENT_ADDRESS,
-                value: amountWei
-            });
-            
-            console.log("Transaction sent:", tx.hash);
-            await tx.wait(); // İşlemin onaylanmasını bekle
-            return true;
-
+          const tx = await signer.sendTransaction({
+            to: PAYMENT_ADDRESS,
+            value: amountWei
+          });
+          await tx.wait();
+          return true;
         } catch (error) {
-            console.error("Payment error:", error);
-            // Hata detayını kullanıcıya göster (Mobil debug için önemli)
-            alert("Payment failed: " + (error.message |
-
-| "Unknown error"));
-            return false;
+          console.error("Payment error:", error);
+          alert("Payment failed: " + (error.message || "Unknown error"));
+          return false;
         }
-    }
+      }
 
       async function upgradeFactory(type) {
         let currentLevel;
@@ -1579,7 +1586,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        alert("✅ Payment successful! Upgrade started."); {
+        alert("✅ Payment successful! Upgrade started.");
         updateUI();
         saveData();
       }
@@ -2164,9 +2171,6 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
-
-
-
 
 
 
