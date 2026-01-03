@@ -21,54 +21,60 @@
     
     <title>TRANIUM VERSE - Strategy Hub</title>
     
-  <script type="module">
-    // En güncel Frame SDK'sı
-    import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
+ <script type="module">
+    import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
+    import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@1.6.0';
+    import { base } from 'https://esm.sh/@reown/appkit/networks@1.6.0';
 
-    // SDK'yı global yapıyoruz
-    window.farcasterSDK = sdk;
-    window.isMiniApp = true;
-
-    const triggerReady = async () => {
-        try {
-            // SDK Context'i bekle
-            const context = await sdk.context;
-
-            // --- DEĞİŞİKLİK BURADA ---
-            // Context varsa (Farcaster) veya yoksa (Tarayıcı) fark etmeksizin oyunu başlatıyoruz.
-            
-            if (context) {
-                console.log("✅ Farcaster Ortamı");
-                
-                // Varsa FID'yi al
-                if (context.user && context.user.fid) {
-                    window.userFID = context.user.fid;
-                    console.log("👤 FID:", window.userFID);
-                }
-                sdk.actions.ready();
-            } else {
-                console.log("⚠️ Tarayıcı Ortamı (Test Modu)");
-                // Tarayıcıdaysak test için rastgele FID ata
-                window.userFID = 999999;
-            }
-
-        } catch (e) {
-            console.error("SDK Hatası (Önemsiz):", e);
-        } finally {
-            // NE OLURSA OLSUN BU KISIM ÇALIŞIR:
-            // 1. Engelleyici ekranı kaldır
-            const blocker = document.getElementById("desktop-blocker");
-            if (blocker) blocker.style.display = "none";
-
-            // 2. Intro'yu başlat (Bu fonksiyon butonu görünür yapar)
-            if(window.startIntro) {
-                console.log("🎬 Intro Başlatılıyor...");
-                window.startIntro();
-            }
-        }
+    // Global erişim için window'a atıyoruz
+    window.AppKitLib = {
+        createAppKit,
+        EthersAdapter,
+        networks: [base]
     };
 
-    document.addEventListener('DOMContentLoaded', triggerReady);
+    // --- DÜZELTME BURADA ---
+    // Değişkeni global tanımlıyoruz
+    window.appKitModal = null; 
+
+    async function initWalletSystem() {
+        if (!window.AppKitLib) {
+            setTimeout(initWalletSystem, 1000);
+            return;
+        }
+
+        if (window.appKitModal) return; // Zaten varsa tekrar kurma
+
+        try {
+            const { createAppKit, EthersAdapter, networks } = window.AppKitLib;
+
+            const metadata = {
+                name: 'Tranium Verse',
+                description: 'Resource Mining Game',
+                url: 'https://tranium-xi.vercel.app', 
+                icons: ['https://tranium-xi.vercel.app/preview.jpg']
+            };
+
+            // Modal'ı oluştur ve WINDOW'a eşitle
+            window.appKitModal = createAppKit({
+                adapters: [new EthersAdapter()],
+                networks,
+                metadata,
+                projectId: '2c7a5c244856e6edb4c52e0d4e61fadb',
+                features: {
+                    analytics: true 
+                }
+            });
+            console.log("✅ PC Cüzdan Sistemi (AppKit) Hazır ve Global");
+        } catch (e) {
+            console.error("AppKit Başlatma Hatası:", e);
+        }
+    }
+
+    // Başlatıcılar
+    window.initWalletSystem = initWalletSystem; // Fonksiyonu da dışarı açtık
+    document.addEventListener('DOMContentLoaded', initWalletSystem);
+    window.addEventListener('load', initWalletSystem);
 </script>
     
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
@@ -2501,6 +2507,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
 
 
 
