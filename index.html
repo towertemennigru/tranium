@@ -2359,8 +2359,34 @@ Energy regenerates over time (1 per hour) even when you are offline.
         }
     }, 2000);
 </script>
+  <script>
+    window.addEventListener('load', () => {
+        // 1. Masaüstü engelini kaldır
+        const blocker = document.getElementById("desktop-blocker");
+        if(blocker) blocker.style.display = "none";
+
+        // 2. Intro Ekranını Göster
+        const intro = document.getElementById("introOverlay");
+        if(intro) intro.style.display = "flex";
+
+        // 3. START butonunu zorla görünür yap (1.5 saniye sonra)
+        setTimeout(() => {
+            const btn = document.getElementById("enterBtn");
+            if(btn) {
+                btn.style.display = "block";
+                console.log("🔘 Start Butonu Zorla Açıldı");
+            }
+            
+            // Eğer Farcaster SDK yüklenmediyse manuel hazırla
+            if(window.sdk && window.sdk.actions) {
+                window.sdk.actions.ready();
+            }
+        }, 1500);
+    });
+</script>
   </body>
 </html>
+
 
 
 
