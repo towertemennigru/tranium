@@ -2319,11 +2319,16 @@ async function executeTransaction(signer, amountETH, toAddress) {
       }
 
       // Initial call to setup the intro screen
-      window.onload = function() {
-        console.log("🚀 App Loaded. Triggering Farcaster SDK...");
-        
-   
-      };
+      // Initial call to setup the intro screen
+      window.onload = function() {
+        console.log("🚀 App Loaded. Triggering Farcaster SDK...");
+        
+        // DÜZELTME: Intro'yu zorla başlat
+        // Bu sayede Farcaster context'i gelmese bile buton 0.8sn sonra görünür.
+        if (window.startIntro) {
+            window.startIntro();
+        }
+      };
     </script>
     <script>
       (function () {
@@ -2451,6 +2456,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
