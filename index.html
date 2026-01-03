@@ -22,25 +22,24 @@
     <title>TRANIUM VERSE - Strategy Hub</title>
     
    <script type="module">
-    import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk@0.2.1';
+    import { sdk } from 'https://esm.sh/@farcaster/frame-sdk'; // En stabil sürümü çeker
 
-    // BU SATIRLAR ÇOK ÖNEMLİ (Cüzdan için gerekli):
+    // SDK'yı global değişkene ata
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 
     const triggerReady = async () => {
         try {
-            await Promise.race([
-                sdk.context,
-                new Promise(resolve => setTimeout(resolve, 1000))
-            ]);
+            // SDK Context'inin yüklenmesini bekle
+            await sdk.context;
+            
+            // Farcaster'a "Ben hazırım" sinyali gönder
             sdk.actions.ready();
-            // Intro fonksiyonu tanımlıysa başlat
+            console.log("✅ SDK Ready Signal Sent");
+            
             if(window.startIntro) window.startIntro();
         } catch (e) {
-            console.error("SDK Error:", e);
-            sdk.actions.ready();
-            if(window.startIntro) window.startIntro();
+            console.error("SDK Init Error:", e);
         }
     };
 
@@ -1494,59 +1493,46 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       async function sendETHPayment(amountETH) {
-        // DEBUG: Adım 1
-        alert("Adım 1: Fonksiyon Başladı. SDK Kontrol ediliyor...");
-
+        // 1. SDK Kontrolü
         if (!window.farcasterSDK || !window.farcasterSDK.actions) {
-            alert("HATA: Farcaster SDK bulunamadı! Oyunu Warpcast içinden açtığınıza emin olun.");
+            alert("HATA: Farcaster SDK yüklenemedi. Lütfen sayfayı yenileyin veya Warpcast içinde açın.");
             return false;
         }
 
         try {
-            // DEBUG: Adım 2
-            alert("Adım 2: SDK var. Context kontrol ediliyor...");
-            
-            // Context'i bekle (Bağlantı testi)
-            const context = await window.farcasterSDK.context;
-            // alert("Context OK: " + (context ? "Evet" : "Hayır")); // Gerekirse açılabilir
+            // 2. Değer Dönüştürme (Ether -> Wei -> Hex)
+            // Farcaster Cüzdanı KESİNLİKLE Hex string (0x...) ister.
+            const amountWei = ethers.parseEther(amountETH.toString());
+            const amountHex = "0x" + amountWei.toString(16); // BigInt to Hex
 
-            // DEBUG: Adım 3
-            alert("Adım 3: Değer hesaplanıyor...");
+            console.log("Gönderilecek Tutar (Hex):", amountHex);
 
-            // Ethers ile BigInt hesapla
-            const amountBigInt = ethers.parseEther(amountETH.toString());
-            // ÖNEMLİ: Değeri Hex String'e çevir (0x...)
-            const amountHex = "0x" + amountBigInt.toString(16);
-
-            alert("Gidecek Tutar (Hex): " + amountHex);
-
-            // DEBUG: Adım 4
-            alert("Adım 4: İşlem Warpcast'e gönderiliyor...");
-
+            // 3. İşlemi Gönder (Sadece Farcaster SDK)
+            // 'value' kesinlikle string olmalı ve 0x ile başlamalı
             const result = await window.farcasterSDK.actions.sendTransaction({
                 transaction: {
                     to: PAYMENT_ADDRESS,
-                    value: amountHex, // Düzeltme: Hex gönderiyoruz
-                    data: "0x",
+                    value: amountHex, 
+                    data: "0x", 
                     chainId: 8453 // Base Chain ID
                 }
             });
 
-            // DEBUG: Adım 5
-            alert("Adım 5: Yanıt Geldi! " + JSON.stringify(result));
+            console.log("SDK Yanıtı:", result);
 
+            // 4. Sonuç Kontrolü
+            // Farcaster bazen sadece { hash: "0x..." } döner, bazen { transactionId: "0x..." }
             if (result && (result.hash || result.transactionId)) {
-                console.log("TX Hash:", result.hash || result.transactionId);
                 return true; 
             }
             
-            alert("İşlem gönderildi ama Hash dönmedi (İptal edilmiş olabilir).");
+            // Eğer hash gelmediyse (kullanıcı kapattıysa)
             return false;
 
         } catch (e) {
-            console.error("Farcaster SDK Hatası:", e);
-            // Hatayı tam olarak ekrana yazdıralım
-            alert("KRİTİK HATA: " + (e.message || e));
+            console.error("Ödeme Hatası:", e);
+            // Hata mesajını kullanıcıya gösterelim ki "tepki yok" sanmasın
+            alert("Ödeme Hatası: " + (e.message || e));
             return false;
         }
       }
@@ -1556,14 +1542,14 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
         if (type === "metal") {
           if (metalFacUpgradeEndTime > Date.now()) {
-            alert("Zaten geliştirme yapılıyor!");
+            alert("Şu an zaten geliştirme yapılıyor!");
             return;
           }
           currentLevel = metalFacLvl;
           btnId = "upMetalFac";
         } else if (type === "kristal") {
           if (kristalFacUpgradeEndTime > Date.now()) {
-            alert("Zaten geliştirme yapılıyor!");
+            alert("Şu an zaten geliştirme yapılıyor!");
             return;
           }
           currentLevel = kristalFacLvl;
@@ -1573,22 +1559,31 @@ Energy regenerates over time (1 per hour) even when you are offline.
         const ethCost = getUpgradeCost(currentLevel);
         const upgradeTime = getUpgradeTime(currentLevel);
         
-        // Ödeme fonksiyonunu çağır
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "⚡ CÜZDAN AÇILIYOR..."; 
+        btn.disabled = true; 
+
+        // Ödemeyi başlat
         const paymentSuccess = await sendETHPayment(ethCost);
         
+        // Eğer başarısız olduysa butonu düzelt ve çık
         if (!paymentSuccess) {
-          // Başarısızsa dur
+          btn.innerHTML = originalText;
+          btn.disabled = false;
           return;
         }
 
-        // Başarılıysa (Hash geldiyse) geliştirmeyi başlat
+        // Başarılı olduysa işlemleri yap
         if (type === "metal") {
           metalFacUpgradeEndTime = Date.now() + upgradeTime;
         } else if (type === "kristal") {
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        alert("✅ Ödeme Başarılı! İnşaat başlıyor.");
+        alert("✅ Ödeme Warpcast'e iletildi! İnşaat başladı.");
         updateUI();
         saveData();
       }
@@ -2172,6 +2167,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
 
 
 
