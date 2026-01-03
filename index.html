@@ -1125,7 +1125,50 @@ Energy regenerates over time (1 per hour) even when you are offline.
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
       const WORLD_SIZE = 2500;
+      // --- GOOGLE SHEETS ENTEGRASYONU ---
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0uv8SzjHAX8GNWYK2nQTDmAeGON5zfNVLwGY8o8PA0saiiC-wVmEfcOOw7G4ChK3UHA/exec";
+// Buluttan Veri Çekme (LOAD)
+async function loadCloudData(fid) {
+    try {
+        console.log("☁️ Buluttan veri çekiliyor... FID:", fid);
+        // GET isteği atıyoruz
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=load&fid=${fid}`);
+        const data = await response.json();
+        
+        if (data.status === "new") {
+            console.log("🆕 Yeni kullanıcı, varsayılan değerlerle başlanıyor.");
+            return null; // Kayıt yoksa null dön
+        }
+        
+        console.log("✅ Veri yüklendi:", data);
+        return data;
+    } catch (error) {
+        console.error("❌ Veri yükleme hatası:", error);
+        return null;
+    }
+}
 
+// Buluta Veri Kaydetme (SAVE)
+function saveCloudData(fid) {
+    // Kaydedilecek veri paketi
+    const payload = {
+        fid: fid,
+        metal: Math.floor(metal),
+        kristal: Math.floor(kristal),
+        tranium: Math.floor(tranium),
+        metal_lvl: metalFacLvl,
+        kristal_lvl: kristalFacLvl,
+        energy: energy
+    };
+
+    // POST isteği (CORS hatasını aşmak için Content-Type text/plain gönderiyoruz)
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+    }).then(res => res.json())
+      .then(response => console.log("☁️ Kayıt Başarılı:", response))
+      .catch(err => console.error("❌ Kayıt Hatası:", err));
+}
       let metal = 0,
         kristal = 0,
         tranium = 0,
@@ -1763,26 +1806,77 @@ async function executeTransaction(signer, amountETH, toAddress) {
         return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
       }
 
-      window.initHub = function() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        canvas.style.imageRendering = "pixelated";
+    window.initHub = async function() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.imageRendering = "pixelated";
 
-        const now = Date.now();
-        const secondsPassed = Math.floor((now - lastTime) / 1000);
-        processMining(secondsPassed);
-        checkUpgradeProgress();
-        updateUI();
-        startEnergyCountdown();
-        for (let i = 0; i < 40; i++) spawnWorker();
-        for (let i = 0; i < 15; i++) spawnEnemy();
-        requestAnimationFrame(gameLoop);
-        setInterval(saveData, 3000);
+    // --- FID ALMA MANTIĞI ---
+    let userFID = "local_user"; // Varsayılan (PC'de test için)
+    
+    // Farcaster ortamında mıyız?
+    if (window.farcasterSDK && window.farcasterSDK.context) {
+        try {
+            const context = await window.farcasterSDK.context;
+            if (context && context.user && context.user.fid) {
+                userFID = context.user.fid;
+                console.log("🆔 Kullanıcı FID bulundu:", userFID);
+            }
+        } catch (e) {
+            console.error("FID alınamadı:", e);
+        }
+    }
+    
+    // Global değişkene atayalım ki save fonksiyonu da erişsin
+    window.currentUserFID = userFID;
 
-        setInterval(checkUpgradeProgress, 1000);
-        initJoystick();
-      }
-
+    // --- VERİ YÜKLEME ---
+    // Önce buluta bak
+    const cloudData = await loadCloudData(userFID);
+    
+    if (cloudData) {
+        // Buluttan veri geldiyse değişkenleri güncelle
+        metal = cloudData.metal;
+        kristal = cloudData.kristal;
+        tranium = cloudData.tranium;
+        metalFacLvl = cloudData.metal_lvl;
+        kristalFacLvl = cloudData.kristal_lvl;
+        energy = cloudData.energy;
+        // İşçi sayılarını level'a göre tahmini ayarla veya sıfırla (Basit tutmak için 0 başlatıyoruz)
+        metalWorkers = 0; 
+        kristalWorkers = 0;
+    } else {
+        // Bulutta yoksa LocalStorage'a bak (Eski oyuncular için yedek)
+        if (localStorage.getItem("w_last_time")) {
+             metal = parseFloat(localStorage.getItem("w_metal")) || 0;
+             kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
+             tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
+             metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
+             kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
+             let savedEnergy = localStorage.getItem("w_energy");
+             energy = savedEnergy !== null ? parseInt(savedEnergy) : 10;
+        }
+    }
+    
+    // --- OYUNU BAŞLAT ---
+    const now = Date.now();
+    const secondsPassed = Math.floor((now - lastTime) / 1000); // lastTime'ı globalden alacak
+    processMining(secondsPassed);
+    checkUpgradeProgress();
+    updateUI();
+    startEnergyCountdown();
+    
+    for (let i = 0; i < 40; i++) spawnWorker();
+    for (let i = 0; i < 15; i++) spawnEnemy();
+    
+    requestAnimationFrame(gameLoop);
+    
+    // Hem LocalStorage hem de Cloud'a kaydet (3 saniyede bir)
+    setInterval(saveData, 3000);
+    
+    setInterval(checkUpgradeProgress, 1000);
+    initJoystick();
+}
       function initJoystick() {
         const joystickContainer = document.getElementById("joystickContainer");
         const rect = joystickContainer.getBoundingClientRect();
@@ -1942,21 +2036,26 @@ async function executeTransaction(signer, amountETH, toAddress) {
       }
 
       function saveData() {
-        localStorage.setItem("w_metal", metal);
-        localStorage.setItem("w_kristal", kristal);
-        localStorage.setItem("w_tranium", tranium);
-        localStorage.setItem("w_mw", metalWorkers);
-        localStorage.setItem("w_kw", kristalWorkers);
-        localStorage.setItem("w_mfl", metalFacLvl);
-        localStorage.setItem("w_kfl", kristalFacLvl);
-        localStorage.setItem("w_energy", energy);
-        localStorage.setItem("w_last_time", Date.now());
-        localStorage.setItem("w_next_energy_time", nextEnergyTime);
-        localStorage.setItem("w_energy_reg_start", energyRegenerationStartTime);
-        localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
-        localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
-      }
+    // 1. LocalStorage (Hızlı yedek)
+    localStorage.setItem("w_metal", metal);
+    localStorage.setItem("w_kristal", kristal);
+    localStorage.setItem("w_tranium", tranium);
+    localStorage.setItem("w_mw", metalWorkers);
+    localStorage.setItem("w_kw", kristalWorkers);
+    localStorage.setItem("w_mfl", metalFacLvl);
+    localStorage.setItem("w_kfl", kristalFacLvl);
+    localStorage.setItem("w_energy", energy);
+    localStorage.setItem("w_last_time", Date.now());
+    localStorage.setItem("w_next_energy_time", nextEnergyTime);
+    localStorage.setItem("w_energy_reg_start", energyRegenerationStartTime);
+    localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
+    localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
 
+    // 2. Google Sheets (Bulut Kayıt)
+    if (window.currentUserFID) {
+        saveCloudData(window.currentUserFID);
+    }
+}
       function spawnWorker() {
         const isM = Math.random() > 0.5;
         workers.push({
@@ -2336,6 +2435,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
