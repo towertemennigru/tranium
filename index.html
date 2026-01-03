@@ -5,49 +5,71 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
-    <meta property="og:title" content="TRANIUM VERSE - Strategy Hub" />
-    <meta property="og:description" content="Collect resources and refine Tranium to dominate the Verse. A strategic mining game on Farcaster." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://tranium-xi.vercel.app/preview.jpg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    
-    <meta property="fc:frame" content='{"version": "next", "imageUrl": "https://tranium-xi.vercel.app/preview.jpg", "button": {"title": "Start Mining", "action": {"type": "launch_frame", "name": "Tranium Verse", "url": "https://tranium-xi.vercel.app", "splashImageUrl": "https://tranium-xi.vercel.app/preview.jpg", "splashBackgroundColor": "#0a0a00"}}}' />
-    <meta name="fc:miniapp" content="hosted" />
+<meta property="fc:frame" content="vNext" />
+<meta property="fc:frame:image" content="https://tranium-xi.vercel.app/preview.jpg" />
+<meta property="fc:frame:button:1" content="Start Mining" />
+<meta property="fc:frame:button:1:action" content="launch_frame" />
+<meta property="fc:frame:button:1:target" content="https://tranium-xi.vercel.app" />
     
     <title>TRANIUM VERSE - Strategy Hub</title>
     
-    <script type="module">
-        import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk@0.0.14';
+   <script type="module">
+    import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk@0.0.14';
 
-        // 1. Agresif Başlatma Fonksiyonu
-        const triggerReady = async () => {
-    try {
-        // Context'i bekleyelim, ancak maksimum 1 saniye bekleyip ready sinyalini gönderelim.
-        await Promise.race([
-            sdk.context,
-            new Promise(resolve => setTimeout(resolve, 1000))
-        ]);
+    // 1. Agresif Başlatma Fonksiyonu
+    const triggerReady = async () => {
+        try {
+            // Context'i bekleyelim, ancak maksimum 1 saniye bekleyip ready sinyalini gönderelim.
+            await Promise.race([
+                sdk.context,
+                new Promise(resolve => setTimeout(resolve, 1000))
+            ]);
+            
+            // READY sinyalini gönder (Splash ekranını kaldırır)
+            sdk.actions.ready();
+            console.log("✅ SDK Ready Signal Sent (Auto)");
+            
+            // SDK hazır olduktan sonra intro ekranını göster
+            startIntro();
+            
+        } catch (e) {
+            console.error("SDK Error:", e);
+            // Hata olsa bile sinyali gönder, kullanıcı takılı kalmasın
+            sdk.actions.ready();
+            startIntro();
+        }
+    };
+
+    // DOM yüklendiğinde SDK'yı başlat
+    document.addEventListener('DOMContentLoaded', triggerReady);
+    
+    // Global değişkenler
+    window.farcasterSDK = sdk;
+    window.isMiniApp = true;
+</script>
+    // Bu kodu </body> kapanışından önce ekleyin
+<script>
+    // Emergency splash screen remover
+    setTimeout(() => {
+        if (typeof sdk !== 'undefined' && sdk.actions && sdk.actions.ready) {
+            sdk.actions.ready();
+            console.log("🚨 EMERGENCY: Force-ready sent");
+        }
         
-        // READY sinyalini gönder (Splash ekranını kaldırır)
-        sdk.actions.ready();
-        console.log("✅ SDK Ready Signal Sent (Auto)");
+        // Fallback: window.parent'e mesaj gönder (Farcaster özel)
+        try {
+            window.parent.postMessage({
+                type: 'ready',
+                data: { ready: true }
+            }, '*');
+        } catch(e) {}
         
-    } catch (e) {
-        console.error("SDK Error:", e);
-        // Hata olsa bile sinyali gönder, kullanıcı takılı kalmasın
-        sdk.actions.ready();
-    }
-};
-
-        // Sayfa yüklenir yüklenmez çalıştır
-        triggerReady();
-
-      
-        // Global değişkenler
-        window.farcasterSDK = sdk;
-        window.isMiniApp = true;
-    </script>
+        // Fallback 2: URL'de ready parametresi
+        if (window.location.search.includes('splash=1')) {
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+    }, 2000);
+</script>
 
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
 
@@ -2035,9 +2057,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
       window.onload = function() {
         console.log("🚀 App Loaded. Triggering Farcaster SDK...");
         
-             
-        // Ana Oyun Akışını Başlat (Intro Ekranı)
-        startIntro();
+   
       };
     </script>
     <script>
@@ -2143,5 +2163,6 @@ Energy regenerates over time (1 per hour) even when you are offline.
     </script>
   </body>
 </html>
+
 
 
