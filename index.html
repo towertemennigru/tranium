@@ -60,30 +60,7 @@
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 </script>
-    // Bu kodu </body> kapanışından önce ekleyin
-<script>
-    // Emergency splash screen remover
-    setTimeout(() => {
-        if (typeof sdk !== 'undefined' && sdk.actions && sdk.actions.ready) {
-            sdk.actions.ready();
-            console.log("🚨 EMERGENCY: Force-ready sent");
-        }
-        
-        // Fallback: window.parent'e mesaj gönder (Farcaster özel)
-        try {
-            window.parent.postMessage({
-                type: 'ready',
-                data: { ready: true }
-            }, '*');
-        } catch(e) {}
-        
-        // Fallback 2: URL'de ready parametresi
-        if (window.location.search.includes('splash=1')) {
-            window.history.replaceState({}, '', window.location.pathname);
-        }
-    }, 2000);
-</script>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
 
     <style>
@@ -2174,8 +2151,32 @@ Energy regenerates over time (1 per hour) even when you are offline.
         secureGameLoop();
       })();
     </script>
+     // Bu kodu </body> kapanışından önce ekleyin
+<script>
+    // Emergency splash screen remover
+    setTimeout(() => {
+        if (typeof sdk !== 'undefined' && sdk.actions && sdk.actions.ready) {
+            sdk.actions.ready();
+            console.log("🚨 EMERGENCY: Force-ready sent");
+        }
+        
+        // Fallback: window.parent'e mesaj gönder (Farcaster özel)
+        try {
+            window.parent.postMessage({
+                type: 'ready',
+                data: { ready: true }
+            }, '*');
+        } catch(e) {}
+        
+        // Fallback 2: URL'de ready parametresi
+        if (window.location.search.includes('splash=1')) {
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+    }, 2000);
+</script>
   </body>
 </html>
+
 
 
 
