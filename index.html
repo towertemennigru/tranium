@@ -1163,9 +1163,9 @@ function saveCloudData(fid) {
         tranium: Math.floor(tranium),
         metal_lvl: metalFacLvl,
         kristal_lvl: kristalFacLvl,
-        energy: energy
+        energy: energy,
         metal_workers: metalWorkers,
-        kristal_workers: kristalWorkers
+        kristal_workers: kristalWorkers,
     };
 
     // POST isteği (CORS hatasını aşmak için Content-Type text/plain gönderiyoruz)
@@ -2319,16 +2319,11 @@ async function executeTransaction(signer, amountETH, toAddress) {
       }
 
       // Initial call to setup the intro screen
-      // Initial call to setup the intro screen
-      window.onload = function() {
-        console.log("🚀 App Loaded. Triggering Farcaster SDK...");
-        
-        // DÜZELTME: Intro'yu zorla başlat
-        // Bu sayede Farcaster context'i gelmese bile buton 0.8sn sonra görünür.
-        if (window.startIntro) {
-            window.startIntro();
-        }
-      };
+      window.onload = function() {
+        console.log("🚀 App Loaded. Triggering Farcaster SDK...");
+        
+   
+      };
     </script>
     <script>
       (function () {
@@ -2456,20 +2451,6 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
