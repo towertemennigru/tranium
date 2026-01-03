@@ -22,20 +22,21 @@
     <title>TRANIUM VERSE - Strategy Hub</title>
     
    <script type="module">
-    import { sdk } from 'https://esm.sh/@farcaster/frame-sdk'; // En stabil sürümü çeker
+    // En kararlı sürüm
+    import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
 
-    // SDK'yı global değişkene ata
+    // Global erişim
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 
     const triggerReady = async () => {
         try {
-            // SDK Context'inin yüklenmesini bekle
+            // SDK'nın hazır olmasını bekle
             await sdk.context;
             
-            // Farcaster'a "Ben hazırım" sinyali gönder
+            // Yükleme ekranını kaldır
             sdk.actions.ready();
-            console.log("✅ SDK Ready Signal Sent");
+            console.log("✅ SDK Ready");
             
             if(window.startIntro) window.startIntro();
         } catch (e) {
@@ -1493,46 +1494,90 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       async function sendETHPayment(amountETH) {
-        // 1. SDK Kontrolü
-        if (!window.farcasterSDK || !window.farcasterSDK.actions) {
-            alert("HATA: Farcaster SDK yüklenemedi. Lütfen sayfayı yenileyin veya Warpcast içinde açın.");
+        console.log("Ödeme süreci başlatılıyor...");
+
+        // Warpcast Mobil, window.ethereum'u otomatik olarak doldurur.
+        if (typeof window.ethereum === "undefined") {
+            alert("Cüzdan ortamı bulunamadı. Lütfen oyunu Warpcast mobil uygulamasında açın.");
             return false;
         }
 
         try {
-            // 2. Değer Dönüştürme (Ether -> Wei -> Hex)
-            // Farcaster Cüzdanı KESİNLİKLE Hex string (0x...) ister.
-            const amountWei = ethers.parseEther(amountETH.toString());
-            const amountHex = "0x" + amountWei.toString(16); // BigInt to Hex
+            // 1. Ethers Provider Kurulumu
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            
+            // 2. İzin İste
+            // Bu satır mobilde Warpcast çekmecesini, PC'de cüzdanı tetikler
+            const accounts = await provider.send("eth_requestAccounts", []);
+            if (!accounts || accounts.length === 0) {
+                alert("Cüzdan erişim izni verilmedi.");
+                return false;
+            }
 
-            console.log("Gönderilecek Tutar (Hex):", amountHex);
+            const signer = await provider.getSigner();
 
-            // 3. İşlemi Gönder (Sadece Farcaster SDK)
-            // 'value' kesinlikle string olmalı ve 0x ile başlamalı
-            const result = await window.farcasterSDK.actions.sendTransaction({
-                transaction: {
-                    to: PAYMENT_ADDRESS,
-                    value: amountHex, 
-                    data: "0x", 
-                    chainId: 8453 // Base Chain ID
+            // 3. Ağ Kontrolü (Base: 8453)
+            const network = await provider.getNetwork();
+            const chainId = Number(network.chainId);
+            
+            if (chainId !== 8453) {
+                try {
+                    await window.ethereum.request({
+                        method: "wallet_switchEthereumChain",
+                        params: [{ chainId: "0x2105" }], // 8453 hex
+                    });
+                } catch (switchError) {
+                    // Zincir ekleme gerekirse
+                    if (switchError.code === 4902) {
+                        try {
+                            await window.ethereum.request({
+                                method: "wallet_addEthereumChain",
+                                params: [{
+                                    chainId: "0x2105",
+                                    chainName: "Base",
+                                    nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+                                    rpcUrls: ["https://mainnet.base.org"],
+                                    blockExplorerUrls: ["https://basescan.org"]
+                                }]
+                            });
+                        } catch (addError) {
+                            alert("Base ağına geçiş yapılamadı.");
+                            return false;
+                        }
+                    } else {
+                        alert("Lütfen ağınızı Base Network olarak değiştirin.");
+                        return false;
+                    }
                 }
+            }
+
+            // 4. İşlemi Gönder
+            // Ethers.js 'value' parametresini otomatik olarak hex'e çevirir, manuel çeviriye gerek yok.
+            const amountWei = ethers.parseEther(amountETH.toString());
+            
+            console.log("İşlem gönderiliyor...");
+            
+            // BU SATIR CÜZDAN ONAY EKRANINI AÇAR
+            const tx = await signer.sendTransaction({
+                to: PAYMENT_ADDRESS,
+                value: amountWei
             });
 
-            console.log("SDK Yanıtı:", result);
-
-            // 4. Sonuç Kontrolü
-            // Farcaster bazen sadece { hash: "0x..." } döner, bazen { transactionId: "0x..." }
-            if (result && (result.hash || result.transactionId)) {
-                return true; 
-            }
+            console.log("TX Hash:", tx.hash);
             
-            // Eğer hash gelmediyse (kullanıcı kapattıysa)
-            return false;
+            // Hash oluştuysa işlem ağa iletilmiştir.
+            // Onaylanmasını beklemek (tx.wait) bazen donma yapar, o yüzden hash gelince başarılı sayıyoruz.
+            return true;
 
-        } catch (e) {
-            console.error("Ödeme Hatası:", e);
-            // Hata mesajını kullanıcıya gösterelim ki "tepki yok" sanmasın
-            alert("Ödeme Hatası: " + (e.message || e));
+        } catch (error) {
+            console.error("Ödeme Hatası:", error);
+            
+            // Kullanıcı reddettiyse (User rejected)
+            if (error.code === 4001 || error.message.includes("rejected")) {
+                alert("İşlem iptal edildi.");
+            } else {
+                alert("Hata: " + (error.shortMessage || error.message || "Bilinmeyen hata"));
+            }
             return false;
         }
       }
@@ -1542,14 +1587,14 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
         if (type === "metal") {
           if (metalFacUpgradeEndTime > Date.now()) {
-            alert("Şu an zaten geliştirme yapılıyor!");
+            alert("Zaten geliştirme yapılıyor!");
             return;
           }
           currentLevel = metalFacLvl;
           btnId = "upMetalFac";
         } else if (type === "kristal") {
           if (kristalFacUpgradeEndTime > Date.now()) {
-            alert("Şu an zaten geliştirme yapılıyor!");
+            alert("Zaten geliştirme yapılıyor!");
             return;
           }
           currentLevel = kristalFacLvl;
@@ -1563,27 +1608,27 @@ Energy regenerates over time (1 per hour) even when you are offline.
         if (!btn) return;
 
         const originalText = btn.innerHTML;
-        btn.innerHTML = "⚡ CÜZDAN AÇILIYOR..."; 
+        btn.innerHTML = "⚡ CÜZDAN..."; 
         btn.disabled = true; 
 
         // Ödemeyi başlat
         const paymentSuccess = await sendETHPayment(ethCost);
         
-        // Eğer başarısız olduysa butonu düzelt ve çık
+        // Başarısız olursa butonu düzelt
         if (!paymentSuccess) {
           btn.innerHTML = originalText;
           btn.disabled = false;
           return;
         }
 
-        // Başarılı olduysa işlemleri yap
+        // Başarılı olursa (Hash geldiyse) geliştirmeyi başlat
         if (type === "metal") {
           metalFacUpgradeEndTime = Date.now() + upgradeTime;
         } else if (type === "kristal") {
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        alert("✅ Ödeme Warpcast'e iletildi! İnşaat başladı.");
+        alert("✅ İşlem Ağa Gönderildi! İnşaat başlıyor.");
         updateUI();
         saveData();
       }
@@ -2167,6 +2212,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
 
 
 
