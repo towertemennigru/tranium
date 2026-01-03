@@ -4,9 +4,6 @@
     <meta name="base:app_id" content="6957083ec63ad876c9081cd6" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="base:app_id" content="6957083ec63ad876c9081cd6" />
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
     <meta property="og:title" content="TRANIUM VERSE - Strategy Hub" />
     <meta property="og:description" content="Collect resources and refine Tranium to dominate the Verse. A strategic mining game on Farcaster." />
@@ -22,38 +19,24 @@
     <title>TRANIUM VERSE - Strategy Hub</title>
     
    <script type="module">
-    // En güncel Frame SDK'sını çekiyoruz
     import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
 
-    // SDK'yı global değişkene atıyoruz ki her yerden erişelim
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 
     const triggerReady = async () => {
     try {
-        // SDK'nın context (bağlam) bilgisini bekle
         const context = await sdk.context;
-
-        // Eğer context gelirse (yani Farcaster içindeysek)
         if (context) {
             console.log("✅ Farcaster Environment Detected");
-            
-            // Engelleyici ekranı kaldır
             document.getElementById("desktop-blocker").style.display = "none";
-            
-            // SDK'ya hazır olduğumuzu bildir
             sdk.actions.ready();
-
-            // Varsa intro'yu başlat
             if(window.startIntro) window.startIntro();
         } else {
-            // Context yoksa (Normal tarayıcı)
             console.warn("❌ Not in Farcaster");
-            // Engelleyici ekran kalmaya devam eder
         }
     } catch (e) {
         console.error("SDK Init Error:", e);
-        // Hata olursa da engelleyici ekran kalır
     }
 };
 
@@ -67,7 +50,6 @@
     import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@1.6.0';
     import { base } from 'https://esm.sh/@reown/appkit/networks@1.6.0';
 
-    // Global erişim için window'a atıyoruz
     window.AppKitLib = {
         createAppKit,
         EthersAdapter,
@@ -113,7 +95,7 @@
         image-rendering: pixelated;
       }
 
-      /* --- YENİ EKLENEN LOADER STİLLERİ --- */
+      /* --- LOADER STİLLERİ --- */
       #loader {
         position: fixed; 
         top: 0; 
@@ -142,7 +124,7 @@
         letter-spacing: 2px; 
       }
 
-      /* --- MEVCUT INTRO/OVERLAY STİLLERİ --- */
+      /* --- INTRO/OVERLAY STİLLERİ --- */
       #introOverlay {
         position: fixed;
         top: 0;
@@ -239,7 +221,7 @@
         100% { box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); opacity: 0.8; }
       }
 
-      /* --- MEVCUT LOADING STİLLERİ (Yedek) --- */
+      /* --- LOADING STİLLERİ --- */
       #loadingOverlay {
         position: fixed;
         top: 0;
@@ -1126,12 +1108,13 @@ Energy regenerates over time (1 per hour) even when you are offline.
       const ctx = canvas.getContext("2d");
       const WORLD_SIZE = 2500;
       // --- GOOGLE SHEETS ENTEGRASYONU ---
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwv78Zv9yCzNN-FnZ01IaPvRRJKAL4SJ5cVT9gqBQeqyDcU97YjeTLdZP-3iWSeoqSfcQ/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFqUv3-RN83SyYItSnk6iYsHRlL_qv9goc1RJ7pwB0vwRhDOM9Goe5zq2UVlZMvaNhdA/exec";
 // Buluttan Veri Çekme (LOAD)
 async function loadCloudData(fid) {
     try {
         console.log("☁️ Buluttan veri çekiliyor... FID:", fid);
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=load&fid=${fid}`);
+        // FID'yi string olarak gönder
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=load&fid=${String(fid)}`);
         const data = await response.json();
         
         if (data.status === "new") {
@@ -1139,8 +1122,6 @@ async function loadCloudData(fid) {
             return null;
         }
         
-        // GÜVENLİK KONTROLÜ: Gelen enerji verisi sayısal mı?
-        // Eğer Apps Script boş dönerse NaN olur, bu durumda varsayılan 10'a dön.
         if (isNaN(data.energy) || data.energy === null || data.energy === "") {
              console.warn("⚠️ Enerji verisi bozuk geldi, varsayılan (10) kullanılacak.");
              data.energy = 10;
@@ -1157,7 +1138,7 @@ async function loadCloudData(fid) {
 function saveCloudData(fid) {
     // Kaydedilecek veri paketi
     const payload = {
-        fid: fid,
+        fid: String(fid), // String garantiye al
         metal: Math.floor(metal),
         kristal: Math.floor(kristal),
         tranium: Math.floor(tranium),
@@ -1166,10 +1147,10 @@ function saveCloudData(fid) {
         energy: energy,
         metal_workers: metalWorkers,
         kristal_workers: kristalWorkers,
-        last_save_time: Date.now()
+        last_save_time: Date.now(),
+        energy_reg_start: energyRegenerationStartTime // YENİ EKLENEN KRİTİK VERİ
     };
 
-    // POST isteği (CORS hatasını aşmak için Content-Type text/plain gönderiyoruz)
     fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
         body: JSON.stringify(payload)
@@ -1824,95 +1805,102 @@ async function executeTransaction(signer, amountETH, toAddress) {
         return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
       }
 
-    // window.initHub fonksiyonunun baş kısmı:
-
-window.initHub = async function() {
+    window.initHub = async function() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     canvas.style.imageRendering = "pixelated";
 
-    // --- FID ALMA MANTIĞI (GÜNCELLENDİ) ---
-    let userFID = "local_user"; // Varsayılan
+    // --- FID ALMA MANTIĞI ---
+    let userFID = "local_user"; // Varsayılan (PC'de test için)
     
-    // 1. Önce URL Parametresine bak (PC Testi için)
-    // Örnek kullanım: senin-siten.com?fid=2891
+    // 1. URL parametresine bak
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('fid')) {
         userFID = urlParams.get('fid');
         console.log("💻 PC Modu: URL'den FID alındı ->", userFID);
     } 
-    // 2. Yoksa Farcaster SDK'ya bak (Mobil için)
+    // 2. Farcaster SDK'ya bak
     else if (window.farcasterSDK && window.farcasterSDK.context) {
         try {
             const context = await window.farcasterSDK.context;
             if (context && context.user && context.user.fid) {
                 userFID = context.user.fid;
-                console.log("📱 Mobil Mod: Farcaster FID bulundu ->", userFID);
+                console.log("🆔 Mobil Mod: FID bulundu:", userFID);
             }
         } catch (e) {
             console.error("FID alınamadı:", e);
         }
     }
     
-    // ... kodun geri kalanı aynı ...
-    
     // Global değişkene atayalım ki save fonksiyonu da erişsin
-    window.currentUserFID = userFID;
+    window.currentUserFID = String(userFID);
 
     // --- VERİ YÜKLEME ---
+    // Önce buluta bak
     const cloudData = await loadCloudData(userFID);
     
-    // lastTime değişkenini başta şu an olarak ayarla
-    lastTime = Date.now(); 
+    lastTime = Date.now(); // Başlangıç varsayılanı
 
     if (cloudData) {
+        // Buluttan veri geldiyse değişkenleri güncelle
         metal = cloudData.metal;
         kristal = cloudData.kristal;
         tranium = cloudData.tranium;
         metalFacLvl = cloudData.metal_lvl;
         kristalFacLvl = cloudData.kristal_lvl;
         energy = cloudData.energy;
-        metalWorkers = cloudData.metal_workers || 0;
+        metalWorkers = cloudData.metal_workers || 0; 
         kristalWorkers = cloudData.kristal_workers || 0;
         
-        // YENİ: Buluttan gelen son oynama zamanını al
+        // Zamanlayıcıları senkronize et (KRİTİK KISIM)
+        if (cloudData.energy_reg_start) {
+            energyRegenerationStartTime = parseInt(cloudData.energy_reg_start);
+        }
         if (cloudData.last_save_time) {
             lastTime = parseInt(cloudData.last_save_time);
-            console.log("☁️ Bulut Zamanı Kullanılıyor:", new Date(lastTime).toLocaleTimeString());
         }
+        
     } else {
-        // ... (Local storage yedek kısmı kalabilir) ...
+        // Bulutta yoksa LocalStorage'a bak (Eski oyuncular için yedek)
+        if (localStorage.getItem("w_last_time")) {
+             metal = parseFloat(localStorage.getItem("w_metal")) || 0;
+             kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
+             tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
+             metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
+             kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
+             let savedEnergy = localStorage.getItem("w_energy");
+             energy = savedEnergy !== null ? parseInt(savedEnergy) : 10;
+        }
     }
     
     // --- OYUNU BAŞLAT ---
     const now = Date.now();
-    // Eğer lastTime gelecekteyse (saat farkı hatası vb.) 0 kabul et
+    // Offline süreyi hesapla (Buluttaki last_save_time'a göre)
     let secondsPassed = Math.floor((now - lastTime) / 1000);
-    if (secondsPassed < 0) secondsPassed = 0;
-
-    console.log("⏳ Offline Süre (Saniye):", secondsPassed);
-
+    if(secondsPassed < 0) secondsPassed = 0;
+    
     processMining(secondsPassed);
-    updateOfflineEnergyRegeneration(); // Enerjiyi de bu süreye göre hesapla
+    
+    // Enerjiyi buluttan gelen regeneration_start'a göre güncelle
+    updateOfflineEnergyRegeneration();
+    
+    checkUpgradeProgress();
+    updateUI();
+    startEnergyCountdown();
     
     for (let i = 0; i < 40; i++) spawnWorker();
     for (let i = 0; i < 15; i++) spawnEnemy();
     
     requestAnimationFrame(gameLoop);
     
-    // Hem LocalStorage hem de Cloud'a kaydet (3 saniyede bir)
+    // Hem LocalStorage hem de Cloud'a kaydet (30 saniyede bir)
     setInterval(saveData, 30000);
-      // Kullanıcı sekmeyi kapatırsa veya yenilerse ANINDA kaydet
-    window.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === 'hidden') {
-            saveData();
-        }
-    });
     
-    // Mobil tarayıcılar için ek güvenlik (Sayfa kapanırken tetiklenir)
-    window.addEventListener("pagehide", () => {
-        saveData();
+    // Sayfa kapanırken kaydet
+    window.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === 'hidden') saveData();
     });
+    window.addEventListener("pagehide", () => saveData());
     
     setInterval(checkUpgradeProgress, 1000);
     initJoystick();
@@ -2346,7 +2334,11 @@ window.initHub = async function() {
       window.onload = function() {
         console.log("🚀 App Loaded. Triggering Farcaster SDK...");
         
-   
+        // DÜZELTME: Intro'yu zorla başlat
+        // Bu sayede Farcaster context'i gelmese bile buton 0.8sn sonra görünür.
+        if (window.startIntro) {
+            window.startIntro();
+        }
       };
     </script>
     <script>
@@ -2475,11 +2467,3 @@ window.initHub = async function() {
 </script>
   </body>
 </html>
-
-
-
-
-
-
-
-
