@@ -19,6 +19,51 @@
     <meta name="fc:miniapp" content="hosted" />
     
     <title>TRANIUM VERSE - Strategy Hub</title>
+    
+    <script type="module">
+        import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk@0.0.14';
+
+        // SDK'yı global yap
+        window.farcasterSDK = sdk;
+        window.isMiniApp = true;
+
+        const safeLaunch = async () => {
+            console.log("🚀 Starting Safe Launch Sequence...");
+
+            // 1. DOM'un tamamen hazır olduğundan emin ol
+            if (document.readyState === 'loading') {
+                await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
+            }
+
+            // 2. Kritik UI elementinin (Intro) varlığını kontrol et
+            const intro = document.getElementById("introOverlay");
+            if (intro) {
+                console.log("✅ UI Detected");
+            }
+
+            // 3. Context'i bekle (Timeoutlu - maks 500ms)
+            // Bu adım context gelmese bile oyunun açılmasını sağlar
+            try {
+                await Promise.race([
+                    sdk.context,
+                    new Promise(r => setTimeout(r, 500))
+                ]);
+            } catch (e) { console.warn("Context wait", e); }
+
+            // 4. EKRAN BOYAMASINI BEKLE (En Önemli Kısım)
+            // Tarayıcının 'paint' işlemini yapması için bir frame atlatıyoruz.
+            // Bu, "SDK ready called too early" hatasının kesin çözümüdür.
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    sdk.actions.ready();
+                    console.log("✅ SDK READY SENT (After UI Paint)");
+                }, 50); // 50ms ekstra tampon süre
+            });
+        };
+
+        safeLaunch();
+    </script>
+
     <style>
       :root {
         --gold: #ffcc00;
@@ -53,6 +98,8 @@
         touch-action: none;
         image-rendering: pixelated;
       }
+      
+      /* GÜNCELLEME: Intro Overlay varsayılan olarak görünür (Siyah ekranı önler) */
       #introOverlay {
         position: fixed;
         top: 0;
@@ -60,13 +107,14 @@
         width: 100%;
         height: 100%;
         background: linear-gradient(45deg, #000000 0%, #1a0000 50%, #000000 100%);
-        display: flex;
+        display: flex; /* Flex olarak başlatıyoruz */
         flex-direction: column;
         align-items: center;
         justify-content: center;
         z-index: 1000;
         overflow: hidden;
       }
+      
       .intro-container {
         text-align: center;
         position: relative;
@@ -122,7 +170,8 @@
         font-weight: 300;
         letter-spacing: 2px;
       }
-      /* NEW ENTER BUTTON STYLE */
+      
+      /* Start Button */
       #enterBtn {
         margin-top: 40px;
         background: transparent;
@@ -137,7 +186,7 @@
         box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
         transition: all 0.3s ease;
         animation: btnPulse 2s infinite;
-        display: none; /* Hidden initially */
+        display: block; /* Buton her zaman görünür olsun */
       }
       #enterBtn:active {
         background: var(--neon);
@@ -1018,39 +1067,6 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
     <canvas id="gameCanvas"></canvas>
 
-    <script type="module">
-        import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk@0.0.14';
-
-        // Make SDK available globally safely
-        window.farcasterSDK = sdk;
-        window.isMiniApp = false;
-        
-        // Expose SDK Ready trigger for manual button
-        window.triggerSdkReady = () => {
-             try {
-                sdk.actions.ready();
-                window.isMiniApp = true;
-                console.log("✅ SDK Ready called via interaction");
-            } catch (e) {
-                console.error("⚠️ SDK Ready call failed:", e);
-            }
-        };
-
-        // Helper to get context if needed later
-        window.loadFarcasterContext = async () => {
-            try {
-                const context = await sdk.context;
-                window.farcasterContext = context;
-                console.log("✅ Context loaded:", context);
-            } catch (e) {
-                console.error("Context load error:", e);
-            }
-        };
-        
-        // Start fetching context in background
-        window.loadFarcasterContext();
-    </script>
-
     <script>
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
@@ -1205,24 +1221,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
         updateOfflineEnergyRegeneration();
       }
 
-      function startIntro() {
-        const introOverlay = document.getElementById("introOverlay");
-        introOverlay.style.display = "flex";
-        
-        // Show the Enter button after a short delay
-        setTimeout(() => {
-           const btn = document.getElementById("enterBtn");
-           if(btn) btn.style.display = "block";
-        }, 800);
-      }
-
       // NEW: User Interaction to start the flow
       function userEnterGame() {
-        // 1. Trigger SDK Ready (critical for Farcaster splash removal)
-        if (window.triggerSdkReady) {
-            window.triggerSdkReady();
-        }
-        
         // 2. Hide Intro
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "none";
@@ -1993,7 +1993,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       // Initial call to setup the intro screen
-      window.onload = startIntro;
+      // window.onload yerine artık aşağıdakini kullanmıyoruz çünkü SDK scripti yönetiyor
+      // window.onload = startIntro; 
     </script>
     <script>
       (function () {
