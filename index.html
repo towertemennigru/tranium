@@ -3,10 +3,7 @@
   <head>
     <meta name="base:app_id" content="6957083ec63ad876c9081cd6" />
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
     <meta property="og:title" content="TRANIUM VERSE - Strategy Hub" />
     <meta property="og:description" content="Collect resources and refine Tranium to dominate the Verse. A strategic mining game on Farcaster." />
@@ -23,46 +20,41 @@
     <script type="module">
         import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk@0.0.14';
 
-        // SDK'yı global yap
-        window.farcasterSDK = sdk;
-        window.isMiniApp = true;
-
-        const safeLaunch = async () => {
-            console.log("🚀 Starting Safe Launch Sequence...");
-
-            // 1. DOM'un tamamen hazır olduğundan emin ol
-            if (document.readyState === 'loading') {
-                await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
-            }
-
-            // 2. Kritik UI elementinin (Intro) varlığını kontrol et
-            const intro = document.getElementById("introOverlay");
-            if (intro) {
-                console.log("✅ UI Detected");
-            }
-
-            // 3. Context'i bekle (Timeoutlu - maks 500ms)
-            // Bu adım context gelmese bile oyunun açılmasını sağlar
+        // 1. Agresif Başlatma Fonksiyonu
+        const triggerReady = async () => {
             try {
+                // Context'i en fazla 500ms bekle (hızlı açılış için)
                 await Promise.race([
                     sdk.context,
-                    new Promise(r => setTimeout(r, 500))
+                    new Promise(resolve => setTimeout(resolve, 500))
                 ]);
-            } catch (e) { console.warn("Context wait", e); }
-
-            // 4. EKRAN BOYAMASINI BEKLE (En Önemli Kısım)
-            // Tarayıcının 'paint' işlemini yapması için bir frame atlatıyoruz.
-            // Bu, "SDK ready called too early" hatasının kesin çözümüdür.
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    sdk.actions.ready();
-                    console.log("✅ SDK READY SENT (After UI Paint)");
-                }, 50); // 50ms ekstra tampon süre
-            });
+                
+                // READY sinyalini gönder (Splash ekranını kaldırır)
+                sdk.actions.ready();
+                console.log("✅ SDK Ready Signal Sent (Auto)");
+                
+            } catch (e) {
+                console.error("SDK Error:", e);
+                // Hata olsa bile sinyali gönder, kullanıcı takılı kalmasın
+                sdk.actions.ready();
+            }
         };
 
-        safeLaunch();
+        // Sayfa yüklenir yüklenmez çalıştır
+        triggerReady();
+
+        // 2. Yedek Tetikleme (Fallback)
+        setTimeout(() => {
+            sdk.actions.ready();
+            console.log("✅ Fallback Ready Signal Sent");
+        }, 1000);
+
+        // Global değişkenler
+        window.farcasterSDK = sdk;
+        window.isMiniApp = true;
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
 
     <style>
       :root {
@@ -87,6 +79,8 @@
         color: white;
         height: 100vh;
         width: 100vw;
+        -webkit-user-select: none; 
+        user-select: none;
       }
       #gameCanvas {
         position: fixed;
@@ -98,8 +92,37 @@
         touch-action: none;
         image-rendering: pixelated;
       }
-      
-      /* GÜNCELLEME: Intro Overlay varsayılan olarak görünür (Siyah ekranı önler) */
+
+      /* --- YENİ EKLENEN LOADER STİLLERİ --- */
+      #loader {
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%;
+        background: #0a0a00; 
+        z-index: 9999;
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center;
+      }
+      .spinner { 
+        width: 50px; 
+        height: 50px; 
+        border: 5px solid #333; 
+        border-top: 5px solid #ffcc00; 
+        border-radius: 50%; 
+        animation: spin 1s infinite linear; 
+      }
+      .text { 
+        margin-top: 20px; 
+        color: #00ffcc; 
+        font-weight: bold; 
+        letter-spacing: 2px; 
+      }
+
+      /* --- MEVCUT INTRO/OVERLAY STİLLERİ --- */
       #introOverlay {
         position: fixed;
         top: 0;
@@ -107,14 +130,13 @@
         width: 100%;
         height: 100%;
         background: linear-gradient(45deg, #000000 0%, #1a0000 50%, #000000 100%);
-        display: flex; /* Flex olarak başlatıyoruz */
+        display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         z-index: 1000;
         overflow: hidden;
       }
-      
       .intro-container {
         text-align: center;
         position: relative;
@@ -170,8 +192,6 @@
         font-weight: 300;
         letter-spacing: 2px;
       }
-      
-      /* Start Button */
       #enterBtn {
         margin-top: 40px;
         background: transparent;
@@ -186,7 +206,7 @@
         box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
         transition: all 0.3s ease;
         animation: btnPulse 2s infinite;
-        display: block; /* Buton her zaman görünür olsun */
+        display: none; 
       }
       #enterBtn:active {
         background: var(--neon);
@@ -199,6 +219,7 @@
         100% { box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); opacity: 0.8; }
       }
 
+      /* --- MEVCUT LOADING STİLLERİ (Yedek) --- */
       #loadingOverlay {
         position: fixed;
         top: 0;
@@ -279,6 +300,8 @@
         max-width: 300px;
         line-height: 1.4;
       }
+
+      /* --- ANA OYUN UI --- */
       #overlay {
         position: fixed;
         top: 0;
@@ -296,6 +319,55 @@
         gap: 0;
         display: none;
       }
+      
+      /* --- JOYSTICK & UI BİRLEŞTİRME --- */
+      #ui { 
+        position: absolute; 
+        top: 15px; 
+        left: 15px; 
+        right: 15px; 
+        z-index: 10; 
+        display: none; /* Varsayılan olarak gizli */
+        justify-content: space-between; 
+        font-weight: bold; 
+        text-shadow: 2px 2px 4px black;
+        font-size: min(14px, 3.5vw);
+        pointer-events: none; /* Tıklamaları alta geçir */
+      }
+      /* UI içindeki butonların tıklanabilir olması için */
+      #ui > * { pointer-events: auto; }
+
+      #joystickContainer { 
+        position: fixed; 
+        bottom: 30px; 
+        left: 30px; 
+        width: 100px; 
+        height: 100px; 
+        z-index: 20; 
+        display: none; /* Varsayılan olarak gizli */
+        pointer-events: auto;
+      }
+      #joystickBase { 
+        width: 100%; 
+        height: 100%; 
+        background: rgba(255,255,255,0.1); 
+        border: 2px solid rgba(255,255,255,0.3); 
+        border-radius: 50%; 
+        position: absolute;
+      }
+      #joystickHandle { 
+        position: absolute; 
+        top: 50%; 
+        left: 50%; 
+        width: 50px; 
+        height: 50px; 
+        background: #ffcc00; 
+        border-radius: 50%; 
+        transform: translate(-50%, -50%); 
+        box-shadow: 0 0 15px #ffcc00; 
+      }
+
+      /* --- MODAL ve DİĞER PENCERELER --- */
       #howToPlayScreen {
         position: fixed;
         top: 0;
@@ -341,6 +413,7 @@
         align-items: center;
         gap: 5px;
         flex-shrink: 0;
+        pointer-events: auto;
       }
       .btn-help-open:before {
         content: "?";
@@ -640,20 +713,6 @@
         min-height: 70px;
         box-shadow: 0 6px 0 #b89600;
       }
-      #ui {
-        position: absolute;
-        top: max(env(safe-area-inset-top), 15px);
-        left: 15px;
-        right: 15px;
-        pointer-events: none;
-        display: flex;
-        justify-content: space-between;
-        z-index: 10;
-        opacity: 0;
-        font-weight: bold;
-        text-shadow: 2px 2px 4px black;
-        font-size: min(14px, 3.5vw);
-      }
       .reset-link {
         color: var(--neon);
         font-size: 12px;
@@ -671,37 +730,7 @@
         min-height: 44px;
         flex-shrink: 0;
       }
-      #joystickContainer {
-        position: fixed;
-        left: 25px;
-        bottom: 25px;
-        width: 120px;
-        height: 120px;
-        z-index: 20;
-        display: none;
-        pointer-events: auto;
-      }
-      #joystickBase {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-      }
-      #joystickHandle {
-        position: absolute;
-        width: 60px;
-        height: 60px;
-        background: rgba(255, 204, 0, 0.9);
-        border: 2px solid rgba(255, 255, 255, 0.8);
-        border-radius: 50%;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
-      }
+
       @keyframes introFadeIn {
         from {
           opacity: 0;
@@ -737,6 +766,8 @@
           opacity: 1;
         }
       }
+
+      /* MEDIA QUERIES */
       @media (max-width: 600px) and (max-height: 850px) {
         #overlay {
           justify-content: space-evenly;
@@ -875,9 +906,8 @@
         }
       }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
   </head>
-  <body>
+   <body>
     <div id="introOverlay">
       <div class="intro-container">
         <div class="disease-logo">DISEASES GAMES</div>
@@ -1221,8 +1251,22 @@ Energy regenerates over time (1 per hour) even when you are offline.
         updateOfflineEnergyRegeneration();
       }
 
+      function startIntro() {
+        const introOverlay = document.getElementById("introOverlay");
+        introOverlay.style.display = "flex";
+        
+        // Show the Enter button after a short delay
+        setTimeout(() => {
+           const btn = document.getElementById("enterBtn");
+           if(btn) btn.style.display = "block";
+        }, 800);
+      }
+
       // NEW: User Interaction to start the flow
       function userEnterGame() {
+        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
+        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
+        
         // 2. Hide Intro
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "none";
@@ -1993,8 +2037,19 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       // Initial call to setup the intro screen
-      // window.onload yerine artık aşağıdakini kullanmıyoruz çünkü SDK scripti yönetiyor
-      // window.onload = startIntro; 
+      window.onload = function() {
+        console.log("🚀 App Loaded. Triggering Farcaster SDK...");
+        
+        // SDK Hazır Sinyali
+        if (window.farcaster && window.farcaster.sdk) {
+            window.farcaster.sdk.actions.ready();
+        } else {
+            console.warn("SDK not found on window, checking imports...");
+        }
+        
+        // Ana Oyun Akışını Başlat (Intro Ekranı)
+        startIntro();
+      };
     </script>
     <script>
       (function () {
@@ -2099,3 +2154,4 @@ Energy regenerates over time (1 per hour) even when you are offline.
     </script>
   </body>
 </html>
+
