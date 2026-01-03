@@ -2391,122 +2391,125 @@ Energy regenerates over time (1 per hour) even when you are offline.
     });
 </script>
   <script>
-    // 1. Supabase Bağlantısını Garantile
-    const S_URL = 'https://zfuihwcesflbkyqhixxu.supabase.co';
-    const S_KEY = 'sb_publishable_STygDXzq5VQpS7bHiAGRIg_y0gSIxOb';
-    let mySupabase = null;
+    // 1. ACİL DURUM: Siyah Ekranı ve Yüklemeyi Zorla Kaldır
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            // Engelleyiciyi kaldır
+            const blocker = document.getElementById("desktop-blocker");
+            if(blocker) blocker.style.display = "none";
 
-    if (typeof window.supabase !== 'undefined') {
-        mySupabase = window.supabase.createClient(S_URL, S_KEY);
-    }
+            // Yükleme ekranını gizle (Eğer takılı kaldıysa)
+            const loading = document.getElementById("loadingOverlay");
+            if(loading) loading.style.display = "none";
 
-    // 2. Butona Tıklanınca Çalışacak Fonksiyon (Kesin Çözüm)
+            // Intro ekranını aç
+            const intro = document.getElementById("introOverlay");
+            if(intro) intro.style.display = "flex";
+
+            // Butonu görünür yap
+            const btn = document.getElementById("enterBtn");
+            if(btn) {
+                btn.style.display = "block";
+                btn.innerText = "START SIMULATION";
+                btn.disabled = false;
+                console.log("🟢 Arayüz Zorla Açıldı");
+            }
+        }, 1000); // 1 saniye bekle ve aç
+    });
+
+    // 2. Butona Tıklama Fonksiyonu (Hata Korumalı)
     window.userEnterGame = async function() {
-        console.log("🖱️ Butona tıklandı...");
         const btn = document.getElementById("enterBtn");
         
-        // Eğer cüzdan zaten doğrulanmışsa direkt oyunu aç
+        // Zaten giriş yapıldıysa oyuna geç
         if (window.isWalletAuthenticated) {
-            document.getElementById("introOverlay").style.display = "none";
-            startLoading();
+            startLoading(); 
             return;
         }
 
-        // Görsel Geri Bildirim
-        const originalText = btn.innerText;
-        btn.innerText = "CÜZDAN AÇILIYOR...";
-        btn.style.opacity = "0.7";
-        
+        btn.innerText = "CÜZDAN YÜKLENİYOR...";
+        btn.disabled = true;
+
         try {
-            // Cüzdan Doğrulama Fonksiyonunu Çağır
-            const result = await runAuthProcess();
-            
-            if (result) {
-                btn.innerText = "GİRİŞ BAŞARILI ✅";
-                btn.style.borderColor = "#00ff00";
-                btn.style.color = "#00ff00";
+            // AppKit hazır mı kontrol et, değilse 1.5 saniye bekle (Mobilde gecikebilir)
+            if (!window.appKitModal) {
+                // Eğer global değişken yoksa, module içindeki init fonksiyonunu tetiklemeyi dene
+                if(window.initWalletSystem) window.initWalletSystem();
                 
-                // 1 saniye sonra oyuna geç
-                setTimeout(() => {
-                    document.getElementById("introOverlay").style.display = "none";
-                    startLoading();
-                }, 1000);
-            } else {
-                // Başarısız olursa butonu eski haline getir
-                btn.innerText = "TEKRAR DENE";
-                btn.style.opacity = "1";
+                await new Promise(r => setTimeout(r, 1500));
+                
+                // Tekrar kontrol et
+                if(!window.appKitModal) {
+                    throw new Error("Cüzdan sistemi yüklenemedi. Lütfen sayfayı yenileyin.");
+                }
             }
+
+            // A) Bağlan
+            if (!window.appKitModal.getIsConnected()) {
+                await window.appKitModal.open();
+                // Bağlantı bekleme döngüsü
+                await new Promise((resolve) => {
+                    const check = setInterval(() => {
+                        if (window.appKitModal.getIsConnected()) {
+                            clearInterval(check);
+                            resolve();
+                        }
+                    }, 500);
+                });
+            }
+
+            // B) Adres Al
+            const walletProvider = window.appKitModal.getProvider();
+            const provider = new ethers.BrowserProvider(walletProvider);
+            const signer = await provider.getSigner();
+            const address = await signer.getAddress();
+
+            // C) İmzala
+            btn.innerText = "İMZA BEKLENİYOR...";
+            const message = `Tranium Verse Login\nFID: ${window.userFID || 'Guest'}\nWallet: ${address}`;
+            await signer.signMessage(message);
+
+            // D) Veritabanına Yaz (Supabase varsa)
+            if (typeof window.supabase !== 'undefined') {
+                const client = window.supabase.createClient(
+                    'https://zfuihwcesflbkyqhixxu.supabase.co',
+                    'sb_publishable_STygDXzq5VQpS7bHiAGRIg_y0gSIxOb'
+                );
+                if(window.userFID) {
+                    await client.from('players').upsert({
+                        fid: window.userFID,
+                        wallet_address: address,
+                        last_login: new Date().toISOString()
+                    }, { onConflict: 'fid' });
+                }
+            }
+
+            // Başarılı
+            window.isWalletAuthenticated = true;
+            btn.innerText = "GİRİŞ BAŞARILI ✅";
+            btn.style.color = "#00ff00";
+            
+            setTimeout(() => {
+                document.getElementById("introOverlay").style.display = "none";
+                if(window.initHub) {
+                    document.getElementById("overlay").style.display = "flex";
+                    window.initHub(); // Oyunu direkt başlat
+                } else {
+                    startLoading();
+                }
+            }, 500);
+
         } catch (err) {
-            alert("Hata: " + err.message);
-            btn.innerText = originalText;
-            btn.style.opacity = "1";
+            console.error(err);
+            alert("Hata: " + (err.message || "Bilinmeyen hata"));
+            btn.innerText = "TEKRAR DENE";
+            btn.disabled = false;
         }
     };
-
-    // 3. Asıl Cüzdan ve İmza Mantığı
-    async function runAuthProcess() {
-        // AppKit hazır mı kontrol et
-        if (!appKitModal) {
-            // Hazır değilse 2 saniye bekle ve tekrar dene (PC/Yavaş internet için)
-            alert("Sistem hazırlanıyor... Lütfen 2 saniye bekleyip tekrar tıklayın.");
-            return false;
-        }
-
-        // A) Cüzdan Bağlı Değilse Bağla
-        if (!appKitModal.getIsConnected()) {
-            await appKitModal.open();
-            // Kullanıcı bağlayana kadar bekle
-            await new Promise((resolve) => {
-                const check = setInterval(() => {
-                    if (appKitModal.getIsConnected()) {
-                        clearInterval(check);
-                        resolve();
-                    }
-                }, 500);
-            });
-        }
-
-        // B) Adresi Al ve İmzayı Hazırla
-        const walletProvider = appKitModal.getProvider();
-        const provider = new ethers.BrowserProvider(walletProvider);
-        const signer = await provider.getSigner();
-        const address = await signer.getAddress();
-        const fid = window.userFID || 'Misafir';
-
-        // C) İmza Mesajı (Kullanıcının önüne çıkacak yazı)
-        const message = `Tranium Verse Giriş\n\nKullanıcı: ${fid}\nCüzdan: ${address}\nTarih: ${new Date().toLocaleDateString()}`;
-
-        try {
-            // İmza penceresini aç
-            await signer.signMessage(message);
-            console.log("✅ İmza Başarılı! Adres:", address);
-
-            // D) Supabase'e Kaydet
-            if (mySupabase && window.userFID) {
-                await mySupabase.from('players').upsert({
-                    fid: window.userFID,
-                    wallet_address: address,
-                    last_login: new Date().toISOString()
-                }, { onConflict: 'fid' });
-                console.log("💾 Veritabanına işlendi.");
-            }
-
-            window.isWalletAuthenticated = true;
-            return true;
-
-        } catch (error) {
-            console.error("İmza Hatası:", error);
-            if(error.code === 4001 || error.message.includes("rejected")) {
-                alert("Giriş yapabilmek için imzayı onaylamanız gerekir.");
-            } else {
-                alert("Beklenmeyen hata: " + error.message);
-            }
-            return false;
-        }
-    }
 </script>
   </body>
 </html>
+
 
 
 
