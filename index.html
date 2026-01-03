@@ -1494,72 +1494,75 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       async function sendETHPayment(amountETH) {
-        
-        // 1. Farcaster Mini App Kontrolü (ÖNCELİKLİ)
-        if (window.farcasterSDK && window.farcasterSDK.actions) {
+        console.log("Ödeme işlemi başlatılıyor...");
+
+        // 1. Standart Cüzdan Kontrolü (Warpcast ve Metamask burayı kullanır)
+        if (typeof window.ethereum !== "undefined") {
             try {
-                // Wei formatına çevir (Ethers.js kullanarak)
-                const amountWei = ethers.parseEther(amountETH.toString()).toString();
+                // Cüzdan erişimi iste
+                await window.ethereum.request({ method: "eth_requestAccounts" });
                 
-                // SDK üzerinden işlem gönder
-                const result = await window.farcasterSDK.actions.sendTransaction({
+                // Ethers v6 Provider kurulumu
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                
+                // Base Ağı Kontrolü (Chain ID: 8453)
+                const network = await provider.getNetwork();
+                const chainId = Number(network.chainId);
+                
+                if (chainId !== 8453) {
+                    try {
+                        await window.ethereum.request({
+                            method: "wallet_switchEthereumChain",
+                            params: [{ chainId: "0x2105" }], // 8453 (hex)
+                        });
+                    } catch (switchError) {
+                        // Zincir ekleme hatası veya kullanıcı reddi
+                        console.error("Zincir değiştirme hatası:", switchError);
+                        alert("Lütfen cüzdan ağını Base Network (8453) olarak değiştirin.");
+                        return false;
+                    }
+                }
+
+                // Ethers v6 syntax ile Wei çevrimi
+                const amountWei = ethers.parseEther(amountETH.toString());
+
+                // İşlemi gönder
+                console.log("İşlem gönderiliyor...");
+                const tx = await signer.sendTransaction({
                     to: PAYMENT_ADDRESS,
-                    value: amountWei,
-                    chainId: 8453 // Base Chain ID
+                    value: amountWei
                 });
+
+                console.log("TX Hash:", tx.hash);
                 
-                console.log("Farcaster TX Sonucu:", result);
-                return true; 
-            } catch (fcError) {
-                console.error("Farcaster Ödeme Hatası:", fcError);
-                return false; 
-            }
-        }
+                // Onaylanmasını bekle (Opsiyonel ama güvenli)
+                alert("İşlem gönderildi! Onay bekleniyor...");
+                await tx.wait();
+                
+                return true;
 
-        // 2. Normal Tarayıcı (Metamask vb.) Yedeği
-        if (typeof window.ethereum === "undefined") {
-          alert("Cüzdan bulunamadı. Mini App içindeyseniz cüzdanınızın bağlı olduğundan emin olun.");
-          return false;
-        }
-
-        try {
-          await window.ethereum.request({ method: "eth_requestAccounts" });
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const network = await provider.getNetwork();
-          
-          // Base zincirine geçiş kontrolü
-          if (Number(network.chainId) !== 8453) {
-            try {
-              await window.ethereum.request({
-                method: "wallet_switchEthereumChain",
-                params: [{ chainId: "0x2105" }], // Base Chain ID hex
-              });
-            } catch (switchError) {
-                alert("Lütfen cüzdanınızı Base Network ağına manuel geçirin.");
+            } catch (error) {
+                console.error("Wallet Error:", error);
+                // Kullanıcı reddettiyse
+                if (error.code === 4001) {
+                    alert("İşlemi reddettiniz.");
+                } else {
+                    alert("Cüzdan hatası: " + (error.message || error));
+                }
                 return false;
             }
-          }
-
-          const signer = await provider.getSigner();
-          const amountWei = ethers.parseEther(amountETH.toString());
-
-          const tx = await signer.sendTransaction({
-            to: PAYMENT_ADDRESS,
-            value: amountWei
-          });
-          await tx.wait();
-          return true;
-        } catch (error) {
-          console.error("Ödeme hatası:", error);
-          alert("Ödeme başarısız: " + (error.message || "Bilinmeyen hata"));
-          return false;
+        } else {
+            // Cüzdan yoksa
+            alert("Cüzdan bulunamadı! Lütfen Warpcast veya Web3 tarayıcısı kullanın.");
+            return false;
         }
       }
-
       async function upgradeFactory(type) {
         let currentLevel;
-        let btnId; // Butonu bulmak için ID
+        let btnId; 
 
+        // Hangi fabrika?
         if (type === "metal") {
           if (metalFacUpgradeEndTime > Date.now()) {
             alert("Zaten geliştirme yapılıyor!");
@@ -1579,15 +1582,18 @@ Energy regenerates over time (1 per hour) even when you are offline.
         const ethCost = getUpgradeCost(currentLevel);
         const upgradeTime = getUpgradeTime(currentLevel);
         
-        // Confirm penceresini kaldırdık, direkt cüzdanı açıyoruz.
-        // Kullanıcı zaten cüzdanda "Onayla" veya "Reddet" diyebilir.
-        
-        // Butona "İşleniyor" yazısı yazalım
+        // Butonu bul ve durumunu değiştir
         const btn = document.getElementById(btnId);
+        if (!btn) {
+            console.error("Buton bulunamadı:", btnId);
+            return;
+        }
+
         const originalText = btn.innerHTML;
-        btn.innerHTML = "⏳ WALLET OPENING...";
+        btn.innerHTML = "⏳ CÜZDAN AÇILIYOR...";
         btn.disabled = true;
 
+        // Cüzdan fonksiyonunu çağır (Bekleme süresi koymuyoruz, await ile bekliyoruz)
         const paymentSuccess = await sendETHPayment(ethCost);
         
         if (!paymentSuccess) {
@@ -1597,13 +1603,14 @@ Energy regenerates over time (1 per hour) even when you are offline.
           return;
         }
 
+        // Başarılı olursa verileri güncelle
         if (type === "metal") {
           metalFacUpgradeEndTime = Date.now() + upgradeTime;
         } else if (type === "kristal") {
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        alert("✅ Ödeme başarılı! Geliştirme başladı.");
+        alert("✅ Ödeme başarılı! İnşaat başladı.");
         updateUI();
         saveData();
       }
@@ -2188,6 +2195,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
 
 
 
