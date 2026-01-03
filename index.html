@@ -1114,7 +1114,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
       <button class="btn-refine btn-upgrade-menu" onclick="openUpgradeModal()">🏭 FACTORY UPGRADES</button>
 
       <div class="footer">
-        <span id="energyStatus" class="energy-info">⚡ ENERGY: 10/10</span>
+        <span id="energyStatus" class="energy-info">⚡ LOADING...</span>
         <button class="btn-start" onclick="attemptStart()">START MISSION</button>
       </div>
     </div>
@@ -1131,15 +1131,21 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0uv8SzjHAX8
 async function loadCloudData(fid) {
     try {
         console.log("☁️ Buluttan veri çekiliyor... FID:", fid);
-        // GET isteği atıyoruz
         const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=load&fid=${fid}`);
         const data = await response.json();
         
         if (data.status === "new") {
-            console.log("🆕 Yeni kullanıcı, varsayılan değerlerle başlanıyor.");
-            return null; // Kayıt yoksa null dön
+            console.log("🆕 Yeni kullanıcı veya kayıt bulunamadı.");
+            return null;
         }
         
+        // GÜVENLİK KONTROLÜ: Gelen enerji verisi sayısal mı?
+        // Eğer Apps Script boş dönerse NaN olur, bu durumda varsayılan 10'a dön.
+        if (isNaN(data.energy) || data.energy === null || data.energy === "") {
+             console.warn("⚠️ Enerji verisi bozuk geldi, varsayılan (10) kullanılacak.");
+             data.energy = 10;
+        }
+
         console.log("✅ Veri yüklendi:", data);
         return data;
     } catch (error) {
@@ -1147,7 +1153,6 @@ async function loadCloudData(fid) {
         return null;
     }
 }
-
 // Buluta Veri Kaydetme (SAVE)
 function saveCloudData(fid) {
     // Kaydedilecek veri paketi
@@ -1402,22 +1407,32 @@ function saveCloudData(fid) {
         }
       }
 
-      function completeLoading() {
-        clearInterval(loadingInterval);
-        const progressBar = document.querySelector(".loading-progress-bar");
-        const percentageText = document.querySelector(".loading-percentage");
-        const loadingText = document.querySelector(".loading-text");
+     // Yüklemenin bitmesi için initHub'ın (Bulut verisinin) tamamlanmasını bekliyoruz
+async function completeLoading() {
+    clearInterval(loadingInterval);
+    const progressBar = document.querySelector(".loading-progress-bar");
+    const percentageText = document.querySelector(".loading-percentage");
+    const loadingText = document.querySelector(".loading-text");
 
-        progressBar.style.width = "100%";
-        percentageText.textContent = "100%";
-        loadingText.textContent = "Ready to Mine!";
+    progressBar.style.width = "100%";
+    percentageText.textContent = "100%";
+    loadingText.textContent = "Syncing Cloud Data..."; // Kullanıcıya bilgi veriyoruz
 
-        setTimeout(() => {
-          document.getElementById("loadingOverlay").style.display = "none";
-          document.getElementById("overlay").style.display = "flex";
-          initHub();
-        }, 1000);
-      }
+    // --- KRİTİK DEĞİŞİKLİK BURADA ---
+    // Önce initHub'ı çalıştırıp bitmesini bekle (await), sonra ekranı aç.
+    try {
+        await initHub(); 
+    } catch (e) {
+        console.error("Başlatma hatası:", e);
+    }
+
+    setTimeout(() => {
+        document.getElementById("loadingOverlay").style.display = "none";
+        document.getElementById("overlay").style.display = "flex";
+        // UI'ın son halini güncellediğimizden emin olalım
+        updateUI();
+    }, 500);
+}
 
       function updateOfflineEnergyRegeneration() {
         const now = Date.now();
@@ -2435,6 +2450,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
