@@ -21,25 +21,50 @@
     
     <title>TRANIUM VERSE - Strategy Hub</title>
     
-   <script type="module">
-    // En güncel Frame SDK'sını çekiyoruz
+  <script type="module">
+    // En güncel Frame SDK'sı
     import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
 
-    // SDK'yı global değişkene atıyoruz ki her yerden erişelim
+    // SDK'yı global yapıyoruz
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 
     const triggerReady = async () => {
         try {
-            // SDK'nın yüklenmesini bekle
-            await sdk.context;
-            sdk.actions.ready();
-            console.log("✅ SDK Ready");
+            // SDK Context'i bekle
+            const context = await sdk.context;
+
+            // --- DEĞİŞİKLİK BURADA ---
+            // Context varsa (Farcaster) veya yoksa (Tarayıcı) fark etmeksizin oyunu başlatıyoruz.
             
-            // Varsa intro'yu başlat
-            if(window.startIntro) window.startIntro();
+            if (context) {
+                console.log("✅ Farcaster Ortamı");
+                
+                // Varsa FID'yi al
+                if (context.user && context.user.fid) {
+                    window.userFID = context.user.fid;
+                    console.log("👤 FID:", window.userFID);
+                }
+                sdk.actions.ready();
+            } else {
+                console.log("⚠️ Tarayıcı Ortamı (Test Modu)");
+                // Tarayıcıdaysak test için rastgele FID ata
+                window.userFID = 999999;
+            }
+
         } catch (e) {
-            console.error("SDK Init Error:", e);
+            console.error("SDK Hatası (Önemsiz):", e);
+        } finally {
+            // NE OLURSA OLSUN BU KISIM ÇALIŞIR:
+            // 1. Engelleyici ekranı kaldır
+            const blocker = document.getElementById("desktop-blocker");
+            if (blocker) blocker.style.display = "none";
+
+            // 2. Intro'yu başlat (Bu fonksiyon butonu görünür yapar)
+            if(window.startIntro) {
+                console.log("🎬 Intro Başlatılıyor...");
+                window.startIntro();
+            }
         }
     };
 
@@ -2336,6 +2361,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
 
 
 
