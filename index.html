@@ -1558,29 +1558,42 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
       async function upgradeFactory(type) {
         let currentLevel;
+        let btnId; // Butonu bulmak için ID
+
         if (type === "metal") {
           if (metalFacUpgradeEndTime > Date.now()) {
-            alert("Upgrade already in progress!");
+            alert("Zaten geliştirme yapılıyor!");
             return;
           }
           currentLevel = metalFacLvl;
+          btnId = "upMetalFac";
         } else if (type === "kristal") {
           if (kristalFacUpgradeEndTime > Date.now()) {
-            alert("Upgrade already in progress!");
+            alert("Zaten geliştirme yapılıyor!");
             return;
           }
           currentLevel = kristalFacLvl;
+          btnId = "upKristalFac";
         }
 
         const ethCost = getUpgradeCost(currentLevel);
         const upgradeTime = getUpgradeTime(currentLevel);
-        const confirmMsg = `🏭 Upgrade to Level ${currentLevel + 1}\n\n💰 Cost: ${ethCost} ETH (Base Network)\n⏱️ Build Time: ${formatTimeHours(upgradeTime)}\n\n💳 Proceed with payment?`;
-        if (!confirm(confirmMsg)) {
-          return;
-        }
+        
+        // Confirm penceresini kaldırdık, direkt cüzdanı açıyoruz.
+        // Kullanıcı zaten cüzdanda "Onayla" veya "Reddet" diyebilir.
+        
+        // Butona "İşleniyor" yazısı yazalım
+        const btn = document.getElementById(btnId);
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "⏳ WALLET OPENING...";
+        btn.disabled = true;
 
         const paymentSuccess = await sendETHPayment(ethCost);
+        
         if (!paymentSuccess) {
+          // Başarısız olursa butonu eski haline getir
+          btn.innerHTML = originalText;
+          btn.disabled = false;
           return;
         }
 
@@ -1590,7 +1603,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        alert("✅ Payment successful! Upgrade started.");
+        alert("✅ Ödeme başarılı! Geliştirme başladı.");
         updateUI();
         saveData();
       }
@@ -2175,6 +2188,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
 
 
 
