@@ -66,6 +66,7 @@
     import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
     import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@1.6.0';
     import { base } from 'https://esm.sh/@reown/appkit/networks@1.6.0';
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     // Global erişim için window'a atıyoruz
     window.AppKitLib = {
@@ -1172,6 +1173,73 @@ Energy regenerates over time (1 per hour) even when you are offline.
       let metalFacUpgradeEndTime = 0;
       let kristalFacUpgradeEndTime = 0;
 
+      // --- SUPABASE ENTEGRASYONU BAŞLANGIÇ ---
+      const SUPABASE_URL = 'https://zfuihwcesflbkyqhixxu.supabase.co';
+      const SUPABASE_KEY = 'sb_publishable_STygDXzq5VQpS7bHiAGRIg_y0gSIxOb';
+      let supabase = null;
+
+      // Supabase başlatma
+      if (typeof window.supabase !== 'undefined') {
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          console.log("✅ Supabase Bağlandı");
+      }
+
+      // Buluttan Yükleme
+      async function loadFromCloud() {
+          if (!supabase || !window.userFID) return;
+          console.log("☁️ Veri aranıyor... FID:", window.userFID);
+          
+          const { data, error } = await supabase
+              .from('players')
+              .select('game_data')
+              .eq('fid', window.userFID)
+              .single();
+
+          if (data && data.game_data) {
+              const d = data.game_data;
+              // Mevcut değişkenleri güncelle
+              metal = d.metal || 0;
+              kristal = d.kristal || 0;
+              tranium = d.tranium || 0;
+              metalWorkers = d.mw || 0;
+              kristalWorkers = d.kw || 0;
+              metalFacLvl = d.mfl || 1;
+              kristalFacLvl = d.kfl || 1;
+              if(d.energy !== undefined) energy = d.energy;
+              // Diğer zamanlayıcıları da alabilirsin ama şimdilik temel veriler yeterli
+              updateUI();
+              console.log("✅ Bulut verisi yüklendi!");
+          }
+      }
+
+      // Buluta Kaydetme (10 saniyede bir sınırlandırılmış)
+      let lastCloudSave = 0;
+      async function saveDataToCloud() {
+          if (!supabase || !window.userFID) return;
+          
+          const now = Date.now();
+          if (now - lastCloudSave < 10000) return; // Çok sık kaydetmeyi önle
+
+          const savePackage = {
+              metal: Math.floor(metal),
+              kristal: Math.floor(kristal),
+              tranium: Math.floor(tranium),
+              mw: metalWorkers,
+              kw: kristalWorkers,
+              mfl: metalFacLvl,
+              kfl: kristalFacLvl,
+              energy: energy,
+              last_time: now
+          };
+
+          const { error } = await supabase
+              .from('players')
+              .upsert({ fid: window.userFID, game_data: savePackage }, { onConflict: 'fid' });
+
+          if (!error) lastCloudSave = now;
+      }
+      // --- SUPABASE ENTEGRASYONU BİTİŞ ---
+
       const imgBG = new Image();
       imgBG.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/bg-H8I42XFyjR45PCLXsG4fQp7B323kKw.webp?37vf";
@@ -1763,10 +1831,12 @@ async function executeTransaction(signer, amountETH, toAddress) {
         return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
       }
 
-      window.initHub = function() {
+      window.initHub = async function() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         canvas.style.imageRendering = "pixelated";
+        
+        await loadFromCloud();
 
         const now = Date.now();
         const secondsPassed = Math.floor((now - lastTime) / 1000);
@@ -1955,6 +2025,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
         localStorage.setItem("w_energy_reg_start", energyRegenerationStartTime);
         localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
         localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
+        saveDataToCloud();
       }
 
       function spawnWorker() {
@@ -2336,6 +2407,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
