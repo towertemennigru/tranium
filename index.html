@@ -30,32 +30,26 @@
     window.isMiniApp = true;
 
     const triggerReady = async () => {
-    try {
-        // SDK'nın context (bağlam) bilgisini bekle
-        const context = await sdk.context;
+        try {
+            await sdk.context;
+            
+            // --- EKLENEN KISIM BAŞLANGIÇ ---
+            const context = await sdk.context;
+            if (context && context.user) {
+                // Kullanıcı ID'sini global bir değişkene atıyoruz ki aşağıdan erişelim
+                window.userFID = context.user.fid; 
+                console.log("👤 Oyuncu Tanındı, FID:", window.userFID);
+            }
+            // --- EKLENEN KISIM BİTİŞ ---
 
-        // Eğer context gelirse (yani Farcaster içindeysek)
-        if (context) {
-            console.log("✅ Farcaster Environment Detected");
-            
-            // Engelleyici ekranı kaldır
-            document.getElementById("desktop-blocker").style.display = "none";
-            
-            // SDK'ya hazır olduğumuzu bildir
             sdk.actions.ready();
-
-            // Varsa intro'yu başlat
+            console.log("✅ SDK Ready");
+            
             if(window.startIntro) window.startIntro();
-        } else {
-            // Context yoksa (Normal tarayıcı)
-            console.warn("❌ Not in Farcaster");
-            // Engelleyici ekran kalmaya devam eder
+        } catch (e) {
+            console.error("SDK Init Error:", e);
         }
-    } catch (e) {
-        console.error("SDK Init Error:", e);
-        // Hata olursa da engelleyici ekran kalır
-    }
-};
+    };
 
     document.addEventListener('DOMContentLoaded', triggerReady);
 </script>
@@ -75,7 +69,7 @@
     };
     console.log("AppKit Kütüphaneleri Yüklendi");
 </script>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
       :root {
         --gold: #ffcc00;
@@ -1171,6 +1165,137 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
       let metalFacUpgradeEndTime = 0;
       let kristalFacUpgradeEndTime = 0;
+      // --- BULUT SİSTEMİ KODLARI BAŞLANGIÇ ---
+      
+      // -----------------------------------------------------------
+      // --- SUPABASE BULUT KAYIT SİSTEMİ (Start) ---
+      // -----------------------------------------------------------
+
+      // 1. Supabase Kütüphanesini Dinamik Olarak Yükle (Eğer head'e eklemediysen burada yükler)
+      if (typeof supabase === 'undefined') {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+          script.onload = () => { initSupabase(); };
+          document.head.appendChild(script);
+      } else {
+          initSupabase();
+      }
+
+      let supabaseClient = null;
+
+      function initSupabase() {
+          const SUPABASE_URL = 'https://zfuihwcesflbkyqhixxu.supabase.co';
+          const SUPABASE_KEY = 'sb_publishable_STygDXzq5VQpS7bHiAGRIg_y0gSIxOb';
+          
+          if (window.supabase) {
+              supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+              console.log("✅ Supabase Bağlantısı Hazırlandı");
+          }
+      }
+
+      // --- BULUTTAN YÜKLEME FONKSİYONU ---
+      async function loadFromCloud() {
+        // Supabase henüz yüklenmediyse veya kullanıcı ID yoksa bekleme
+        if (!supabaseClient || !window.userFID) {
+            console.log("⚠️ Bulut yüklenemedi (FID yok veya Sistem hazır değil). Yerel veri kullanılıyor.");
+            return;
+        }
+
+        console.log("☁️ Supabase'den veri çekiliyor... FID:", window.userFID);
+        try {
+            // 'players' tablosundan veriyi çek
+            const { data, error } = await supabaseClient
+                .from('players')
+                .select('game_data')
+                .eq('fid', window.userFID)
+                .single();
+
+            if (error) {
+                console.log("ℹ️ Kayıt bulunamadı (Yeni oyuncu olabilir):", error.message);
+                return;
+            }
+
+            if (data && data.game_data) {
+                const cloudData = data.game_data;
+                console.log("✅ Bulut Verisi Yüklendi!", cloudData);
+                
+                // Oyundaki değişkenleri güncelle
+                metal = cloudData.metal || 0;
+                kristal = cloudData.kristal || 0;
+                tranium = cloudData.tranium || 0;
+                metalWorkers = cloudData.mw || 0;
+                kristalWorkers = cloudData.kw || 0;
+                metalFacLvl = cloudData.mfl || 1;
+                kristalFacLvl = cloudData.kfl || 1;
+                
+                // Enerji ve zaman kontrolü
+                if (cloudData.energy !== undefined) energy = cloudData.energy;
+                
+                // UI'ı yenile ki veriler ekrana yansısın
+                updateUI();
+            }
+        } catch (e) {
+            console.error("Supabase Yükleme Hatası:", e);
+        }
+      }
+
+      // Supabase'i çok yormamak için son kayıt zamanını tutuyoruz
+      let lastCloudSaveTime = 0;
+
+      // --- BULUTA KAYDETME FONKSİYONU ---
+      async function saveDataToCloud() {
+        // 1. Önce her zaman YEREL (Telefon/PC) hafızaya kaydet (Garanti olsun)
+        localStorage.setItem("w_metal", metal);
+        localStorage.setItem("w_kristal", kristal);
+        localStorage.setItem("w_tranium", tranium);
+        localStorage.setItem("w_mw", metalWorkers);
+        localStorage.setItem("w_kw", kristalWorkers);
+        localStorage.setItem("w_mfl", metalFacLvl);
+        localStorage.setItem("w_kfl", kristalFacLvl);
+        localStorage.setItem("w_energy", energy);
+        localStorage.setItem("w_last_time", Date.now());
+        localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
+        localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
+
+        // 2. Bulut Kontrolleri
+        if (!supabaseClient || !window.userFID) return; // Kullanıcı yoksa çık
+        
+        const now = Date.now();
+        // 10 saniyede bir kaydet (Sürekli istek atıp kotayı doldurmamak için)
+        if (now - lastCloudSaveTime < 10000) return; 
+
+        // 3. Paketi Hazırla
+        const savePackage = {
+            metal: Math.floor(metal),
+            kristal: Math.floor(kristal),
+            tranium: Math.floor(tranium),
+            mw: metalWorkers,
+            kw: kristalWorkers,
+            mfl: metalFacLvl,
+            kfl: kristalFacLvl,
+            energy: energy,
+            last_time: now
+        };
+
+        // 4. Gönder (Upsert: Varsa güncelle, yoksa yeni oluştur)
+        supabaseClient
+            .from('players')
+            .upsert({ 
+                fid: window.userFID, 
+                game_data: savePackage 
+            }, { onConflict: 'fid' })
+            .then(({ error }) => {
+                if (!error) {
+                    // console.log("✅ Bulut Kaydı Başarılı"); // Konsolu kirletmemek için kapalı
+                    lastCloudSaveTime = now;
+                } else {
+                    console.error("Bulut Kayıt Hatası:", error.message);
+                }
+            });
+      }
+      // -----------------------------------------------------------
+      // --- SUPABASE BULUT KAYIT SİSTEMİ (End) ---
+      // -----------------------------------------------------------
 
       const imgBG = new Image();
       imgBG.src =
@@ -1955,6 +2080,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
         localStorage.setItem("w_energy_reg_start", energyRegenerationStartTime);
         localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
         localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
+        saveDataToCloud(); // Artık buluta da kaydetmeyi deneyecek
       }
 
       function spawnWorker() {
@@ -2336,6 +2462,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
