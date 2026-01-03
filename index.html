@@ -22,33 +22,28 @@
 
         // 1. Agresif Başlatma Fonksiyonu
         const triggerReady = async () => {
-            try {
-                // Context'i en fazla 500ms bekle (hızlı açılış için)
-                await Promise.race([
-                    sdk.context,
-                    new Promise(resolve => setTimeout(resolve, 500))
-                ]);
-                
-                // READY sinyalini gönder (Splash ekranını kaldırır)
-                sdk.actions.ready();
-                console.log("✅ SDK Ready Signal Sent (Auto)");
-                
-            } catch (e) {
-                console.error("SDK Error:", e);
-                // Hata olsa bile sinyali gönder, kullanıcı takılı kalmasın
-                sdk.actions.ready();
-            }
-        };
+    try {
+        // Context'i bekleyelim, ancak maksimum 1 saniye bekleyip ready sinyalini gönderelim.
+        await Promise.race([
+            sdk.context,
+            new Promise(resolve => setTimeout(resolve, 1000))
+        ]);
+        
+        // READY sinyalini gönder (Splash ekranını kaldırır)
+        sdk.actions.ready();
+        console.log("✅ SDK Ready Signal Sent (Auto)");
+        
+    } catch (e) {
+        console.error("SDK Error:", e);
+        // Hata olsa bile sinyali gönder, kullanıcı takılı kalmasın
+        sdk.actions.ready();
+    }
+};
 
         // Sayfa yüklenir yüklenmez çalıştır
         triggerReady();
 
-        // 2. Yedek Tetikleme (Fallback)
-        setTimeout(() => {
-            sdk.actions.ready();
-            console.log("✅ Fallback Ready Signal Sent");
-        }, 1000);
-
+      
         // Global değişkenler
         window.farcasterSDK = sdk;
         window.isMiniApp = true;
@@ -2040,13 +2035,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
       window.onload = function() {
         console.log("🚀 App Loaded. Triggering Farcaster SDK...");
         
-        // SDK Hazır Sinyali
-        if (window.farcaster && window.farcaster.sdk) {
-            window.farcaster.sdk.actions.ready();
-        } else {
-            console.warn("SDK not found on window, checking imports...");
-        }
-        
+             
         // Ana Oyun Akışını Başlat (Intro Ekranı)
         startIntro();
       };
@@ -2154,4 +2143,5 @@ Energy regenerates over time (1 per hour) even when you are offline.
     </script>
   </body>
 </html>
+
 
