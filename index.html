@@ -1126,7 +1126,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
       const ctx = canvas.getContext("2d");
       const WORLD_SIZE = 2500;
       // --- GOOGLE SHEETS ENTEGRASYONU ---
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFqUv3-RN83SyYItSnk6iYsHRlL_qv9goc1RJ7pwB0vwRhDOM9Goe5zq2UVlZMvaNhdA/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwv78Zv9yCzNN-FnZ01IaPvRRJKAL4SJ5cVT9gqBQeqyDcU97YjeTLdZP-3iWSeoqSfcQ/exec";
 // Buluttan Veri Çekme (LOAD)
 async function loadCloudData(fid) {
     try {
@@ -1166,6 +1166,7 @@ function saveCloudData(fid) {
         energy: energy,
         metal_workers: metalWorkers,
         kristal_workers: kristalWorkers,
+        last_save_time: Date.now()
     };
 
     // POST isteği (CORS hatasını aşmak için Content-Type text/plain gönderiyoruz)
@@ -1859,39 +1860,40 @@ window.initHub = async function() {
     window.currentUserFID = userFID;
 
     // --- VERİ YÜKLEME ---
-    // Önce buluta bak
     const cloudData = await loadCloudData(userFID);
     
+    // lastTime değişkenini başta şu an olarak ayarla
+    lastTime = Date.now(); 
+
     if (cloudData) {
-        // Buluttan veri geldiyse değişkenleri güncelle
         metal = cloudData.metal;
         kristal = cloudData.kristal;
         tranium = cloudData.tranium;
         metalFacLvl = cloudData.metal_lvl;
         kristalFacLvl = cloudData.kristal_lvl;
         energy = cloudData.energy;
-        metalWorkers = cloudData.metal_workers || 0; 
+        metalWorkers = cloudData.metal_workers || 0;
         kristalWorkers = cloudData.kristal_workers || 0;
-    } else {
-        // Bulutta yoksa LocalStorage'a bak (Eski oyuncular için yedek)
-        if (localStorage.getItem("w_last_time")) {
-             metal = parseFloat(localStorage.getItem("w_metal")) || 0;
-             kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
-             tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
-             metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
-             kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
-             let savedEnergy = localStorage.getItem("w_energy");
-             energy = savedEnergy !== null ? parseInt(savedEnergy) : 10;
+        
+        // YENİ: Buluttan gelen son oynama zamanını al
+        if (cloudData.last_save_time) {
+            lastTime = parseInt(cloudData.last_save_time);
+            console.log("☁️ Bulut Zamanı Kullanılıyor:", new Date(lastTime).toLocaleTimeString());
         }
+    } else {
+        // ... (Local storage yedek kısmı kalabilir) ...
     }
     
     // --- OYUNU BAŞLAT ---
     const now = Date.now();
-    const secondsPassed = Math.floor((now - lastTime) / 1000); // lastTime'ı globalden alacak
+    // Eğer lastTime gelecekteyse (saat farkı hatası vb.) 0 kabul et
+    let secondsPassed = Math.floor((now - lastTime) / 1000);
+    if (secondsPassed < 0) secondsPassed = 0;
+
+    console.log("⏳ Offline Süre (Saniye):", secondsPassed);
+
     processMining(secondsPassed);
-    checkUpgradeProgress();
-    updateUI();
-    startEnergyCountdown();
+    updateOfflineEnergyRegeneration(); // Enerjiyi de bu süreye göre hesapla
     
     for (let i = 0; i < 40; i++) spawnWorker();
     for (let i = 0; i < 15; i++) spawnEnemy();
@@ -2473,6 +2475,7 @@ window.initHub = async function() {
 </script>
   </body>
 </html>
+
 
 
 
