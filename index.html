@@ -1494,106 +1494,51 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       async function sendETHPayment(amountETH) {
-        console.log("💸 Ödeme süreci başlatılıyor...");
+        console.log("⚡ Farcaster (Warpcast) Protokolü Başlatılıyor...");
 
-        // --- YÖNTEM 1: Standart Web3 (PC, Zerion, Metamask) ---
-        if (typeof window.ethereum !== "undefined") {
-            try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                
-                // 1. Hesap İste
-                console.log("🔓 Cüzdan izni isteniyor...");
-                await provider.send("eth_requestAccounts", []);
-                const signer = await provider.getSigner();
+        // 1. SDK Kontrolü: Farcaster ortamında mıyız?
+        // Bu kontrol hem mobilde hem de warpcast.com (PC) üzerinde çalışır.
+        if (!window.farcasterSDK || !window.farcasterSDK.actions) {
+            alert("Hata: Farcaster bağlantısı kurulamadı!\n\nPC'de iseniz: Oyunu warpcast.com üzerinden açın.\nMobilde iseniz: Warpcast uygulamasını kullanın.");
+            return false;
+        }
 
-                // 2. Ağ Kontrolü (Base: 8453)
-                const network = await provider.getNetwork();
-                console.log("🌍 Mevcut Ağ:", network.chainId);
-                
-                if (Number(network.chainId) !== 8453) {
-                    try {
-                        await window.ethereum.request({
-                            method: "wallet_switchEthereumChain",
-                            params: [{ chainId: "0x2105" }], // 8453 hex
-                        });
-                    } catch (switchError) {
-                        // Zincir ekleme hatası (4902)
-                        if (switchError.code === 4902) {
-                            await window.ethereum.request({
-                                method: "wallet_addEthereumChain",
-                                params: [{
-                                    chainId: "0x2105",
-                                    chainName: "Base",
-                                    nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-                                    rpcUrls: ["https://mainnet.base.org"],
-                                    blockExplorerUrls: ["https://basescan.org"]
-                                }]
-                            });
-                        } else {
-                            throw switchError;
-                        }
-                    }
-                }
+        try {
+            // Miktarı Wei cinsine çevir (Hesaplama için ethers kullanıyoruz, bağlantı için değil)
+            const amountWei = ethers.parseEther(amountETH.toString()).toString();
+            
+            console.log("📤 İşlem Warpcast'e iletiliyor...");
 
-                // 3. İşlemi Hazırla ve Gönder
-                const amountWei = ethers.parseEther(amountETH.toString());
-                console.log("🚀 İşlem gönderiliyor...");
-                
-                const tx = await signer.sendTransaction({
+            // SADECE VE SADECE SDK KULLANIYORUZ
+            // Bu komut Zerion'u, Metamask'ı vs. pas geçer.
+            // PC'de ise Warpcast Web arayüzünü, Mobilde ise Warpcast Uygulamasını tetikler.
+            const result = await window.farcasterSDK.actions.sendTransaction({
+                transaction: {
                     to: PAYMENT_ADDRESS,
-                    value: amountWei
-                });
+                    value: amountWei,
+                    data: "0x", 
+                    chainId: 8453 // Base Network
+                }
+            });
 
-                console.log("✅ TX Hash:", tx.hash);
-                
-                // DONMA ÇÖZÜMÜ: tx.wait() kullanmıyoruz. 
-                // Hash oluştuysa işlem ağa düşmüştür, kullanıcıyı bekletmeye gerek yok.
-                alert("İşlem Ağa Gönderildi!\nOnay bekleniyor, inşaat başlıyor...");
-                
+            console.log("✅ SDK Yanıtı:", result);
+
+            // Başarılı işlem kontrolü (Hash veya Transaction ID)
+            if (result && (result.hash || result.transactionId)) {
+                const txHash = result.hash || result.transactionId;
+                console.log("🔗 TX Hash:", txHash);
                 return true; 
-
-            } catch (error) {
-                console.error("PC Cüzdan Hatası:", error);
-                // Kullanıcı reddettiyse sessiz kal, hata ise uyar
-                if (error.code !== 4001) {
-                    alert("Hata: " + (error.shortMessage || error.message || "Bilinmeyen hata"));
-                }
-                return false;
             }
-        }
+            
+            // Eğer buraya düşerse kullanıcı pencereyi kapatmış veya işlem başarısız olmuştur
+            return false;
 
-        // --- YÖNTEM 2: Farcaster Mobil SDK (Yedek) ---
-        // Eğer window.ethereum yoksa (Mobil Warpcast Hatası için)
-        if (window.farcasterSDK && window.farcasterSDK.actions) {
-            try {
-                console.log("📱 Mobil SDK deneniyor...");
-                const amountWei = ethers.parseEther(amountETH.toString()).toString();
-                
-                // SDK üzerinden işlem isteği
-                const result = await window.farcasterSDK.actions.sendTransaction({
-                    transaction: {
-                        to: PAYMENT_ADDRESS,
-                        value: amountWei,
-                        chainId: 8453
-                    }
-                });
-                
-                if (result && (result.hash || result.transactionId)) {
-                    console.log("✅ SDK TX Başarılı");
-                    alert("Mobil işlem başarılı!");
-                    return true;
-                }
-                // SDK bazen null dönebilir ama işlem gerçekleşmiş olabilir
-                return false; 
-            } catch (e) {
-                console.error("SDK Hatası:", e);
-                // Kullanıcıya hata göstermeyelim, belki sadece iptal etmiştir.
-                return false;
-            }
+        } catch (e) {
+            console.error("🚨 Farcaster Hatası:", e);
+            // Hata mesajını kullanıcıya gösterelim ki ne olduğunu anlasın
+            alert("İşlem gerçekleştirilemedi. Warpcast hesabınızın bağlı olduğundan emin olun.");
+            return false;
         }
-
-        alert("❌ Cüzdan bulunamadı! Lütfen Zerion, Metamask veya Warpcast kullanın.");
-        return false;
       }
       async function upgradeFactory(type) {
         let currentLevel;
@@ -1618,32 +1563,32 @@ Energy regenerates over time (1 per hour) even when you are offline.
         const ethCost = getUpgradeCost(currentLevel);
         const upgradeTime = getUpgradeTime(currentLevel);
         
-        // Butonu bul
         const btn = document.getElementById(btnId);
         if (!btn) return;
 
         const originalText = btn.innerHTML;
-        btn.innerHTML = "⏳ WALLET..."; // Buton yazısını değiştir
-        btn.disabled = true; // Butonu kilitle
+        // Kullanıcıya işlemin Warpcast üzerinden yürüdüğünü belirten mesaj
+        btn.innerHTML = "⚡ WARPCAST..."; 
+        btn.disabled = true; 
 
-        // Ödemeyi başlat
+        // Ödeme fonksiyonunu çağır
         const paymentSuccess = await sendETHPayment(ethCost);
         
         if (!paymentSuccess) {
-          // Eğer ödeme başarısızsa veya iptal edildiyse butonu eski haline getir
+          // Başarısız olursa butonu eski haline getir
           btn.innerHTML = originalText;
           btn.disabled = false;
           return;
         }
 
-        // Başarılıysa süreci başlat
+        // Başarılı olursa (Hash geldiyse) geliştirmeyi başlat
         if (type === "metal") {
           metalFacUpgradeEndTime = Date.now() + upgradeTime;
         } else if (type === "kristal") {
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        // alert("✅ İnşaat başladı!"); // sendETHPayment zaten uyarı veriyor
+        alert("✅ İşlem Warpcast tarafından teslim alındı! İnşaat başlıyor.");
         updateUI();
         saveData();
       }
@@ -2228,6 +2173,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 </script>
   </body>
 </html>
+
 
 
 
