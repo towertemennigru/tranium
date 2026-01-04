@@ -24,7 +24,7 @@
    <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
       // BURAYA 'onSnapshot' EKLENDİ DİKKAT ET:
-      import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+      import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
       import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 
       // SENİN YENİ PROJE AYARLARIN (tranium-6f126)
@@ -44,7 +44,7 @@
 
       window.firebaseDB = db;
       // onSnapshot'ı buraya da ekledik ki aşağıdan erişebilelim
-      window.firebaseFunctions = { doc, setDoc, getDoc, updateDoc, onSnapshot };
+      window.firebaseFunctions = { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs };
       
       console.log("🔥 Firebase (Firestore) Realtime Listener ile hazır!");
     </script>
@@ -1094,6 +1094,19 @@ You can start again with energy.
             UPGRADE <span id="costMetalFac"></span>
           </button>
         </div>
+        <div id="refInputModal" class="custom-modal" style="z-index: 9999;">
+  <h2 style="color: var(--neon); margin: 0 0 10px 0;">INVITE CODE</h2>
+  <p style="font-size: 11px; color: #ccc; margin-bottom: 15px;">
+    Enter a friend's code to get <span style="color:var(--gold); font-weight:bold;">+20 TRANIUM</span> instantly!
+  </p>
+  
+  <input type="text" id="refCodeInput" class="modal-input" placeholder="Ex: A1B2C" maxlength="6" style="text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">
+  
+  <div class="modal-btn-row">
+    <button class="modal-btn" style="background: #333; color: #aaa; font-size:12px;" onclick="skipRefCode()">SKIP</button>
+    <button class="modal-btn" style="background: var(--neon); color: black;" onclick="submitRefCode()">ENTER</button>
+  </div>
+</div>
         <div class="fac-card">
           <span class="fac-header">CRYSTAL FACTORY</span>
           <span id="kristalFacLevel" style="font-size: 9px;
@@ -1209,6 +1222,11 @@ Energy regenerates over time (1 per hour) even when you are offline.
       <div style="height: 40px;"></div>
 
       <button class="btn-refine btn-upgrade-menu" onclick="openUpgradeModal()">🏭 FACTORY UPGRADES</button>
+      <div id="myRefDisplayArea" style="text-align: center; margin-top: 15px; padding: 10px; border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(0,0,0,0.3);">
+  <span style="font-size: 10px; color: #888; display: block; margin-bottom: 4px;">YOUR REFERRAL CODE</span>
+  <span id="myRefCodeText" style="font-size: 16px; font-weight: 900; color: var(--gold); letter-spacing: 2px; cursor: pointer;" onclick="copyRefCode()">LOADING...</span>
+  <div style="font-size: 9px; color: var(--neon); margin-top: 3px;">Share to earn +20 Tranium per friend!</div>
+</div>
 
       <div class="footer">
         <span id="energyStatus" class="energy-info">⚡ ENERGY: 10/10</span>
@@ -1480,6 +1498,38 @@ async function identifyUser() {
                     metal = savedMetal;
                     kristal = savedKristal;
 
+                // --- REF CODE MANTIĞI (setupRealtimeListener içine eklenecek) ---
+
+let myRefCode = data.myRefCode;
+let hasUsedRef = data.usedRefCode || false;
+
+// Eğer kullanıcının henüz bir ref kodu yoksa oluştur ve kaydet
+if (!myRefCode) {
+    myRefCode = generateRefCode();
+    // Veritabanına kaydet (Burada updateDoc kullanabiliriz veya bir sonraki saveData döngüsünü bekleyebiliriz ama hemen yazmak daha iyi)
+    // Not: setupRealtimeListener içinde olduğumuz için 'docRef' zaten tanımlı
+    // Ancak döngüye girmemesi için dikkatli olmalıyız.
+    // Şimdilik sadece değişkene atayalım, saveData fonksiyonu bunu kaydeder.
+}
+
+// Global'e taşıyalım (HTML'de göstermek için)
+document.getElementById("myRefCodeText").innerText = myRefCode;
+
+// Eğer kullanıcı daha önce Ref Kodu GİRMEMİŞSE ve YENİ KULLANICI DEĞİLSE (veya yeni ise de sorsun)
+// Loading bittikten hemen sonra sorsun istiyoruz.
+// Bunu kontrol etmek için basit bir flag kullanabiliriz.
+if (!hasUsedRef && !window.refModalShown) {
+    // Biraz gecikmeli aç ki loading tam bitsin
+    setTimeout(() => {
+        document.getElementById("refInputModal").style.display = "block";
+    }, 2000);
+    window.refModalShown = true; // Tekrar tekrar açılmasın
+}
+
+// saveData fonksiyonuna eklenmek üzere global bir değişkene de atabiliriz
+// Ama en kolayı, saveData fonksiyonunda bu veriyi de göndermek.
+window.currentUserRefCode = myRefCode;
+                  
                     updateUI();
                     
                     if (!window.hasInitialLoadCompleted) {
@@ -2222,6 +2272,7 @@ async function saveData() {
         metal: metal,
         kristal: kristal,
         tranium: tranium,
+        myRefCode: document.getElementById("myRefCodeText").innerText, // Ekrandan alıp kaydediyoruz
         metalWorkers: metalWorkers,
         kristalWorkers: kristalWorkers,
         metalFacLvl: metalFacLvl,
@@ -2525,6 +2576,105 @@ async function saveData() {
         
    
       };
+      // --- REFERANS SİSTEMİ FONKSİYONLARI ---
+
+// Rastgele Ref Kodu Oluşturucu (5 Karakter)
+function generateRefCode() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
+    for (let i = 0; i < 5; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+// Ref Kodunu Kopyalama
+function copyRefCode() {
+    const code = document.getElementById("myRefCodeText").innerText;
+    if (code && code !== "LOADING...") {
+        navigator.clipboard.writeText(code).then(() => {
+            alert("Code Copied: " + code);
+        });
+    }
+}
+
+// "SKIP" Butonuna Basılınca
+function skipRefCode() {
+    document.getElementById("refInputModal").style.display = "none";
+    // Veritabanına "ref kodu girmeyi reddetti" veya "gördü" diye işaretleyebiliriz ama şimdilik gerek yok.
+}
+
+// "ENTER" Butonuna Basılınca (Ref Kodu Kullanma)
+async function submitRefCode() {
+    const inputCode = document.getElementById("refCodeInput").value.trim().toUpperCase();
+    const myCode = document.getElementById("myRefCodeText").innerText;
+
+    if (!inputCode) {
+        alert("Please enter a code.");
+        return;
+    }
+    if (inputCode === myCode) {
+        alert("You cannot use your own code!");
+        return;
+    }
+
+    showBlockingLoader(); // İşlem sırasında ekranı kilitle
+
+    try {
+        const db = window.firebaseDB;
+        const { collection, query, where, getDocs, updateDoc, doc } = window.firebaseFunctions;
+
+        // 1. Bu kod kime ait?
+        const usersRef = collection(db, "players");
+        const q = query(usersRef, where("myRefCode", "==", inputCode));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            hideBlockingLoader();
+            alert("Invalid Referral Code!");
+            return;
+        }
+
+        // 2. Kod geçerli, sahibini bulduk
+        let referrerId = "";
+        let referrerCurrentTranium = 0;
+
+        querySnapshot.forEach((doc) => {
+            referrerId = doc.id;
+            referrerCurrentTranium = parseFloat(doc.data().tranium) || 0;
+        });
+
+        // 3. Ödülleri Dağıt
+        
+        // A) Kod Sahibine +20 Tranium ver
+        const referrerRef = doc(db, "players", referrerId);
+        await updateDoc(referrerRef, {
+            tranium: referrerCurrentTranium + 20
+        });
+
+        // B) Kod Kullanan (Ben) +20 Tranium al ve 'usedRefCode' işaretle
+        // Not: 'tranium' değişkeni globalde var, onu artırıp sonra save yapıyoruz.
+        tranium += 20; 
+        
+        // Veritabanına benim kaydımı güncelle
+        const myRef = doc(db, "players", currentUserID);
+        await updateDoc(myRef, {
+            usedRefCode: true, // Bir daha kod giremesin diye
+            tranium: tranium
+        });
+
+        // 4. İşlem Tamam
+        updateUI();
+        hideBlockingLoader();
+        document.getElementById("refInputModal").style.display = "none";
+        alert("SUCCESS! You and your friend earned +20 Tranium!");
+
+    } catch (error) {
+        console.error("Ref Error:", error);
+        hideBlockingLoader();
+        alert("Error processing code. Try again.");
+    }
+}
     </script>
     <script>
       (function () {
@@ -2652,6 +2802,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
