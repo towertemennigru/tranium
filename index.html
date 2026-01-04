@@ -2121,17 +2121,41 @@ function startCloudSync() {
 
       function attemptStart() {
         if (energy > 0) {
+          // 1. Enerjiyi Düşür
           energy--;
+          
+          // 2. Sağlık Puanını Sıfırla
           health = 3;
 
-          updateEnergyTimers();
-
-          saveData();
+          // 3. Enerji Zamanlayıcısını Kontrol Et
+          // Eğer enerji 10'dan 9'a düştüyse (yani tam doluyduysa), zamanlayıcıyı ŞU AN başlat.
+          if (energyRegenerationStartTime === 0) {
+              energyRegenerationStartTime = Date.now();
+              // nextEnergyTime'ı da hemen hesapla ki UI saçmalamasın
+              nextEnergyTime = energyRegenerationStartTime + 3600000;
+          }
+          
+          // 4. Verileri Kaydet ve UI'ı Güncelle
+          updateEnergyTimers(); // Bu fonksiyon zaten saveData'yı çağırıyor ama yine de garanti olsun
+          saveCloudData(window.currentUserFID);
           updateUI();
-          document.getElementById("overlay").style.display = "none";
-          document.getElementById("ui").style.opacity = "1";
-          document.getElementById("joystickContainer").style.display = "block";
+
+          // 5. OYUN SAHNESİNİ AÇ (KRİTİK KISIM)
+          document.getElementById("overlay").style.display = "none"; // Ana menüyü gizle
+          document.getElementById("ui").style.display = "flex";      // Oyun içi UI'ı (Can, Maden) göster
+          
+          // PC değilse Joystick'i göster
+          if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
+              document.getElementById("joystickContainer").style.display = "block";
+          } else {
+              // PC ise Joystick gizli kalsın
+              document.getElementById("joystickContainer").style.display = "none";
+          }
+          
+          // 6. Bayrağı Kaldır
           isStarted = true;
+          console.log("🚀 Mission Started! Energy:", energy);
+
         } else {
           alert("Not enough energy! Wait for energy to regenerate.");
         }
@@ -2482,6 +2506,7 @@ function startCloudSync() {
 </script>
   </body>
 </html>
+
 
 
 
