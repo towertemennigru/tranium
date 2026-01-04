@@ -982,6 +982,40 @@
           height: 45px;
         }
       }
+    /* --- REF STATUS FEEDBACK (EKSİK OLAN KISIM) --- */
+#refStatusOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  border-radius: 20px;
+  z-index: 10001;
+  display: none; /* Varsayılan gizli */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-icon {
+  font-size: 60px;
+  margin-bottom: 10px;
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.status-msg {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  80% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
     </style>
     <script type="module">
   // Firebase kütüphanelerini import ediyoruz
@@ -1122,6 +1156,16 @@ color: white" onclick="closeUpgradeModal()">CLOSE</button>
   <div class="modal-btn-row">
     <button class="modal-btn" style="background: #333; color: #aaa; font-size:12px;" onclick="skipRefCode()">SKIP</button>
     <button class="modal-btn" style="background: var(--neon); color: black;" onclick="submitRefCode()">ENTER</button>
+  </div>
+  <div class="modal-btn-row">
+    <button class="modal-btn" style="background: #333; color: #aaa; font-size:12px;" onclick="skipRefCode()">SKIP</button>
+    <button class="modal-btn" style="background: var(--neon); color: black;" onclick="submitRefCode()">ENTER</button>
+  </div>
+
+  <div id="refStatusOverlay">
+      <div id="statusIcon" class="status-icon"></div>
+      <div id="statusText" class="status-msg"></div>
+  </div>
   </div>
 </div>
     <div id="swapModal" class="custom-modal">
@@ -2640,6 +2684,39 @@ function showRefFeedback(type, message) {
 
 // GÜNCELLENMİŞ SUBMIT FONKSİYONU
 
+      // YARDIMCI FONKSİYON: Durum Göster (Yeşil Tik veya Kırmızı Çarpı)
+function showRefFeedback(type, message) {
+    const overlay = document.getElementById("refStatusOverlay");
+    const icon = document.getElementById("statusIcon");
+    const text = document.getElementById("statusText");
+    
+    // Eğer HTML'de bu elemanlar yoksa hata vermesin diye kontrol
+    if(!overlay || !icon || !text) {
+        console.error("Feedback elemanları HTML'de bulunamadı!");
+        if(type === 'error') alert(message);
+        return Promise.resolve();
+    }
+    
+    overlay.style.display = "flex";
+    
+    if (type === 'success') {
+        icon.innerHTML = "✅";
+        icon.style.textShadow = "0 0 20px #00ff00";
+        text.style.color = "#00ff00";
+        text.innerHTML = message || "SUCCESS!";
+    } else {
+        icon.innerHTML = "❌";
+        icon.style.textShadow = "0 0 20px #ff0000";
+        text.style.color = "#ff4444";
+        text.innerHTML = message || "ERROR!";
+    }
+
+    // 1 Saniye sonra ne olacağını yöneten Promise
+    return new Promise(resolve => setTimeout(() => {
+        overlay.style.display = "none";
+        resolve();
+    }, 1200)); 
+}
       async function submitRefCode() {
     const inputCode = document.getElementById("refCodeInput").value.trim().toUpperCase();
     const myCode = document.getElementById("myRefCodeText").innerText;
@@ -2846,3 +2923,4 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
