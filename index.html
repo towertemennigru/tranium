@@ -22,16 +22,18 @@
     <title>TRANIUM VERSE - Strategy Hub</title>
     
    <script type="module">
-  // Realtime Database kütüphanelerini çağırıyoruz
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-  import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-  // SENİN CONFIG BİLGİLERİN (Değişmedi, aynen kalıyor)
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
   const firebaseConfig = {
     apiKey: "AIzaSyBDJODGqj_t9qo1Cf7LfoXBe69HaJDpscg",
     authDomain: "tranium-fa7b6.firebaseapp.com",
-    databaseURL: "https://tranium-fa7b6-default-rtdb.firebaseio.com", // BURASI ÇOK ÖNEMLİ
+    databaseURL: "https://tranium-fa7b6-default-rtdb.firebaseio.com",
     projectId: "tranium-fa7b6",
     storageBucket: "tranium-fa7b6.firebasestorage.app",
     messagingSenderId: "463112729030",
@@ -39,17 +41,9 @@
     measurementId: "G-4ME0MF0WNM"
   };
 
+  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
-  
-  // Firestore yerine Realtime Database başlatıyoruz
-  const db = getDatabase(app);
   const analytics = getAnalytics(app);
-
-  // Global erişim için window'a atıyoruz
-  window.firebaseDB = db;
-  window.firebaseFunctions = { ref, set, get, child, update };
-  
-  console.log("🔥 Realtime Database Hazır!");
 </script>
     <script type="module">
     // En güncel Frame SDK'sını çekiyoruz
@@ -1342,26 +1336,27 @@ async function identifyUser() {
         }
       }
 
-     async function loadDataFromFirebase() {
-    console.log("☁️ Realtime Database'den veri çekiliyor...");
+      async function loadDataFromFirebase() {
+    console.log("☁️ Firebase'den veri indiriliyor...");
     
+    // Önce kullanıcı kimliğini netleştir
     await identifyUser();
 
     if (!window.firebaseDB || !window.firebaseFunctions) {
         console.error("Firebase bulunamadı!");
-        initHub();
+        initHub(); // Veri olmasa da oyunu başlat
         return;
     }
 
-    const { ref, get, child } = window.firebaseFunctions;
-    const dbRef = ref(window.firebaseDB);
+    const { doc, getDoc } = window.firebaseFunctions;
+    const db = window.firebaseDB;
 
     try {
-        // Belirli kullanıcının verisini "snapshot" olarak çek
-        const snapshot = await get(child(dbRef, `players/${currentUserID}`));
+        const docRef = doc(db, "players", currentUserID);
+        const docSnap = await getDoc(docRef);
 
-        if (snapshot.exists()) {
-            const data = snapshot.val(); // Firestore'da .data() idi, burada .val()
+        if (docSnap.exists()) {
+            const data = docSnap.data();
             
             // Verileri değişkenlere ata
             metal = parseFloat(data.metal) || 0;
@@ -1372,26 +1367,29 @@ async function identifyUser() {
             metalFacLvl = parseInt(data.metalFacLvl) || 1;
             kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
             
+            // Enerji verileri
             energy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
             
             lastTime = parseInt(data.lastTime) || Date.now();
+            
             nextEnergyTime = parseInt(data.nextEnergyTime) || 0;
             energyRegenerationStartTime = parseInt(data.energyRegenerationStartTime) || 0;
+            
             metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
             kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
 
-            console.log("✅ RTDB Verileri Yüklendi.");
+            console.log("✅ Veriler yüklendi. Çevrimdışı kazanç hesaplanacak.");
             updateOfflineEnergyRegeneration();
             
         } else {
-            console.log("🆕 Yeni kullanıcı. RTDB'de kayıt yok.");
-            energy = 10;
+            console.log("🆕 Yeni kullanıcı veya kayıt yok. Sıfırdan başlanıyor.");
+            energy = 10; // Yeni başlayanlara tam enerji
         }
     } catch (error) {
         console.error("Veri çekme hatası:", error);
     }
 
-    // Oyunu başlat
+    // Veri yükleme işi bitti, ARTIK oyunu başlatabiliriz
     initHub();
 }
 
@@ -2055,7 +2053,7 @@ async function saveData() {
     // Veri tabanı hazır mı kontrol et
     if (!window.firebaseDB || !window.firebaseFunctions) return;
 
-    const { ref, update } = window.firebaseFunctions; // update kullanıyoruz ki merge gibi olsun
+    const { doc, setDoc } = window.firebaseFunctions;
     const db = window.firebaseDB;
 
     const gameData = {
@@ -2067,7 +2065,7 @@ async function saveData() {
         metalFacLvl: metalFacLvl,
         kristalFacLvl: kristalFacLvl,
         energy: energy,
-        lastTime: Date.now(),
+        lastTime: Date.now(), // Son kayıt zamanı
         nextEnergyTime: nextEnergyTime,
         energyRegenerationStartTime: energyRegenerationStartTime,
         metalFacUpgradeEndTime: metalFacUpgradeEndTime,
@@ -2075,14 +2073,12 @@ async function saveData() {
     };
 
     try {
-        // Realtime Database'de yol belirtme mantığı: 'players/' + ID
-        const userRef = ref(db, 'players/' + currentUserID);
-        
-        // Veriyi gönder
-        await update(userRef, gameData);
-        // console.log("💾 RTDB Kayıt Başarılı");
+        // "players" koleksiyonuna, kullanıcının ID'si ile kayıt yap
+        // merge: true sayesinde sadece değişen alanları günceller, silmez.
+        await setDoc(doc(db, "players", currentUserID), gameData, { merge: true });
+        // console.log("💾 Veri Firebase'e kaydedildi."); 
     } catch (e) {
-        console.error("RTDB Kayıt Hatası:", e);
+        console.error("Kayıt hatası:", e);
     }
 }
 
@@ -2342,7 +2338,6 @@ async function saveData() {
     </script>
     <script>
       (function () {
-        // FPS Göstergesi (Sol üstte)
         const fpsBox = document.createElement("div");
         fpsBox.id = "pc-fps-counter";
         fpsBox.style.cssText =
@@ -2350,7 +2345,6 @@ async function saveData() {
         fpsBox.innerHTML = "FPS:...";
         document.body.appendChild(fpsBox);
 
-        // Hız Koruma
         function lockPlayerSpeed() {
           try {
             if (typeof player !== "undefined" && player.speed !== 7.0) {
@@ -2365,38 +2359,28 @@ async function saveData() {
         }
 
         const originalInitHub = window.initHub;
-        
-        // --- GÖRÜNTÜ VE BAŞLATMA AYARLARI ---
         window.initHub = function () {
-          // 1. Oyunun iç verilerini yükle (Worker, Enemy spawn vs.)
           if (originalInitHub) originalInitHub();
 
-          // 2. EKRAN ÇÖZÜNÜRLÜĞÜ AYARI (Siyah Ekran ve Zoom Sorunu Çözümü)
           const cvs = document.getElementById("gameCanvas");
           if (cvs) {
-            // Telefonun ekran oranını al
-            const targetRatio = window.innerWidth / window.innerHeight;
-            
-            // 1920 yerine 1280 kullanıyoruz. 
-            // 1280px gayet geniştir, haritayı gösterir ama telefon hafızasını çökertmez.
-            const virtualWidth = 1280; 
-            const virtualHeight = virtualWidth / targetRatio;
+            let targetWidth = window.innerWidth;
+            let targetHeight = window.innerHeight;
 
-            cvs.width = virtualWidth;
-            cvs.height = virtualHeight;
+            if (targetWidth > 1920) {
+              const ratio = window.innerHeight / window.innerWidth;
+              targetWidth = 1920;
+              targetHeight = 1920 * ratio;
+            }
 
-            // Piksel görüntü bozulmasın diye ayarı tazeliyoruz
-            const ctx = cvs.getContext("2d");
-            ctx.imageSmoothingEnabled = false;
-
-            // CSS ile ekrana sığdır
+            cvs.width = targetWidth;
+            cvs.height = targetHeight;
             cvs.style.width = "100vw";
             cvs.style.height = "100vh";
             cvs.style.transform = "translate3d(0,0,0)";
             cvs.style.imageRendering = "pixelated";
           }
 
-          // 3. Joystick Mobilde Görünsün
           if (!("ontouchstart" in window) && navigator.maxTouchPoints === 0) {
             const joyContainer = document.getElementById("joystickContainer");
             if (joyContainer) joyContainer.style.display = "none";
@@ -2405,23 +2389,17 @@ async function saveData() {
             document.head.appendChild(style);
           }
 
-          // 4. Turbo Mod Aktif
           lockPlayerSpeed();
           fpsBox.style.display = "block";
-          console.log("✅ SYSTEM: Safe Resolution 1280px Active");
-
-          // 5. Oyun Döngüsünü BAŞLAT
-          secureGameLoop();
+          console.log("✅ TURBO MODE: Player 7.0 | Enemy Max 6.6");
         };
 
-        // --- OYUN DÖNGÜSÜ ---
         let lastTime = performance.now();
         let frameCount = 0;
         let lastFpsTime = performance.now();
         const targetFPS = 60;
         const frameDelay = 1000 / targetFPS;
         const originalRAF = window.requestAnimationFrame;
-
         function secureGameLoop() {
           originalRAF(secureGameLoop);
 
@@ -2430,13 +2408,10 @@ async function saveData() {
 
           if (elapsed < frameDelay) return;
           lastTime = now - (elapsed % frameDelay);
-          
-          // Hız kontrolü
           if (typeof player !== "undefined") {
             if (player.speed !== 7.0) player.speed = 7.0;
           }
 
-          // Düşman hız kontrolü
           if (typeof enemies !== "undefined" && Array.isArray(enemies)) {
             enemies.forEach((en) => {
               if (en.currentSpeed > 6.6) {
@@ -2445,7 +2420,6 @@ async function saveData() {
             });
           }
 
-          // FPS Sayacı
           frameCount++;
           if (now - lastFpsTime >= 1000) {
             fpsBox.innerHTML = "FPS: " + frameCount;
@@ -2453,20 +2427,19 @@ async function saveData() {
             lastFpsTime = now;
           }
 
-          // Oyunu çiz
           if (typeof window.update === "function" && typeof window.draw === "function") {
             window.update(0.016);
             window.draw();
           }
         }
 
-        // Orijinal loop'u iptal et
-        window.gameLoop = function () {}; 
+        window.gameLoop = function () {};
+        secureGameLoop();
       })();
     </script>
-     
+     // Bu kodu </body> kapanışından önce ekleyin
 <script>
-    
+    // Emergency splash screen remover
     setTimeout(() => {
         if (typeof sdk !== 'undefined' && sdk.actions && sdk.actions.ready) {
             sdk.actions.ready();
@@ -2489,9 +2462,6 @@ async function saveData() {
 </script>
   </body>
 </html>
-
-
-
 
 
 
