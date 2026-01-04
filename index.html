@@ -22,18 +22,16 @@
     <title>TRANIUM VERSE - Strategy Hub</title>
     
    <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+  // Realtime Database kütüphanelerini çağırıyoruz
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+  import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  // SENİN CONFIG BİLGİLERİN (Değişmedi, aynen kalıyor)
   const firebaseConfig = {
     apiKey: "AIzaSyBDJODGqj_t9qo1Cf7LfoXBe69HaJDpscg",
     authDomain: "tranium-fa7b6.firebaseapp.com",
-    databaseURL: "https://tranium-fa7b6-default-rtdb.firebaseio.com",
+    databaseURL: "https://tranium-fa7b6-default-rtdb.firebaseio.com", // BURASI ÇOK ÖNEMLİ
     projectId: "tranium-fa7b6",
     storageBucket: "tranium-fa7b6.firebasestorage.app",
     messagingSenderId: "463112729030",
@@ -41,9 +39,17 @@
     measurementId: "G-4ME0MF0WNM"
   };
 
-  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
+  
+  // Firestore yerine Realtime Database başlatıyoruz
+  const db = getDatabase(app);
   const analytics = getAnalytics(app);
+
+  // Global erişim için window'a atıyoruz
+  window.firebaseDB = db;
+  window.firebaseFunctions = { ref, set, get, child, update };
+  
+  console.log("🔥 Realtime Database Hazır!");
 </script>
     <script type="module">
     // En güncel Frame SDK'sını çekiyoruz
@@ -1336,27 +1342,26 @@ async function identifyUser() {
         }
       }
 
-      async function loadDataFromFirebase() {
-    console.log("☁️ Firebase'den veri indiriliyor...");
+     async function loadDataFromFirebase() {
+    console.log("☁️ Realtime Database'den veri çekiliyor...");
     
-    // Önce kullanıcı kimliğini netleştir
     await identifyUser();
 
     if (!window.firebaseDB || !window.firebaseFunctions) {
         console.error("Firebase bulunamadı!");
-        initHub(); // Veri olmasa da oyunu başlat
+        initHub();
         return;
     }
 
-    const { doc, getDoc } = window.firebaseFunctions;
-    const db = window.firebaseDB;
+    const { ref, get, child } = window.firebaseFunctions;
+    const dbRef = ref(window.firebaseDB);
 
     try {
-        const docRef = doc(db, "players", currentUserID);
-        const docSnap = await getDoc(docRef);
+        // Belirli kullanıcının verisini "snapshot" olarak çek
+        const snapshot = await get(child(dbRef, `players/${currentUserID}`));
 
-        if (docSnap.exists()) {
-            const data = docSnap.data();
+        if (snapshot.exists()) {
+            const data = snapshot.val(); // Firestore'da .data() idi, burada .val()
             
             // Verileri değişkenlere ata
             metal = parseFloat(data.metal) || 0;
@@ -1367,29 +1372,26 @@ async function identifyUser() {
             metalFacLvl = parseInt(data.metalFacLvl) || 1;
             kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
             
-            // Enerji verileri
             energy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
             
             lastTime = parseInt(data.lastTime) || Date.now();
-            
             nextEnergyTime = parseInt(data.nextEnergyTime) || 0;
             energyRegenerationStartTime = parseInt(data.energyRegenerationStartTime) || 0;
-            
             metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
             kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
 
-            console.log("✅ Veriler yüklendi. Çevrimdışı kazanç hesaplanacak.");
+            console.log("✅ RTDB Verileri Yüklendi.");
             updateOfflineEnergyRegeneration();
             
         } else {
-            console.log("🆕 Yeni kullanıcı veya kayıt yok. Sıfırdan başlanıyor.");
-            energy = 10; // Yeni başlayanlara tam enerji
+            console.log("🆕 Yeni kullanıcı. RTDB'de kayıt yok.");
+            energy = 10;
         }
     } catch (error) {
         console.error("Veri çekme hatası:", error);
     }
 
-    // Veri yükleme işi bitti, ARTIK oyunu başlatabiliriz
+    // Oyunu başlat
     initHub();
 }
 
@@ -2053,7 +2055,7 @@ async function saveData() {
     // Veri tabanı hazır mı kontrol et
     if (!window.firebaseDB || !window.firebaseFunctions) return;
 
-    const { doc, setDoc } = window.firebaseFunctions;
+    const { ref, update } = window.firebaseFunctions; // update kullanıyoruz ki merge gibi olsun
     const db = window.firebaseDB;
 
     const gameData = {
@@ -2065,7 +2067,7 @@ async function saveData() {
         metalFacLvl: metalFacLvl,
         kristalFacLvl: kristalFacLvl,
         energy: energy,
-        lastTime: Date.now(), // Son kayıt zamanı
+        lastTime: Date.now(),
         nextEnergyTime: nextEnergyTime,
         energyRegenerationStartTime: energyRegenerationStartTime,
         metalFacUpgradeEndTime: metalFacUpgradeEndTime,
@@ -2073,12 +2075,14 @@ async function saveData() {
     };
 
     try {
-        // "players" koleksiyonuna, kullanıcının ID'si ile kayıt yap
-        // merge: true sayesinde sadece değişen alanları günceller, silmez.
-        await setDoc(doc(db, "players", currentUserID), gameData, { merge: true });
-        // console.log("💾 Veri Firebase'e kaydedildi."); 
+        // Realtime Database'de yol belirtme mantığı: 'players/' + ID
+        const userRef = ref(db, 'players/' + currentUserID);
+        
+        // Veriyi gönder
+        await update(userRef, gameData);
+        // console.log("💾 RTDB Kayıt Başarılı");
     } catch (e) {
-        console.error("Kayıt hatası:", e);
+        console.error("RTDB Kayıt Hatası:", e);
     }
 }
 
@@ -2462,6 +2466,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
