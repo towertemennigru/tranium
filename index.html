@@ -2478,10 +2478,13 @@ function showFloatingText(text, color) {
       }
 
       window.update = function(dt) {
-        updateParticles();
+        updateParticles(); // Parçacıkların hareketini hesapla
         processMining(dt);
         checkUpgradeProgress();
+        
         if (!isStarted) return;
+        
+        // --- JOYSTICK ve HAREKET KODLARI ---
         if (joystickActive) {
           const moveSpeed = player.speed;
           player.x += joystickDirection.x * moveSpeed;
@@ -2508,29 +2511,26 @@ function showFloatingText(text, color) {
         player.y = Math.max(50, Math.min(WORLD_SIZE - 50, player.y));
         camera.x = Math.max(0, Math.min(WORLD_SIZE - canvas.width, player.x - canvas.width / 2));
         camera.y = Math.max(0, Math.min(WORLD_SIZE - canvas.height, player.y - canvas.height / 2));
+        
+        // --- MADENCİ TOPLAMA VE EFEKT KISMI (DÜZELTİLDİ) ---
         workers.forEach((w, i) => {
           if (Math.hypot(player.x - w.x, player.y - w.y) < 70) {
+            
+            // 1. EFEKTİ PATLAT
+            let pColor = (w.type === "metal") ? "#ffcc00" : "#00ffff";
+            createExplosion(w.x, w.y, pColor);
+
+            // 2. KAYNAK EKLE
             if (w.type === "metal") metalWorkers++;
             else kristalWorkers++;
-            // ...
-if (Math.hypot(player.x - w.x, player.y - w.y) < 70) {
-    // --- BURAYA EKLE ---
-    // Metal ise Altın rengi (#ffcc00), Kristal ise Neon Mavi (#00ffff)
-    let pColor = (w.type === "metal") ? "#ffcc00" : "#00ffff";
-    createExplosion(w.x, w.y, pColor);
-    // -------------------
-
-    if (w.type === "metal") metalWorkers++;
-    else kristalWorkers++;
-    workers.splice(i, 1);
-    updateUI();
-}
-// ...
+            
+            // 3. SİL VE GÜNCELLE (Sadece bir kez)
             workers.splice(i, 1);
             updateUI();
           }
         });
 
+        // --- DÜŞMAN MANTIĞI ---
         const now = Date.now();
         enemies.forEach((en, i) => {
           if (en.isChasing && now - en.chaseStartTime > 5000) {
@@ -2566,7 +2566,11 @@ if (Math.hypot(player.x - w.x, player.y - w.y) < 70) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.translate(-camera.x, -camera.y);
+        
+        // Arkaplan
         if (imgBG.complete) ctx.drawImage(imgBG, 0, 0, WORLD_SIZE, WORLD_SIZE);
+        
+        // Madenciler
         workers.forEach((w) => {
           ctx.save();
           ctx.shadowBlur = 10;
@@ -2574,6 +2578,8 @@ if (Math.hypot(player.x - w.x, player.y - w.y) < 70) {
           ctx.drawImage(w.img, w.x - 40, w.y - 40, 80, 80);
           ctx.restore();
         });
+
+        // Düşmanlar
         enemies.forEach((en) => {
           ctx.save();
           ctx.shadowBlur = 20;
@@ -2587,16 +2593,21 @@ if (Math.hypot(player.x - w.x, player.y - w.y) < 70) {
             if (tr < 1000) ctx.globalAlpha = tr / 1000;
           }
           ctx.drawImage(imgInfected, en.x - 40, en.y - 50, 80, 100);
-          drawParticles();
           ctx.restore();
         });
+
+        // --- PARÇACIKLAR (BURAYA ALINDI) ---
+        drawParticles(); 
+
+        // Oyuncu (Player)
         ctx.save();
         let bounce = player.isMoving ? Math.abs(Math.sin(walkCycle)) * 14 : 0;
         ctx.translate(player.x, player.y - bounce);
         if (player.flipX) ctx.scale(-1, 1);
         ctx.drawImage(imgDayi, -50, -60, 100, 120);
         ctx.restore();
-        ctx.restore();
+        
+        ctx.restore(); // Kamera translate restore
       }
 
       function gameLoop() {
@@ -3023,6 +3034,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
