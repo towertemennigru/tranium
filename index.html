@@ -1296,34 +1296,7 @@ function saveCloudData(fid) {
         }
       }
 
-      if (localStorage.getItem("w_last_time")) {
-        metal = parseFloat(localStorage.getItem("w_metal")) || 0;
-        kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
-        tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
-        metalWorkers = parseInt(localStorage.getItem("w_mw")) || 0;
-        kristalWorkers = parseInt(localStorage.getItem("w_kw")) || 0;
-        metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
-        kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
-
-        let savedEnergy = localStorage.getItem("w_energy");
-        if (savedEnergy !== null) {
-          energy = parseInt(savedEnergy);
-        } else {
-          energy = 10;
-        }
-
-        lastTime = parseInt(localStorage.getItem("w_last_time")) || Date.now();
-
-        nextEnergyTime = parseInt(localStorage.getItem("w_next_energy_time")) || 0;
-        energyRegenerationStartTime = parseInt(localStorage.getItem("w_energy_reg_start")) || 0;
-
-        metalFacUpgradeEndTime = parseInt(localStorage.getItem("w_mfue")) || 0;
-        kristalFacUpgradeEndTime = parseInt(localStorage.getItem("w_kfue")) || 0;
-
-        updateOfflineEnergyRegeneration();
-      }
-
-      function startIntro() {
+     function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "flex";
         
@@ -2507,6 +2480,7 @@ function startCloudSync() {
 </script>
   </body>
 </html>
+
 
 
 
