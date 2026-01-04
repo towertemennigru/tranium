@@ -1094,19 +1094,7 @@ You can start again with energy.
             UPGRADE <span id="costMetalFac"></span>
           </button>
         </div>
-        <div id="refInputModal" class="custom-modal" style="z-index: 9999;">
-  <h2 style="color: var(--neon); margin: 0 0 10px 0;">INVITE CODE</h2>
-  <p style="font-size: 11px; color: #ccc; margin-bottom: 15px;">
-    Enter a friend's code to get <span style="color:var(--gold); font-weight:bold;">+20 TRANIUM</span> instantly!
-  </p>
-  
-  <input type="text" id="refCodeInput" class="modal-input" placeholder="Ex: A1B2C" maxlength="6" style="text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">
-  
-  <div class="modal-btn-row">
-    <button class="modal-btn" style="background: #333; color: #aaa; font-size:12px;" onclick="skipRefCode()">SKIP</button>
-    <button class="modal-btn" style="background: var(--neon); color: black;" onclick="submitRefCode()">ENTER</button>
-  </div>
-</div>
+        
         <div class="fac-card">
           <span class="fac-header">CRYSTAL FACTORY</span>
           <span id="kristalFacLevel" style="font-size: 9px;
@@ -1123,7 +1111,19 @@ margin-bottom: 5px; color: #888">⏱️ 2h</span>
 color: white" onclick="closeUpgradeModal()">CLOSE</button>
       </div>
     </div>
-
+<div id="refInputModal" class="custom-modal" style="z-index: 9999;">
+  <h2 style="color: var(--neon); margin: 0 0 10px 0;">INVITE CODE</h2>
+  <p style="font-size: 11px; color: #ccc; margin-bottom: 15px;">
+    Enter a friend's code to get <span style="color:var(--gold); font-weight:bold;">+20 TRANIUM</span> instantly!
+  </p>
+  
+  <input type="text" id="refCodeInput" class="modal-input" placeholder="Ex: A1B2C" maxlength="6" style="text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">
+  
+  <div class="modal-btn-row">
+    <button class="modal-btn" style="background: #333; color: #aaa; font-size:12px;" onclick="skipRefCode()">SKIP</button>
+    <button class="modal-btn" style="background: var(--neon); color: black;" onclick="submitRefCode()">ENTER</button>
+  </div>
+</div>
     <div id="swapModal" class="custom-modal">
       <h2 style="color: var(--gold);
 margin: 0; font-size: 18px">TRANIUM REFINERY</h2>
@@ -2787,6 +2787,7 @@ async function submitRefCode() {
 </script>
   </body>
 </html>
+
 
 
 
