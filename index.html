@@ -1107,7 +1107,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
       const ctx = canvas.getContext("2d");
       const WORLD_SIZE = 2500;
       // --- GOOGLE SHEETS ENTEGRASYONU ---
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIJV48xZ3C2dxBAAZ3rLsAMLEArjYkOCB1iuQElbaNxNc4vW-bF51G9GyQxf1zEBdRAg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9MqtfdAYkIVhiZBieOHJA_AHY73kEBivW9rOq8QT8BVenHVvWMGLucjF5FwTjJZkxXg/exec";
 // Buluttan Veri Çekme (LOAD)
 async function loadCloudData(fid) {
     try {
@@ -1214,7 +1214,7 @@ function saveCloudData(fid) {
 // (let metal = 0, kristal = 0... satırlarının altına)
 
 function initializeNewUser() {
-    console.log("🆕 Yeni kullanıcı varsayılanları atanıyor...");
+    console.log("🆕 Veri bulunamadı veya yeni kullanıcı. Değerler sıfırlanıyor...");
     metal = 0;
     kristal = 0;
     tranium = 0;
@@ -1229,12 +1229,7 @@ function initializeNewUser() {
     metalFacUpgradeEndTime = 0;
     kristalFacUpgradeEndTime = 0;
     
-    // İlk kaydı oluştur (Eğer ID varsa)
-    if(window.currentUserFID && window.currentUserFID !== "local_user") {
-        saveCloudData(window.currentUserFID); 
-    }
 }
-
       const imgBG = new Image();
       imgBG.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/bg-H8I42XFyjR45PCLXsG4fQp7B323kKw.webp?37vf";
@@ -2509,6 +2504,7 @@ function startCloudSync() {
 </script>
   </body>
 </html>
+
 
 
 
