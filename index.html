@@ -1111,26 +1111,25 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyE-K9mGf382D
 // Buluttan Veri Çekme (LOAD)
 async function loadCloudData(fid) {
     try {
-        console.log("☁️ Buluttan veri çekiliyor... FID:", fid);
-        // FID'yi string olarak gönder
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=load&fid=${String(fid)}`);
+        console.log("☁️ Bulut verisi isteniyor:", fid);
+        // Önbelleği önlemek için timestamp ekliyoruz (&t=...)
+        const url = `${GOOGLE_SCRIPT_URL}?action=load&fid=${String(fid)}&t=${Date.now()}`;
+        
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Network response was not ok");
+        
         const data = await response.json();
         
-        if (data.status === "new") {
-            console.log("🆕 Yeni kullanıcı veya kayıt bulunamadı.");
-            return null;
+        if (data.status === "new" || !data.metal) { // Veri yoksa veya boşsa
+            return { status: "new" };
         }
         
-        if (isNaN(data.energy) || data.energy === null || data.energy === "") {
-             console.warn("⚠️ Enerji verisi bozuk geldi, varsayılan (10) kullanılacak.");
-             data.energy = 10;
-        }
-
-        console.log("✅ Veri yüklendi:", data);
         return data;
     } catch (error) {
-        console.error("❌ Veri yükleme hatası:", error);
-        return null;
+        console.error("❌ Bulut yükleme hatası:", error);
+        // Hata durumunda null döndür ki initHub yeni kullanıcı gibi davransın veya tekrar denesin
+        // Oyunun kilitlenmemesi için "new" döndürmek daha güvenli olabilir geçici olarak
+        return { status: "new" }; 
     }
 }
 // Buluta Veri Kaydetme (SAVE)
@@ -1156,6 +1155,14 @@ function saveCloudData(fid) {
     }).then(res => res.json())
       .then(response => console.log("☁️ Kayıt Başarılı:", response))
       .catch(err => console.error("❌ Kayıt Hatası:", err));
+}
+      function saveData() {
+    // Eğer geçerli bir kullanıcı ID'si varsa buluta kaydet
+    if (window.currentUserFID) {
+        saveCloudData(window.currentUserFID);
+    } else {
+        console.warn("Kayıt yapılamadı: Kullanıcı ID bulunamadı.");
+    }
 }
       let metal = 0,
         kristal = 0,
@@ -1809,106 +1816,85 @@ async function executeTransaction(signer, amountETH, toAddress) {
     canvas.height = window.innerHeight;
     canvas.style.imageRendering = "pixelated";
 
-    // --- FID ALMA MANTIĞI ---
-    let userFID = "local_user"; // Varsayılan (PC'de test için)
+    // --- 1. FID TESPİTİ ---
+    let userFID = "local_user"; 
     
-    // 1. URL parametresine bak
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('fid')) {
         userFID = urlParams.get('fid');
-        console.log("💻 PC Modu: URL'den FID alındı ->", userFID);
-    } 
-    // 2. Farcaster SDK'ya bak
-    else if (window.farcasterSDK && window.farcasterSDK.context) {
+    } else if (window.farcasterSDK && window.farcasterSDK.context) {
         try {
             const context = await window.farcasterSDK.context;
             if (context && context.user && context.user.fid) {
                 userFID = context.user.fid;
-                console.log("🆔 Mobil Mod: FID bulundu:", userFID);
             }
-        } catch (e) {
-            console.error("FID alınamadı:", e);
-        }
+        } catch (e) { console.error("FID Hatası:", e); }
     }
     
-    // Global değişkene atayalım ki save fonksiyonu da erişsin
     window.currentUserFID = String(userFID);
+    console.log("🆔 Giriş yapan FID:", window.currentUserFID);
 
-    // --- VERİ YÜKLEME ---
-    // Önce buluta bak
+    // --- 2. BULUT VERİSİNİ BEKLE (Wait) ---
+    // Oyun burada donmuş gibi görünmemeli, loading ekranı zaten açık.
+    // Veri gelene kadar bir alt satıra geçmez (await).
     const cloudData = await loadCloudData(userFID);
     
-    lastTime = Date.now(); // Başlangıç varsayılanı
+    // --- 3. VERİYİ İŞLE ---
+    if (cloudData && cloudData.status !== "new") {
+        console.log("☁️ Veri bulundu, yükleniyor...");
+        metal = Number(cloudData.metal) || 0;
+        kristal = Number(cloudData.kristal) || 0;
+        tranium = Number(cloudData.tranium) || 0;
+        metalFacLvl = Number(cloudData.metal_lvl) || 1;
+        kristalFacLvl = Number(cloudData.kristal_lvl) || 1;
+        energy = Number(cloudData.energy);
+        if (isNaN(energy)) energy = 10; // Güvenlik
 
-    if (cloudData) {
-        // Buluttan veri geldiyse değişkenleri güncelle
-        metal = cloudData.metal;
-        kristal = cloudData.kristal;
-        tranium = cloudData.tranium;
-        metalFacLvl = cloudData.metal_lvl;
-        kristalFacLvl = cloudData.kristal_lvl;
-        energy = cloudData.energy;
-        metalWorkers = cloudData.metal_workers || 0; 
-        kristalWorkers = cloudData.kristal_workers || 0;
+        metalWorkers = Number(cloudData.metal_workers) || 0; 
+        kristalWorkers = Number(cloudData.kristal_workers) || 0;
         
-        // Zamanlayıcıları senkronize et (KRİTİK KISIM)
-        if (cloudData.energy_reg_start) {
-            energyRegenerationStartTime = parseInt(cloudData.energy_reg_start);
-        }
-        if (cloudData.last_save_time) {
-            lastTime = parseInt(cloudData.last_save_time);
-        }
+        energyRegenerationStartTime = Number(cloudData.energy_reg_start) || 0;
+        lastTime = Number(cloudData.last_save_time) || Date.now();
         
+        // Offline kazanç hesaplama (Geçen süreye göre)
+        const now = Date.now();
+        let secondsPassed = Math.floor((now - lastTime) / 1000);
+        if(secondsPassed < 0) secondsPassed = 0;
+        
+        console.log(`🕒 Offline süre: ${secondsPassed} saniye. Üretim işleniyor...`);
+        processMining(secondsPassed);
+
     } else {
-        // Bulutta yoksa LocalStorage'a bak (Eski oyuncular için yedek)
-        if (localStorage.getItem("w_last_time")) {
-             metal = parseFloat(localStorage.getItem("w_metal")) || 0;
-             kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
-             tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
-             metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
-             kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
-             let savedEnergy = localStorage.getItem("w_energy");
-             energy = savedEnergy !== null ? parseInt(savedEnergy) : 10;
-        }
+        // Eğer cloudData null ise veya status "new" ise
+        initializeNewUser();
     }
     
-    // --- OYUNU BAŞLAT ---
-    const now = Date.now();
-    // Offline süreyi hesapla (Buluttaki last_save_time'a göre)
-    let secondsPassed = Math.floor((now - lastTime) / 1000);
-    if(secondsPassed < 0) secondsPassed = 0;
-    
-    processMining(secondsPassed);
-    
-    // Enerjiyi buluttan gelen regeneration_start'a göre güncelle
+    // --- 4. OYUNU BAŞLAT ---
+    // Veriler yüklendikten SONRA oyunu başlatıyoruz.
     updateOfflineEnergyRegeneration();
-    
     checkUpgradeProgress();
     updateUI();
     startEnergyCountdown();
     
+    // Worker ve Enemy oluşturma
     for (let i = 0; i < 40; i++) spawnWorker();
     for (let i = 0; i < 15; i++) spawnEnemy();
     
+    // Game Loop Başlat
     requestAnimationFrame(gameLoop);
     
-    // 1. Düzenli Kayıt (30 saniyede bir) - Fonksiyon içine parametre göndermek için arrow function kullan
+    // Otomatik Kayıtçılar
     setInterval(() => {
         if(window.currentUserFID) saveCloudData(window.currentUserFID);
-    }, 30000);
+    }, 30000); // 30 saniyede bir kaydet
     
-    // 2. [YENİ] Arka Plan Senkronizasyonunu Başlat (5 saniyede bir)
-    startCloudSync();
+    startCloudSync(); // Başka cihazdan oynanırsa senkronize et
 
-    // ... (diğer pagehide event listener'ları aynen kalsın) ...
-    
     // Sayfa kapanırken kaydet
     window.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === 'hidden') saveData();
+        if (document.visibilityState === 'hidden') saveCloudData(window.currentUserFID);
     });
-    window.addEventListener("pagehide", () => saveData());
     
-    setInterval(checkUpgradeProgress, 1000);
     initJoystick();
 }
       function initJoystick() {
@@ -2521,6 +2507,7 @@ function startCloudSync() {
 </script>
   </body>
 </html>
+
 
 
 
