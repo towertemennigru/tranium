@@ -1339,62 +1339,92 @@ async function identifyUser() {
         }
       }
 
-      async function loadDataFromFirebase() {
-    console.log("☁️ Firebase'den veri indiriliyor...");
-    
-    // Önce kullanıcı kimliğini netleştir
-    await identifyUser();
+      // ESKİ loadDataFromFirebase YERİNE BU GELECEK:
+      async function setupRealtimeListener() {
+        console.log("📡 Realtime Bağlantı Kuruluyor...");
+        
+        await identifyUser();
 
-    if (!window.firebaseDB || !window.firebaseFunctions) {
-        console.error("Firebase bulunamadı!");
-        initHub(); // Veri olmasa da oyunu başlat
-        return;
-    }
-
-    const { doc, getDoc } = window.firebaseFunctions;
-    const db = window.firebaseDB;
-
-    try {
-        const docRef = doc(db, "players", currentUserID);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            
-            // Verileri değişkenlere ata
-            metal = parseFloat(data.metal) || 0;
-            kristal = parseFloat(data.kristal) || 0;
-            tranium = parseInt(data.tranium) || 0;
-            metalWorkers = parseInt(data.metalWorkers) || 0;
-            kristalWorkers = parseInt(data.kristalWorkers) || 0;
-            metalFacLvl = parseInt(data.metalFacLvl) || 1;
-            kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
-            
-            // Enerji verileri
-            energy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
-            
-            lastTime = parseInt(data.lastTime) || Date.now();
-            
-            nextEnergyTime = parseInt(data.nextEnergyTime) || 0;
-            energyRegenerationStartTime = parseInt(data.energyRegenerationStartTime) || 0;
-            
-            metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
-            kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
-
-            console.log("✅ Veriler yüklendi. Çevrimdışı kazanç hesaplanacak.");
-            updateOfflineEnergyRegeneration();
-            
-        } else {
-            console.log("🆕 Yeni kullanıcı veya kayıt yok. Sıfırdan başlanıyor.");
-            energy = 10; // Yeni başlayanlara tam enerji
+        if (!window.firebaseDB || !window.firebaseFunctions) {
+            console.error("Firebase bulunamadı!");
+            initHub(); 
+            return;
         }
-    } catch (error) {
-        console.error("Veri çekme hatası:", error);
-    }
 
-    // Veri yükleme işi bitti, ARTIK oyunu başlatabiliriz
-    initHub();
-}
+        const { doc, onSnapshot } = window.firebaseFunctions;
+        const db = window.firebaseDB;
+
+        try {
+            // onSnapshot: Veritabanındaki değişikliği anında yakalar!
+            const docRef = doc(db, "players", currentUserID);
+            
+            // Bu kısım sürekli açık kalır ve her değişiklikte çalışır
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    // Veri tabanından gelen yeni veriyi değişkenlere eşitle
+                    // Not: Sadece değerleri güncelliyoruz, oyun akışını bozmuyoruz.
+                    
+                    // Değişkenleri güncelle
+                    // Eğer yerel değer sunucudan çok farklıysa (örn: harcama yapıldıysa) sunucuyu kabul et.
+                    // Küçük farklar (mining) için yerel akışı bozmamaya çalışabiliriz ama
+                    // tam senkronizasyon için sunucuyu otorite kabul etmek en iyisidir.
+                    
+                    metal = parseFloat(data.metal) || 0;
+                    kristal = parseFloat(data.kristal) || 0;
+                    tranium = parseInt(data.tranium) || 0;
+                    metalWorkers = parseInt(data.metalWorkers) || 0;
+                    kristalWorkers = parseInt(data.kristalWorkers) || 0;
+                    
+                    // Factory seviyeleri değiştiyse güncelle
+                    if (metalFacLvl !== (parseInt(data.metalFacLvl) || 1)) {
+                        metalFacLvl = parseInt(data.metalFacLvl) || 1;
+                    }
+                    if (kristalFacLvl !== (parseInt(data.kristalFacLvl) || 1)) {
+                        kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
+                    }
+
+                    // Enerji senkronizasyonu
+                    const serverEnergy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
+                    // Enerji sadece sunucuda arttıysa veya azaldıysa al (yerel sayaçla çakışmaması için)
+                    if (Math.abs(serverEnergy - energy) > 0) {
+                         energy = serverEnergy;
+                    }
+
+                    nextEnergyTime = parseInt(data.nextEnergyTime) || 0;
+                    energyRegenerationStartTime = parseInt(data.energyRegenerationStartTime) || 0;
+                    metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
+                    kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
+
+                    // UI'ı anında güncelle
+                    updateUI();
+                    
+                    // İlk yükleme kontrolü: Eğer oyun daha başlamadıysa verileri yükleyip başlat
+                    if (!window.hasInitialLoadCompleted) {
+                        console.log("✅ İlk Veriler Yüklendi.");
+                        updateOfflineEnergyRegeneration();
+                        initHub();
+                        window.hasInitialLoadCompleted = true;
+                    }
+
+                } else {
+                    console.log("🆕 Yeni kullanıcı. Kayıt oluşturulacak.");
+                    energy = 10;
+                    if (!window.hasInitialLoadCompleted) {
+                        initHub();
+                        window.hasInitialLoadCompleted = true;
+                    }
+                }
+            }, (error) => {
+                console.error("Dinleme hatası:", error);
+            });
+
+        } catch (error) {
+            console.error("Listener kurma hatası:", error);
+            initHub();
+        }
+      }
 
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
@@ -2465,6 +2495,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
