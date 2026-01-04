@@ -2350,7 +2350,7 @@ async function saveData() {
         fpsBox.innerHTML = "FPS:...";
         document.body.appendChild(fpsBox);
 
-        // Hız Koruma (Hile önleyici basit yapı)
+        // Hız Koruma
         function lockPlayerSpeed() {
           try {
             if (typeof player !== "undefined" && player.speed !== 7.0) {
@@ -2366,33 +2366,37 @@ async function saveData() {
 
         const originalInitHub = window.initHub;
         
-        // --- KRİTİK DÜZELTME BURADA ---
+        // --- GÖRÜNTÜ VE BAŞLATMA AYARLARI ---
         window.initHub = function () {
-          // 1. Önce oyunun verilerini yükleyen orijinal başlatıcıyı çalıştır
+          // 1. Oyunun iç verilerini yükle (Worker, Enemy spawn vs.)
           if (originalInitHub) originalInitHub();
 
-          // 2. EKRAN ÇÖZÜNÜRLÜĞÜ AYARI (ZOOM SORUNU ÇÖZÜMÜ)
+          // 2. EKRAN ÇÖZÜNÜRLÜĞÜ AYARI (Siyah Ekran ve Zoom Sorunu Çözümü)
           const cvs = document.getElementById("gameCanvas");
           if (cvs) {
-            // Telefon ekranı ne olursa olsun, oyun kendini 1920px genişlikte sanacak.
-            // Bu sayede karakter küçük, harita geniş görünecek.
+            // Telefonun ekran oranını al
             const targetRatio = window.innerWidth / window.innerHeight;
             
-            const virtualWidth = 1920; 
+            // 1920 yerine 1280 kullanıyoruz. 
+            // 1280px gayet geniştir, haritayı gösterir ama telefon hafızasını çökertmez.
+            const virtualWidth = 1280; 
             const virtualHeight = virtualWidth / targetRatio;
 
-            // Canvas'ın iç çözünürlüğünü yüksek yapıyoruz
             cvs.width = virtualWidth;
             cvs.height = virtualHeight;
 
-            // Ama CSS ile telefona sığdırıyoruz
+            // Piksel görüntü bozulmasın diye ayarı tazeliyoruz
+            const ctx = cvs.getContext("2d");
+            ctx.imageSmoothingEnabled = false;
+
+            // CSS ile ekrana sığdır
             cvs.style.width = "100vw";
             cvs.style.height = "100vh";
             cvs.style.transform = "translate3d(0,0,0)";
             cvs.style.imageRendering = "pixelated";
           }
 
-          // 3. Joystick Mobilde Görünsün (PC'de Gizlensin)
+          // 3. Joystick Mobilde Görünsün
           if (!("ontouchstart" in window) && navigator.maxTouchPoints === 0) {
             const joyContainer = document.getElementById("joystickContainer");
             if (joyContainer) joyContainer.style.display = "none";
@@ -2401,10 +2405,10 @@ async function saveData() {
             document.head.appendChild(style);
           }
 
-          // 4. Hız kilidini aç ve FPS göster
+          // 4. Turbo Mod Aktif
           lockPlayerSpeed();
           fpsBox.style.display = "block";
-          console.log("✅ SYSTEM: Virtual Resolution 1920px Active");
+          console.log("✅ SYSTEM: Safe Resolution 1280px Active");
 
           // 5. Oyun Döngüsünü BAŞLAT
           secureGameLoop();
@@ -2456,7 +2460,7 @@ async function saveData() {
           }
         }
 
-        // Orijinal loop'u iptal edip kendi secureLoop'umuzu initHub içinde çağırıyoruz
+        // Orijinal loop'u iptal et
         window.gameLoop = function () {}; 
       })();
     </script>
@@ -2485,6 +2489,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
