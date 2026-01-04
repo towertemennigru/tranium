@@ -1408,155 +1408,140 @@ async function identifyUser() {
 
     
       async function setupRealtimeListener() {
-        console.log("📡 Realtime Bağlantı Kuruluyor...");
-        
-        await identifyUser();
+    console.log("📡 Realtime Bağlantı Kuruluyor...");
 
-        if (!window.firebaseDB || !window.firebaseFunctions) {
-            console.error("Firebase bulunamadı!");
-            initHub(); 
-            return;
-        }
+    await identifyUser();
 
-        const { doc, onSnapshot } = window.firebaseFunctions;
-        const db = window.firebaseDB;
+    if (!window.firebaseDB || !window.firebaseFunctions) {
+        console.error("Firebase bulunamadı!");
+        initHub();
+        return;
+    }
 
-        try {
-            const docRef = doc(db, "players", currentUserID);
-            
-            onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    
-                    // 1. Mevcut verileri çek (Burası aynen kalıyor)
-                    // Ancak offline hesaplama yapabilmek için önce kaydedilmiş ham veriyi alalım
-                    let savedMetal = parseFloat(data.metal) || 0;
-                    let savedKristal = parseFloat(data.kristal) || 0;
-                    let savedLastTime = parseInt(data.lastTime) || Date.now();
+    const { doc, onSnapshot } = window.firebaseFunctions;
+    const db = window.firebaseDB;
 
-                    // Diğer değişkenleri güncelle
-                    tranium = parseInt(data.tranium) || 0;
-                    metalWorkers = parseInt(data.metalWorkers) || 0;
-                    kristalWorkers = parseInt(data.kristalWorkers) || 0;
-                    
-                    if (metalFacLvl !== (parseInt(data.metalFacLvl) || 1)) {
-                        metalFacLvl = parseInt(data.metalFacLvl) || 1;
-                    }
-                    if (kristalFacLvl !== (parseInt(data.kristalFacLvl) || 1)) {
-                        kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
-                    }
+    try {
+        const docRef = doc(db, "players", currentUserID);
 
-                    // Enerji senkronizasyonu
-                    const serverEnergy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
-                    if (Math.abs(serverEnergy - energy) > 0) {
-                         energy = serverEnergy;
-                    }
+        onSnapshot(docRef, (docSnap) => {
+            // --- SENARYO 1: MEVCUT KULLANICI İSE ---
+            if (docSnap.exists()) {
+                const data = docSnap.data();
 
-                    nextEnergyTime = parseInt(data.nextEnergyTime) || 0;
-                    energyRegenerationStartTime = parseInt(data.energyRegenerationStartTime) || 0;
-                    metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
-                    kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
+                // 1. Verileri Çek
+                let savedMetal = parseFloat(data.metal) || 0;
+                let savedKristal = parseFloat(data.kristal) || 0;
+                let savedLastTime = parseInt(data.lastTime) || Date.now();
 
-                    // -----------------------------------------------------------
-                    // 🛠️ YENİ EKLENEN KISIM: OFFLINE KAZANÇ HESAPLAMA
-                    // -----------------------------------------------------------
-                    // Bu hesaplama sadece ilk yüklemede (sayfa yenilendiğinde) yapılmalı.
-                    // Yoksa oyun oynarken her save işleminde tekrar tekrar ekleme yapar.
-                    
-                    if (!window.hasInitialLoadCompleted) {
-                        const now = Date.now();
-                        // Geçen süreyi saniye cinsinden bul
-                        const secondsPassed = (now - savedLastTime) / 1000;
+                tranium = parseInt(data.tranium) || 0;
+                metalWorkers = parseInt(data.metalWorkers) || 0;
+                kristalWorkers = parseInt(data.kristalWorkers) || 0;
+                metalFacLvl = parseInt(data.metalFacLvl) || 1;
+                kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
 
-                        // Eğer kullanıcı en az 10 saniye yoksa hesapla
-                        if (secondsPassed > 10) {
-                            // Çarpanları hesapla
-                            const metalMultiplier = Math.pow(2, metalFacLvl - 1);
-                            const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
+                const serverEnergy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
+                if (Math.abs(serverEnergy - energy) > 0) energy = serverEnergy;
 
-                            // Formül: Saniye * İşçi Sayısı * Hız * Fabrika Çarpanı
-                            const offlineMetalGain = secondsPassed * (metalWorkers * BASE_WORKER_SPEED * metalMultiplier);
-                            const offlineKristalGain = secondsPassed * (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier);
+                nextEnergyTime = parseInt(data.nextEnergyTime) || 0;
+                energyRegenerationStartTime = parseInt(data.energyRegenerationStartTime) || 0;
+                metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
+                kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
 
-                            if (offlineMetalGain > 0 || offlineKristalGain > 0) {
-                                savedMetal += offlineMetalGain;
-                                savedKristal += offlineKristalGain;
+                // 2. Offline Kazanç Hesapla (Sadece ilk girişte)
+                if (!window.hasInitialLoadCompleted) {
+                    const now = Date.now();
+                    const secondsPassed = (now - savedLastTime) / 1000;
+                    if (secondsPassed > 10) {
+                        const metalMultiplier = Math.pow(2, metalFacLvl - 1);
+                        const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
+                        const offlineMetalGain = secondsPassed * (metalWorkers * BASE_WORKER_SPEED * metalMultiplier);
+                        const offlineKristalGain = secondsPassed * (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier);
 
-                                console.log(`💤 Offline Kazanç: ${offlineMetalGain.toFixed(2)} Metal, ${offlineKristalGain.toFixed(2)} Kristal (${(secondsPassed/60).toFixed(1)} dk)`);
-                                
-                                // Kullanıcıya hoş bir bildirim göster
-                                alert(`HOŞ GELDİN!\n\nSen yokken madencilerin çalıştı:\n⚙️ +${Math.floor(offlineMetalGain)} Metal\n💎 +${Math.floor(offlineKristalGain)} Kristal`);
-                                
-                                // Hemen veritabanına bu yeni haliyle güncelle ki kaybolmasın
-                                // Not: updateUI ve saveData aşağıda çağırılacak zaten.
-                            }
+                        if (offlineMetalGain > 0 || offlineKristalGain > 0) {
+                            savedMetal += offlineMetalGain;
+                            savedKristal += offlineKristalGain;
+                            alert(`HOŞ GELDİN!\n\nSen yokken madencilerin çalıştı:\n⚙️ +${Math.floor(offlineMetalGain)} Metal\n💎 +${Math.floor(offlineKristalGain)} Kristal`);
                         }
                     }
-                    // -----------------------------------------------------------
-
-                    // Değişkenleri son haline eşitle
-                    metal = savedMetal;
-                    kristal = savedKristal;
-
-                // --- REF CODE MANTIĞI (setupRealtimeListener içine eklenecek) ---
-
-let myRefCode = data.myRefCode;
-let hasUsedRef = data.usedRefCode || false;
-
-// Eğer kullanıcının henüz bir ref kodu yoksa oluştur ve kaydet
-if (!myRefCode) {
-    myRefCode = generateRefCode();
-    // Veritabanına kaydet (Burada updateDoc kullanabiliriz veya bir sonraki saveData döngüsünü bekleyebiliriz ama hemen yazmak daha iyi)
-    // Not: setupRealtimeListener içinde olduğumuz için 'docRef' zaten tanımlı
-    // Ancak döngüye girmemesi için dikkatli olmalıyız.
-    // Şimdilik sadece değişkene atayalım, saveData fonksiyonu bunu kaydeder.
-}
-
-// Global'e taşıyalım (HTML'de göstermek için)
-document.getElementById("myRefCodeText").innerText = myRefCode;
-
-// Eğer kullanıcı daha önce Ref Kodu GİRMEMİŞSE ve YENİ KULLANICI DEĞİLSE (veya yeni ise de sorsun)
-// Loading bittikten hemen sonra sorsun istiyoruz.
-// Bunu kontrol etmek için basit bir flag kullanabiliriz.
-if (!hasUsedRef && !window.refModalShown) {
-    // Biraz gecikmeli aç ki loading tam bitsin
-    setTimeout(() => {
-        document.getElementById("refInputModal").style.display = "block";
-    }, 2000);
-    window.refModalShown = true; // Tekrar tekrar açılmasın
-}
-
-// saveData fonksiyonuna eklenmek üzere global bir değişkene de atabiliriz
-// Ama en kolayı, saveData fonksiyonunda bu veriyi de göndermek.
-window.currentUserRefCode = myRefCode;
-                  
-                    updateUI();
-                    
-                    if (!window.hasInitialLoadCompleted) {
-                        console.log("✅ İlk Veriler Yüklendi.");
-                        updateOfflineEnergyRegeneration();
-                        initHub();
-                        // İlk yüklemenin bittiğini işaretle (Offline hesaplama bir daha çalışmasın diye)
-                        window.hasInitialLoadCompleted = true;
-                    }
-
-                } else {
-                    console.log("🆕 Yeni kullanıcı. Kayıt oluşturulacak.");
-                    energy = 10;
-                    if (!window.hasInitialLoadCompleted) {
-                        initHub();
-                        window.hasInitialLoadCompleted = true;
-                    }
                 }
-            }, (error) => {
-                console.error("Dinleme hatası:", error);
-            });
 
-        } catch (error) {
-            console.error("Listener kurma hatası:", error);
-            initHub();
-        }
-      }
+                metal = savedMetal;
+                kristal = savedKristal;
+
+                // --- REF CODE MANTIĞI (MEVCUT KULLANICI İÇİN) ---
+                let myRefCode = data.myRefCode;
+                let hasUsedRef = data.usedRefCode || false;
+
+                // Eğer eski bir kullanıcıysa ve kodu yoksa oluştur
+                if (!myRefCode) {
+                    myRefCode = generateRefCode();
+                    // Hemen veritabanına yazmıyoruz, saveData döngüsü veya bir sonraki işlem yazacak.
+                    // Ama ekranda görünsün diye değişkene atıyoruz.
+                }
+
+                // Ekrana Yazdır (LOADING... yazısını kaldırır)
+                const refTextEl = document.getElementById("myRefCodeText");
+                if (refTextEl) refTextEl.innerText = myRefCode;
+
+                // Ref Code Pop-up Gösterimi (Eğer daha önce girmediyse)
+                if (!hasUsedRef && !window.refModalShown) {
+                    setTimeout(() => {
+                        const modal = document.getElementById("refInputModal");
+                        if (modal) modal.style.display = "block";
+                    }, 2500); // 2.5 saniye sonra aç
+                    window.refModalShown = true;
+                }
+
+                updateUI();
+
+                if (!window.hasInitialLoadCompleted) {
+                    console.log("✅ İlk Veriler Yüklendi.");
+                    updateOfflineEnergyRegeneration();
+                    initHub();
+                    window.hasInitialLoadCompleted = true;
+                }
+
+            } 
+            // --- SENARYO 2: YENİ KULLANICI İSE (Senin durumun) ---
+            else {
+                console.log("🆕 Yeni kullanıcı. Kayıt oluşturulacak.");
+                energy = 10;
+                
+                // 1. Yeni Ref Kodu Oluştur
+                const newRefCode = generateRefCode();
+                
+                // 2. Ekrana Hemen Yazdır (Kritik nokta burasıydı)
+                const refTextEl = document.getElementById("myRefCodeText");
+                if (refTextEl) refTextEl.innerText = newRefCode;
+
+                // 3. Pop-up'ı planla
+                if (!window.refModalShown) {
+                    setTimeout(() => {
+                        const modal = document.getElementById("refInputModal");
+                        if (modal) modal.style.display = "block";
+                    }, 2500);
+                    window.refModalShown = true;
+                }
+
+                // 4. Oyunu Başlat
+                if (!window.hasInitialLoadCompleted) {
+                    initHub();
+                    window.hasInitialLoadCompleted = true;
+                }
+                
+                // 5. İlk Kaydı Hemen Yap (Ref kodunu kaydetmek için)
+                saveData(true);
+            }
+        }, (error) => {
+            console.error("Dinleme hatası:", error);
+        });
+
+    } catch (error) {
+        console.error("Listener kurma hatası:", error);
+        initHub();
+    }
+}
 
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
@@ -2802,6 +2787,7 @@ async function submitRefCode() {
 </script>
   </body>
 </html>
+
 
 
 
