@@ -2611,20 +2611,49 @@ async function skipRefCode() {
 }
 
 // "ENTER" Butonuna Basılınca (Ref Kodu Kullanma)
-async function submitRefCode() {
+// YARDIMCI FONKSİYON: Durum Göster (Yeşil Tik veya Kırmızı Çarpı)
+function showRefFeedback(type, message) {
+    const overlay = document.getElementById("refStatusOverlay");
+    const icon = document.getElementById("statusIcon");
+    const text = document.getElementById("statusText");
+    
+    overlay.style.display = "flex";
+    
+    if (type === 'success') {
+        icon.innerHTML = "✅";
+        icon.style.textShadow = "0 0 20px #00ff00";
+        text.style.color = "#00ff00";
+        text.innerHTML = message || "SUCCESS!";
+    } else {
+        icon.innerHTML = "❌";
+        icon.style.textShadow = "0 0 20px #ff0000";
+        text.style.color = "#ff4444";
+        text.innerHTML = message || "ERROR!";
+    }
+
+    // 1 Saniye sonra ne olacağını yöneten Promise
+    return new Promise(resolve => setTimeout(() => {
+        overlay.style.display = "none";
+        resolve();
+    }, 1200)); // Animasyon rahat görünsün diye 1.2 sn
+}
+
+// GÜNCELLENMİŞ SUBMIT FONKSİYONU
+
+      async function submitRefCode() {
     const inputCode = document.getElementById("refCodeInput").value.trim().toUpperCase();
     const myCode = document.getElementById("myRefCodeText").innerText;
 
     if (!inputCode) {
-        alert("Please enter a code.");
+        await showRefFeedback('error', 'ENTER CODE');
         return;
     }
     if (inputCode === myCode) {
-        alert("You cannot use your own code!");
+        await showRefFeedback('error', 'YOUR CODE!');
         return;
     }
 
-    showBlockingLoader(); // İşlem sırasında ekranı kilitle
+    showBlockingLoader(); // Büyük yükleme ekranını aç
 
     try {
         const db = window.firebaseDB;
@@ -2637,7 +2666,8 @@ async function submitRefCode() {
 
         if (querySnapshot.empty) {
             hideBlockingLoader();
-            alert("Invalid Referral Code!");
+            // Alert yerine bizim özel feedback fonksiyonumuz
+            await showRefFeedback('error', 'INVALID CODE');
             return;
         }
 
@@ -2651,37 +2681,42 @@ async function submitRefCode() {
         });
 
         // 3. Ödülleri Dağıt
-        
-        // A) Kod Sahibine +20 Tranium ver
         const referrerRef = doc(db, "players", referrerId);
         await updateDoc(referrerRef, {
             tranium: referrerCurrentTranium + 20
         });
 
-        // B) Kod Kullanan (Ben) +20 Tranium al ve 'usedRefCode' işaretle
-        // Not: 'tranium' değişkeni globalde var, onu artırıp sonra save yapıyoruz.
+        // Benim verilerimi güncelle
         tranium += 20; 
         
-        // Veritabanına benim kaydımı güncelle
-        const newRefCode = generateRefCode();
+        const myRef = doc(db, "players", currentUserID);
+        const newRefCode = generateRefCode(); // Kod girdikten sonra benim kodumu oluştur
+        
         await updateDoc(myRef, {
-            refActionTaken: true,  // Bir daha sorma
-            usedRefCode: true,     // Kod kullandı
-            myRefCode: newRefCode, // Benim kodumu kaydet
+            refActionTaken: true,
+            usedRefCode: true,
+            myRefCode: newRefCode,
             tranium: tranium
         });
-
-        // 4. İşlem Tamam
+        
+        // 4. İşlem Tamam - UI Güncelle
         updateUI();
         hideBlockingLoader();
+        
+        // Kendi kodunu ekrana yaz
         document.getElementById("myRefCodeText").innerText = newRefCode;
         window.currentUserRefCode = newRefCode;
-        alert("SUCCESS! You and your friend earned +20 Tranium!");
+
+        // BAŞARILI FEEDBACK (Yeşil Tik)
+        await showRefFeedback('success', '+20 TRANIUM');
+        
+        // Feedback bittikten sonra modalı tamamen kapat
+        document.getElementById("refInputModal").style.display = "none";
 
     } catch (error) {
         console.error("Ref Error:", error);
         hideBlockingLoader();
-        alert("Error processing code. Try again.");
+        await showRefFeedback('error', 'NET ERROR');
     }
 }
     </script>
@@ -2811,25 +2846,3 @@ async function submitRefCode() {
 </script>
   </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
