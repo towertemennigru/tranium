@@ -1210,6 +1210,31 @@ function saveCloudData(fid) {
       let metalFacUpgradeEndTime = 0;
       let kristalFacUpgradeEndTime = 0;
 
+      // --- MEVCUT DEĞİŞKENLERİNİZİN ALTINA EKLEYİN ---
+// (let metal = 0, kristal = 0... satırlarının altına)
+
+function initializeNewUser() {
+    console.log("🆕 Yeni kullanıcı varsayılanları atanıyor...");
+    metal = 0;
+    kristal = 0;
+    tranium = 0;
+    metalWorkers = 0;
+    kristalWorkers = 0;
+    metalFacLvl = 1;
+    kristalFacLvl = 1;
+    energy = 10;
+    lastTime = Date.now();
+    energyRegenerationStartTime = 0;
+    nextEnergyTime = 0;
+    metalFacUpgradeEndTime = 0;
+    kristalFacUpgradeEndTime = 0;
+    
+    // İlk kaydı oluştur (Eğer ID varsa)
+    if(window.currentUserFID && window.currentUserFID !== "local_user") {
+        saveCloudData(window.currentUserFID); 
+    }
+}
+
       const imgBG = new Image();
       imgBG.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/bg-H8I42XFyjR45PCLXsG4fQp7B323kKw.webp?37vf";
@@ -1225,6 +1250,7 @@ function saveCloudData(fid) {
       const imgInfected = new Image();
       imgInfected.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/infect-removebg-preview-5HhmhH4V5DqNbYNXhiFg3o9Z0RkEIj.webp?uN63";
+      
       
       function openHowToPlay() {
         document.getElementById("howToPlayScreen").style.display = "flex";
@@ -2117,7 +2143,7 @@ function startCloudSync() {
         });
       }
 
-      function attemptStart() {
+     function attemptStart() {
         if (energy > 0) {
           energy--;
           health = 3;
@@ -2126,9 +2152,17 @@ function startCloudSync() {
 
           saveData();
           updateUI();
+          
+          // --- DÜZELTME BURADA ---
           document.getElementById("overlay").style.display = "none";
-          document.getElementById("ui").style.opacity = "1";
+          
+          // Hem display'i açmalıyız hem de opacity'i
+          const uiElement = document.getElementById("ui");
+          uiElement.style.display = "flex"; // "none" idi, "flex" yaptık
+          setTimeout(() => { uiElement.style.opacity = "1"; }, 50); // Ufak gecikme ile efekt
+          
           document.getElementById("joystickContainer").style.display = "block";
+          
           isStarted = true;
         } else {
           alert("Not enough energy! Wait for energy to regenerate.");
@@ -2331,8 +2365,14 @@ function startCloudSync() {
       });
       function endGame() {
         document.getElementById("overlay").style.display = "flex";
-        document.getElementById("ui").style.opacity = "0";
+        
+        // UI'ı gizle
+        const uiElement = document.getElementById("ui");
+        uiElement.style.opacity = "0";
+        uiElement.style.display = "none"; // Bunu ekledik
+        
         document.getElementById("joystickContainer").style.display = "none";
+        
         if (energyTimer) {
           clearInterval(energyTimer);
           energyTimer = null;
@@ -2341,17 +2381,6 @@ function startCloudSync() {
         startEnergyCountdown();
         
         console.log("Game Over! Score: " + Math.floor(tranium));
-      }
-
-      // Initial call to setup the intro screen
-      window.onload = function() {
-        console.log("🚀 App Loaded. Triggering Farcaster SDK...");
-        
-        // DÜZELTME: Intro'yu zorla başlat
-        // Bu sayede Farcaster context'i gelmese bile buton 0.8sn sonra görünür.
-        if (window.startIntro) {
-            window.startIntro();
-        }
       };
     </script>
     <script>
@@ -2480,6 +2509,7 @@ function startCloudSync() {
 </script>
   </body>
 </html>
+
 
 
 
