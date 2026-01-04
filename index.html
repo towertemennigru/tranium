@@ -1970,7 +1970,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
         checkUpgradeProgress();
         updateUI();
         startEnergyCountdown();
-        for (let i = 0; i < 40; i++) spawnWorker();
+        for (let i = 0; i < 50; i++) spawnWorker();
         for (let i = 0; i < 15; i++) spawnEnemy();
         requestAnimationFrame(gameLoop);
         setInterval(saveData, 3000);
@@ -2299,7 +2299,6 @@ async function saveData() {
             else kristalWorkers++;
             workers.splice(i, 1);
             updateUI();
-            spawnWorker();
           }
         });
 
@@ -2594,6 +2593,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
