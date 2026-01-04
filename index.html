@@ -2119,47 +2119,43 @@ function startCloudSync() {
         });
       }
 
-      function attemptStart() {
-        if (energy > 0) {
-          // 1. Enerjiyi Düşür
-          energy--;
-          
-          // 2. Sağlık Puanını Sıfırla
-          health = 3;
+      // --- GÜNCELLENMİŞ attemptStart ---
+function attemptStart() {
+    if (energy > 0) {
+        // 1. Enerjiyi düşür ve canı fulle
+        energy--;
+        health = 3;
 
-          // 3. Enerji Zamanlayıcısını Kontrol Et
-          // Eğer enerji 10'dan 9'a düştüyse (yani tam doluyduysa), zamanlayıcıyı ŞU AN başlat.
-          if (energyRegenerationStartTime === 0) {
-              energyRegenerationStartTime = Date.now();
-              // nextEnergyTime'ı da hemen hesapla ki UI saçmalamasın
-              nextEnergyTime = energyRegenerationStartTime + 3600000;
-          }
-          
-          // 4. Verileri Kaydet ve UI'ı Güncelle
-          updateEnergyTimers(); // Bu fonksiyon zaten saveData'yı çağırıyor ama yine de garanti olsun
-          saveCloudData(window.currentUserFID);
-          updateUI();
-
-          // 5. OYUN SAHNESİNİ AÇ (KRİTİK KISIM)
-          document.getElementById("overlay").style.display = "none"; // Ana menüyü gizle
-          document.getElementById("ui").style.display = "flex";      // Oyun içi UI'ı (Can, Maden) göster
-          
-          // PC değilse Joystick'i göster
-          if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
-              document.getElementById("joystickContainer").style.display = "block";
-          } else {
-              // PC ise Joystick gizli kalsın
-              document.getElementById("joystickContainer").style.display = "none";
-          }
-          
-          // 6. Bayrağı Kaldır
-          isStarted = true;
-          console.log("🚀 Mission Started! Energy:", energy);
-
-        } else {
-          alert("Not enough energy! Wait for energy to regenerate.");
+        // 2. Enerji zamanlayıcısı yoksa başlat
+        if (energyRegenerationStartTime === 0) {
+            energyRegenerationStartTime = Date.now();
+            nextEnergyTime = energyRegenerationStartTime + 3600000;
         }
-      }
+
+        // 3. Verileri Kaydet
+        updateEnergyTimers();
+        saveCloudData(window.currentUserFID);
+        
+        // 4. Arayüzü Değiştir (ÖNCE GÖRÜNÜRLÜĞÜ AYARLA)
+        document.getElementById("overlay").style.display = "none"; // Menüyü kapat
+        document.getElementById("ui").style.display = "flex";      // Oyun arayüzünü aç
+
+        // PC/Mobil Kontrolü (Joystick)
+        if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
+            document.getElementById("joystickContainer").style.display = "block";
+        } else {
+            document.getElementById("joystickContainer").style.display = "none";
+        }
+
+        // 5. Oyunu Başlat ve UI'ı güncelle
+        isStarted = true;
+        updateUI(); // UI'ı en son güncelle
+        
+        console.log("🚀 Mission Started! Remaining Energy:", energy);
+    } else {
+        alert("Not enough energy! Wait for energy to regenerate.");
+    }
+}
 
       function processMining(dtSec) {
         const metalGain = dtSec * (metalWorkers * BASE_WORKER_SPEED * metalFacLvl);
@@ -2355,29 +2351,24 @@ function startCloudSync() {
         isTouching = false;
         if (!joystickActive) player.isMoving = false;
       });
-      function endGame() {
-        document.getElementById("overlay").style.display = "flex";
-        document.getElementById("ui").style.opacity = "0";
-        document.getElementById("joystickContainer").style.display = "none";
-        if (energyTimer) {
-          clearInterval(energyTimer);
-          energyTimer = null;
-        }
+     // --- GÜNCELLENMİŞ endGame ---
+function endGame() {
+    // 1. Menüyü geri getir
+    document.getElementById("overlay").style.display = "flex";
+    
+    // 2. Oyun arayüzünü gizle
+    document.getElementById("ui").style.display = "none"; 
+    document.getElementById("joystickContainer").style.display = "none";
 
-        startEnergyCountdown();
-        
-        console.log("Game Over! Score: " + Math.floor(tranium));
-      }
-
-      // Initial call to setup the intro screen
-      window.onload = function() {
-        console.log("🚀 App Loaded. Triggering Farcaster SDK...");
-        
-        // DÜZELTME: Intro'yu zorla başlat
-        // Bu sayede Farcaster context'i gelmese bile buton 0.8sn sonra görünür.
-        if (window.startIntro) {
-            window.startIntro();
-        }
+    // 3. Zamanlayıcıyı temizle ve yeniden başlat
+    if (energyTimer) {
+        clearInterval(energyTimer);
+        energyTimer = null;
+    }
+    startEnergyCountdown();
+    
+    console.log("Game Over! Score: " + Math.floor(tranium));
+}
       };
     </script>
     <script>
@@ -2506,6 +2497,7 @@ function startCloudSync() {
 </script>
   </body>
 </html>
+
 
 
 
