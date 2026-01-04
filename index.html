@@ -2121,41 +2121,54 @@ function startCloudSync() {
 
       // --- GÜNCELLENMİŞ attemptStart ---
 function attemptStart() {
-    if (energy > 0) {
-        // 1. Enerjiyi düşür ve canı fulle
-        energy--;
-        health = 3;
-
-        // 2. Enerji zamanlayıcısı yoksa başlat
-        if (energyRegenerationStartTime === 0) {
-            energyRegenerationStartTime = Date.now();
-            nextEnergyTime = energyRegenerationStartTime + 3600000;
+        // 1. Veri Yüklendi mi Kontrolü (Cloud-Only olduğu için bu şart)
+        // Eğer metal, energy vs. henüz 'undefined' ise veya yüklenmediyse başlatma.
+        if (typeof energy === 'undefined') {
+            console.warn("Veriler henüz yüklenmedi.");
+            return;
         }
 
-        // 3. Verileri Kaydet
-        updateEnergyTimers();
-        saveCloudData(window.currentUserFID);
-        
-        // 4. Arayüzü Değiştir (ÖNCE GÖRÜNÜRLÜĞÜ AYARLA)
-        document.getElementById("overlay").style.display = "none"; // Menüyü kapat
-        document.getElementById("ui").style.display = "flex";      // Oyun arayüzünü aç
+        if (energy > 0) {
+          // 2. Enerji ve Can İşlemleri
+          energy--;
+          health = 3;
 
-        // PC/Mobil Kontrolü (Joystick)
-        if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
-            document.getElementById("joystickContainer").style.display = "block";
+          // Eğer enerji 10'dan 9'a düşüyorsa, sayacı başlat (Yoksa zaten çalışıyordur)
+          if (energyRegenerationStartTime === 0) {
+              energyRegenerationStartTime = Date.now();
+              nextEnergyTime = energyRegenerationStartTime + 3600000;
+          }
+          
+          // 3. Buluta Kaydet (Local Storage yok artık)
+          updateEnergyTimers(); // Bu zaten saveCloudData çağırır ama garanti olsun
+          saveCloudData(window.currentUserFID);
+          updateUI();
+
+          // 4. Arayüz Değişimi (İşte Hatayı Çözen Kısım)
+          document.getElementById("overlay").style.display = "none"; // Menüyü kapat
+          
+          // ESKİ KODDA BURASI 'opacity' İDİ, 'display' OLMALI:
+          const uiElement = document.getElementById("ui");
+          uiElement.style.display = "flex"; 
+          uiElement.style.opacity = "1";
+
+          // 5. Joystick Kontrolü (PC'de açılmasın)
+          if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
+              document.getElementById("joystickContainer").style.display = "block";
+          } else {
+              document.getElementById("joystickContainer").style.display = "none";
+          }
+          
+          // 6. Oyunu Başlat
+          isStarted = true;
+          
+          // Player speed güvenliği (Reset sonrası için)
+          if(player) player.speed = 7.5;
+
         } else {
-            document.getElementById("joystickContainer").style.display = "none";
+          alert("Not enough energy! Wait for energy to regenerate.");
         }
-
-        // 5. Oyunu Başlat ve UI'ı güncelle
-        isStarted = true;
-        updateUI(); // UI'ı en son güncelle
-        
-        console.log("🚀 Mission Started! Remaining Energy:", energy);
-    } else {
-        alert("Not enough energy! Wait for energy to regenerate.");
-    }
-}
+      }
 
       function processMining(dtSec) {
         const metalGain = dtSec * (metalWorkers * BASE_WORKER_SPEED * metalFacLvl);
@@ -2497,6 +2510,7 @@ function endGame() {
 </script>
   </body>
 </html>
+
 
 
 
