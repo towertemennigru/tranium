@@ -1339,7 +1339,7 @@ async function identifyUser() {
         }
       }
 
-      // ESKİ loadDataFromFirebase YERİNE BU GELECEK:
+    
       async function setupRealtimeListener() {
         console.log("📡 Realtime Bağlantı Kuruluyor...");
         
@@ -1513,7 +1513,7 @@ async function identifyUser() {
     setTimeout(() => {
         document.getElementById("loadingOverlay").style.display = "none";
         document.getElementById("overlay").style.display = "flex";
-        loadDataFromFirebase();
+        setupRealtimeListener();
     }, 1000);
 }
       function updateOfflineEnergyRegeneration() {
@@ -2495,6 +2495,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
