@@ -4,9 +4,6 @@
     <meta name="base:app_id" content="6957083ec63ad876c9081cd6" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="base:app_id" content="6957083ec63ad876c9081cd6" />
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
     <meta property="og:title" content="TRANIUM VERSE - Strategy Hub" />
     <meta property="og:description" content="Collect resources and refine Tranium to dominate the Verse. A strategic mining game on Farcaster." />
@@ -18,16 +15,13 @@
     <meta property="fc:frame" content='{"version": "next", "imageUrl": "https://tranium-xi.vercel.app/preview.jpg", "button": {"title": "Start Mining", "action": {"type": "launch_frame", "name": "Tranium Verse", "url": "https://tranium-xi.vercel.app", "splashImageUrl": "https://tranium-xi.vercel.app/preview.jpg", "splashBackgroundColor": "#0a0a00"}}}' />
     <meta name="fc:miniapp" content="hosted" />
     
-    
     <title>TRANIUM VERSE - Strategy Hub</title>
     
-   <script type="module">
+    <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-      // BURAYA 'onSnapshot' EKLENDİ DİKKAT ET:
       import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
       import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 
-      // SENİN YENİ PROJE AYARLARIN (tranium-6f126)
       const firebaseConfig = {
         apiKey: "AIzaSyD5ozuYZ7YWoHz6qC4zXO-hDwVEnHCa-6g",
         authDomain: "tranium-6f126.firebaseapp.com",
@@ -43,65 +37,49 @@
       const analytics = getAnalytics(app);
 
       window.firebaseDB = db;
-      // onSnapshot'ı buraya da ekledik ki aşağıdan erişebilelim
       window.firebaseFunctions = { doc, setDoc, getDoc, updateDoc, onSnapshot };
       
       console.log("🔥 Firebase (Firestore) Realtime Listener ile hazır!");
     </script>
+
     <script type="module">
-    // En güncel Frame SDK'sını çekiyoruz
-    import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
+      import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
 
-    // SDK'yı global değişkene atıyoruz ki her yerden erişelim
-    window.farcasterSDK = sdk;
-    window.isMiniApp = true;
+      window.farcasterSDK = sdk;
+      window.isMiniApp = true;
 
-    const triggerReady = async () => {
-    try {
-        // SDK'nın context (bağlam) bilgisini bekle
-        const context = await sdk.context;
-
-        // Eğer context gelirse (yani Farcaster içindeysek)
-        if (context) {
-            console.log("✅ Farcaster Environment Detected");
-            
-            // Engelleyici ekranı kaldır
-            document.getElementById("desktop-blocker").style.display = "none";
-            
-            // SDK'ya hazır olduğumuzu bildir
-            sdk.actions.ready();
-
-            // Varsa intro'yu başlat
-            if(window.startIntro) window.startIntro();
-        } else {
-            // Context yoksa (Normal tarayıcı)
-            console.warn("❌ Not in Farcaster");
-            // Engelleyici ekran kalmaya devam eder
+      const triggerReady = async () => {
+        try {
+            const context = await sdk.context;
+            if (context) {
+                console.log("✅ Farcaster Environment Detected");
+                document.getElementById("desktop-blocker").style.display = "none";
+                sdk.actions.ready();
+                if(window.startIntro) window.startIntro();
+            } else {
+                console.warn("❌ Not in Farcaster");
+            }
+        } catch (e) {
+            console.error("SDK Init Error:", e);
         }
-    } catch (e) {
-        console.error("SDK Init Error:", e);
-        // Hata olursa da engelleyici ekran kalır
-    }
-};
-
-    document.addEventListener('DOMContentLoaded', triggerReady);
-</script>
+      };
+      document.addEventListener('DOMContentLoaded', triggerReady);
+    </script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
 
-<script type="module">
-    import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
-    import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@1.6.0';
-    import { base } from 'https://esm.sh/@reown/appkit/networks@1.6.0';
+    <script type="module">
+      import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
+      import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@1.6.0';
+      import { base } from 'https://esm.sh/@reown/appkit/networks@1.6.0';
 
-    // Global erişim için window'a atıyoruz
-    window.AppKitLib = {
-        createAppKit,
-        EthersAdapter,
-        networks: [base]
-    };
-    console.log("AppKit Kütüphaneleri Yüklendi");
-</script>
+      window.AppKitLib = {
+          createAppKit,
+          EthersAdapter,
+          networks: [base]
+      };
+      console.log("AppKit Kütüphaneleri Yüklendi");
+    </script>
 
     <style>
       :root {
@@ -140,7 +118,34 @@
         image-rendering: pixelated;
       }
 
-      /* --- YENİ EKLENEN LOADER STİLLERİ --- */
+      /* --- SAVE INDICATOR (YENİ) --- */
+      #saveStatus {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        border: 1px solid var(--neon);
+        color: var(--neon);
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 10px;
+        font-weight: bold;
+        z-index: 99999;
+        display: none; /* Varsayılan gizli */
+        align-items: center;
+        gap: 5px;
+        box-shadow: 0 0 10px var(--neon);
+      }
+      .save-spinner {
+        width: 10px;
+        height: 10px;
+        border: 2px solid var(--neon);
+        border-top: 2px solid transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      /* --- LOADER STİLLERİ --- */
       #loader {
         position: fixed; 
         top: 0; 
@@ -162,14 +167,8 @@
         border-radius: 50%; 
         animation: spin 1s infinite linear; 
       }
-      .text { 
-        margin-top: 20px; 
-        color: #00ffcc; 
-        font-weight: bold; 
-        letter-spacing: 2px; 
-      }
 
-      /* --- MEVCUT INTRO/OVERLAY STİLLERİ --- */
+      /* --- INTRO/OVERLAY STİLLERİ --- */
       #introOverlay {
         position: fixed;
         top: 0;
@@ -200,9 +199,7 @@
         text-transform: uppercase;
         letter-spacing: 8px;
         margin-bottom: 10px;
-        text-shadow:
-          0 0 20px rgba(255, 34, 34, 0.7),
-          0 0 40px rgba(255, 34, 34, 0.5);
+        text-shadow: 0 0 20px rgba(255, 34, 34, 0.7), 0 0 40px rgba(255, 34, 34, 0.5);
         position: relative;
       }
       .disease-logo::after {
@@ -266,7 +263,7 @@
         100% { box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); opacity: 0.8; }
       }
 
-      /* --- MEVCUT LOADING STİLLERİ (Yedek) --- */
+      /* --- LOADING STİLLERİ --- */
       #loadingOverlay {
         position: fixed;
         top: 0;
@@ -367,22 +364,37 @@
         display: none;
       }
       
-      /* --- JOYSTICK & UI BİRLEŞTİRME --- */
+      /* --- JOYSTICK & UI --- */
       #ui { 
         position: absolute; 
         top: 15px; 
         left: 15px; 
         right: 15px; 
         z-index: 10; 
-        display: none; /* Varsayılan olarak gizli */
+        display: none; 
         justify-content: space-between; 
         font-weight: bold; 
         text-shadow: 2px 2px 4px black;
         font-size: min(14px, 3.5vw);
-        pointer-events: none; /* Tıklamaları alta geçir */
+        pointer-events: none; 
       }
-      /* UI içindeki butonların tıklanabilir olması için */
       #ui > * { pointer-events: auto; }
+
+      #manualSaveBtn {
+        background: rgba(0, 255, 204, 0.2);
+        border: 1px solid var(--neon);
+        color: var(--neon);
+        font-size: 10px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 5px;
+        pointer-events: auto;
+      }
+      #manualSaveBtn:active {
+        background: var(--neon);
+        color: black;
+      }
 
       #joystickContainer { 
         position: fixed; 
@@ -391,7 +403,7 @@
         width: 100px; 
         height: 100px; 
         z-index: 20; 
-        display: none; /* Varsayılan olarak gizli */
+        display: none; 
         pointer-events: auto;
       }
       #joystickBase { 
@@ -414,7 +426,7 @@
         box-shadow: 0 0 15px #ffcc00; 
       }
 
-      /* --- MODAL ve DİĞER PENCERELER --- */
+      /* --- MODALLER --- */
       #howToPlayScreen {
         position: fixed;
         top: 0;
@@ -779,39 +791,20 @@
       }
 
       @keyframes introFadeIn {
-        from {
-          opacity: 0;
-          transform: scale(0.9);
-        }
-        to {
-          opacity: 1;
-          transform: scale(1);
-        }
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
       }
       @keyframes loadingFadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
       @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
       @keyframes pulse {
-        0%,
-        100% {
-          opacity: 0.7;
-        }
-        50% {
-          opacity: 1;
-        }
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 1; }
       }
 
       /* MEDIA QUERIES */
@@ -822,179 +815,49 @@
           gap: 0;
           padding-bottom: max(env(safe-area-inset-bottom), 10px);
         }
-        .header {
-          margin-top: 0;
-          margin-bottom: 0;
-        }
-        .game-title {
-          font-size: 18px;
-          margin: 2px 0;
-        }
+        .header { margin-top: 0; margin-bottom: 0; }
+        .game-title { font-size: 18px; margin: 2px 0; }
         .tranium-circle {
-          width: 65px;
-          height: 65px;
-          margin: 5px auto;
-          border-width: 2px;
+          width: 65px; height: 65px; margin: 5px auto; border-width: 2px;
         }
-        .tranium-val {
-          font-size: 20px;
-        }
-        .tranium-lbl {
-          font-size: 8px;
-        }
-        .btn-help-open {
-          padding: 4px 12px;
-          font-size: 10px;
-          margin-bottom: 2px;
-          min-height: 25px;
-        }
-        .reset-link {
-          padding: 5px;
-          min-height: 30px;
-          font-size: 10px;
-          margin: 2px 0;
-          max-width: 200px;
-        }
-        .resource-section {
-          gap: 8px;
-          margin: 2px 0;
-        }
-        .res-card {
-          padding: 8px;
-          min-height: 60px;
-        }
-        .res-name {
-          font-size: 10px;
-        }
-        .res-amount {
-          font-size: 16px;
-          margin: 2px 0;
-        }
-        .res-info {
-          font-size: 9px;
-        }
-        .btn-refine {
-          padding: 10px;
-          min-height: 45px;
-          font-size: 12px;
-          margin: 8px 0;
-        }
-        .footer {
-          padding: 5px;
-          margin-bottom: 5px;
-        }
-        .energy-info {
-          font-size: 12px;
-          margin-bottom: 5px;
-        }
-        .btn-start {
-          padding: 10px;
-          min-height: 50px;
-          font-size: 16px;
-        }
-        #howToPlayScreen {
-          justify-content: center;
-          padding: 10px;
-          overflow: hidden;
-        }
-        #howToPlayScreen.header {
-          margin-top: 0;
-          margin-bottom: 5px;
-        }
-        #howToPlayScreen.game-title {
-          font-size: 16px;
-          margin: 0;
-        }
-        #howToPlayScreen.close-btn {
-          font-size: 30px;
-          top: 10px;
-          right: 15px;
-          z-index: 302;
-        }
-        .help-container {
-          margin-top: 5px;
-          width: 100%;
-        }
-        .help-card {
-          padding: 10px;
-          display: flex;
-          flex-direction: column;
-          gap: 5px;
-        }
-        .warning-text {
-          font-size: 11px;
-          padding: 5px;
-          margin-top: 0;
-          margin-bottom: 5px;
-        }
-        .help-title {
-          font-size: 11px;
-          margin-bottom: 2px;
-          padding-bottom: 2px;
-          border-bottom-width: 1px;
-        }
-        .help-text {
-          font-size: 10px;
-          line-height: 1.2;
-          margin-bottom: 4px;
-        }
-        .help-text:last-child {
-          margin-bottom: 0;
-        }
-        #joystickContainer {
-          width: 90px;
-          height: 90px;
-          left: 15px;
-          bottom: 15px;
-        }
-        #joystickHandle {
-          width: 45px;
-          height: 45px;
-        }
+        .tranium-val { font-size: 20px; }
+        .tranium-lbl { font-size: 8px; }
+        .btn-help-open { padding: 4px 12px; font-size: 10px; margin-bottom: 2px; min-height: 25px; }
+        .reset-link { padding: 5px; min-height: 30px; font-size: 10px; margin: 2px 0; max-width: 200px; }
+        .resource-section { gap: 8px; margin: 2px 0; }
+        .res-card { padding: 8px; min-height: 60px; }
+        .res-name { font-size: 10px; }
+        .res-amount { font-size: 16px; margin: 2px 0; }
+        .res-info { font-size: 9px; }
+        .btn-refine { padding: 10px; min-height: 45px; font-size: 12px; margin: 8px 0; }
+        .footer { padding: 5px; margin-bottom: 5px; }
+        .energy-info { font-size: 12px; margin-bottom: 5px; }
+        .btn-start { padding: 10px; min-height: 50px; font-size: 16px; }
+        #howToPlayScreen { justify-content: center; padding: 10px; overflow: hidden; }
+        #howToPlayScreen.header { margin-top: 0; margin-bottom: 5px; }
+        #howToPlayScreen.game-title { font-size: 16px; margin: 0; }
+        #howToPlayScreen.close-btn { font-size: 30px; top: 10px; right: 15px; z-index: 302; }
+        .help-container { margin-top: 5px; width: 100%; }
+        .help-card { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .warning-text { font-size: 11px; padding: 5px; margin-top: 0; margin-bottom: 5px; }
+        .help-title { font-size: 11px; margin-bottom: 2px; padding-bottom: 2px; border-bottom-width: 1px; }
+        .help-text { font-size: 10px; line-height: 1.2; margin-bottom: 4px; }
+        .help-text:last-child { margin-bottom: 0; }
+        #joystickContainer { width: 90px; height: 90px; left: 15px; bottom: 15px; }
+        #joystickHandle { width: 45px; height: 45px; }
       }
     </style>
-    <script type="module">
-  // Firebase kütüphanelerini import ediyoruz
-  // Not: Versiyon numaraları (11.x.x) firebase konsolunda ne verildiyse onu kullan
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-  // Eğer Analytics kullanacaksan:
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
-
-  // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyD5ozuYZ7YWoHz6qC4zXO-hDwVEnHCa-6g",
-  authDomain: "tranium-6f126.firebaseapp.com",
-  databaseURL: "https://tranium-6f126-default-rtdb.firebaseio.com",
-  projectId: "tranium-6f126",
-  storageBucket: "tranium-6f126.firebasestorage.app",
-  messagingSenderId: "570304399178",
-  appId: "1:570304399178:web:d83ce14dc3fc91b958e3b3",
-  measurementId: "G-6Q23R774CL"
-};
-
-  // Firebase'i başlat
-  const app = initializeApp(firebaseConfig);
-  
-  // Veritabanını (Firestore) başlat
-  const db = getFirestore(app);
-  
-  // Analytics (varsa)
-  const analytics = getAnalytics(app);
-
-  // KRİTİK NOKTA: Diğer scriptlerden erişebilmek için window'a ata
-  window.firebaseDB = db;
-  window.firebaseFunctions = { doc, setDoc, getDoc, updateDoc };
-  
-  console.log("🔥 Firebase başarıyla yüklendi ve başlatıldı!");
-</script>
   </head>
-   <body>
-     <div id="desktop-blocker" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:red; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
-    <h1>ONLY FOR FARCASTER</h1>
-    <p>This game can only be played through Farcaster</p>
-</div>
+  <body>
+    <div id="saveStatus">
+      <div class="save-spinner"></div>
+      SAVING...
+    </div>
+
+    <div id="desktop-blocker" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:red; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+      <h1>ONLY FOR FARCASTER</h1>
+      <p>This game can only be played through Farcaster</p>
+    </div>
     <div id="introOverlay">
       <div class="intro-container">
         <div class="disease-logo">DISEASES GAMES</div>
@@ -1015,16 +878,16 @@ const firebaseConfig = {
         <div class="loading-progress-container">
           <div class="loading-progress-bar"></div>
         </div>
-        <div class="loading-tip">Tip: Collect miners to increase resource production.
-Avoid infected enemies!</div>
+        <div class="loading-tip">Tip: Collect miners to increase resource production. Avoid infected enemies!</div>
       </div>
     </div>
 
     <div id="ui">
-      <div id="resUI">⚙️: 0 |
-💎: 0</div>
+      <div id="resUI">⚙️: 0 | 💎: 0</div>
       <div id="healthUI" style="color: #ff4444">❤️: 3</div>
       <div id="energyUI">⚡: 10/10</div>
+      <div id="playerIDDisplay" style="color: #888; font-size: 10px; margin-top: 5px;">ID: ...</div>
+      <button id="manualSaveBtn" onclick="saveData(true)">💾 SAVE GAME</button>
     </div>
 
     <div id="joystickContainer">
@@ -1035,16 +898,11 @@ Avoid infected enemies!</div>
     <div id="endGameModal" class="custom-modal">
       <h2 style="color: var(--neon); margin: 0">FINISH & SUBMIT</h2>
       <p style="font-size: 13px; margin: 15px 0; color: #ddd">
-        Your current Tranium will be submitted as your score.
-You can start again with energy.
+        Your current Tranium will be submitted as your score. You can start again with energy.
       </p>
       <div class="modal-btn-row">
-        <button class="modal-btn" style="background: #333; color: white" onclick="closeEndGameConfirmation()">
-          CANCEL
-        </button>
-        <button class="modal-btn" style="background: var(--neon); color: black" onclick="triggerManualEndGame()">
-          SUBMIT
-        </button>
+        <button class="modal-btn" style="background: #333; color: white" onclick="closeEndGameConfirmation()">CANCEL</button>
+        <button class="modal-btn" style="background: var(--neon); color: black" onclick="triggerManualEndGame()">SUBMIT</button>
       </div>
     </div>
 
@@ -1062,26 +920,21 @@ You can start again with energy.
         </div>
         <div class="fac-card">
           <span class="fac-header">CRYSTAL FACTORY</span>
-          <span id="kristalFacLevel" style="font-size: 9px;
-text-align: center; margin-bottom: 3px">Lvl 1</span>
-          <span id="kristalBuildTime" style="font-size: 8px; text-align: center;
-margin-bottom: 5px; color: #888">⏱️ 2h</span>
+          <span id="kristalFacLevel" style="font-size: 9px; text-align: center; margin-bottom: 3px">Lvl 1</span>
+          <span id="kristalBuildTime" style="font-size: 8px; text-align: center; margin-bottom: 5px; color: #888">⏱️ 2h</span>
           <button id="upKristalFac" class="btn-upgrade" onclick="upgradeFactory('kristal')">
             UPGRADE <span id="costKristalFac"></span>
           </button>
         </div>
       </div>
       <div class="modal-btn-row">
-        <button class="modal-btn" style="background: #333;
-color: white" onclick="closeUpgradeModal()">CLOSE</button>
+        <button class="modal-btn" style="background: #333; color: white" onclick="closeUpgradeModal()">CLOSE</button>
       </div>
     </div>
 
     <div id="swapModal" class="custom-modal">
-      <h2 style="color: var(--gold);
-margin: 0; font-size: 18px">TRANIUM REFINERY</h2>
-      <p style="font-size: 11px; margin: 10px 0;
-color: #aaa">Refine Metal & Crystal into Tranium (1:1)</p>
+      <h2 style="color: var(--gold); margin: 0; font-size: 18px">TRANIUM REFINERY</h2>
+      <p style="font-size: 11px; margin: 10px 0; color: #aaa">Refine Metal & Crystal into Tranium (1:1)</p>
 
       <div class="percentage-row">
         <button class="pct-btn" onclick="setSwapPct(0.25)">25%</button>
@@ -1093,56 +946,32 @@ color: #aaa">Refine Metal & Crystal into Tranium (1:1)</p>
       <input type="number" id="swapAmountInput" class="modal-input" placeholder="Enter amount..." min="1" />
 
       <div class="modal-btn-row">
-        <button class="modal-btn" style="background: #333;
-color: white" onclick="closeSwapModal()">BACK</button>
-        <button class="modal-btn" style="background: var(--gold);
-color: black" onclick="executeSwap()">REFINE</button>
+        <button class="modal-btn" style="background: #333; color: white" onclick="closeSwapModal()">BACK</button>
+        <button class="modal-btn" style="background: var(--gold); color: black" onclick="executeSwap()">REFINE</button>
       </div>
     </div>
 
     <div id="howToPlayScreen">
       <button class="close-btn" onclick="closeHowToPlay()">&times;</button>
-
       <div class="header">
         <h1 class="game-title">HOW TO PLAY</h1>
       </div>
-
       <div class="help-container">
         <div class="help-card">
           <div class="warning-text">⚠️ DON'T FORGET:<br />TRANIUM = SCORE</div>
-
           <span class="help-title">🎯 MISSION OBJECTIVE</span>
-          <p class="help-text">
-            Collect resources and refine Tranium to dominate the Verse. Survive against the infected swarm.
-          </p>
-
+          <p class="help-text">Collect resources and refine Tranium to dominate the Verse. Survive against the infected swarm.</p>
           <span class="help-title">⛏️ RESOURCES</span>
           <p class="help-text">
-            <span class="help-icon">⚙️</span> <b>Metal & Crystal:</b> Produced automatically by miners. Find miners in
-            the world to increase production.<br />
-            <span class="help-icon">🟡</span> <b>Tranium:</b> The ultimate currency.
-Use the "REFINE" button to convert
-            Metal and Crystal into Tranium.
-</p>
-
+            <span class="help-icon">⚙️</span> <b>Metal & Crystal:</b> Produced automatically by miners. Find miners in the world to increase production.<br />
+            <span class="help-icon">🟡</span> <b>Tranium:</b> The ultimate currency. Use the "REFINE" button to convert Metal and Crystal into Tranium.
+          </p>
           <span class="help-title">🏭 FACTORIES</span>
-          <p class="help-text">
-            Upgrade your Metal and Crystal factories to boost miner efficiency.
-Higher levels mean faster production
-            speeds per miner.
-</p>
-
+          <p class="help-text">Upgrade your Metal and Crystal factories to boost miner efficiency. Higher levels mean faster production speeds per miner.</p>
           <span class="help-title">⚠️ ENEMIES</span>
-          <p class="help-text">
-            Avoid the infected (Red Circles).
-They will chase you. If they touch you 3 times, the mission fails.
-</p>
-
+          <p class="help-text">Avoid the infected (Red Circles). They will chase you. If they touch you 3 times, the mission fails.</p>
           <span class="help-title">⚡ ENERGY SYSTEM</span>
-          <p class="help-text">
-            Every mission costs 1 Energy.
-Energy regenerates over time (1 per hour) even when you are offline.
-</p>
+          <p class="help-text">Every mission costs 1 Energy. Energy regenerates over time (1 per hour) even when you are offline.</p>
         </div>
       </div>
     </div>
@@ -1235,39 +1064,34 @@ Energy regenerates over time (1 per hour) even when you are offline.
       let metalFacUpgradeEndTime = 0;
       let kristalFacUpgradeEndTime = 0;
 
-      // Global değişkenler kısmına ekle
-let currentUserID = "test_user_001"; // Varsayılan test kullanıcısı
+      // Global değişkenler
+      let currentUserID = "test_user_001"; 
+      let lastInteractionTime = Date.now(); // Aktiflik takibi için
 
-async function identifyUser() {
-    try {
-        // Eğer Farcaster içindeysek gerçek ID'yi al
-        if (window.farcasterSDK) {
-            const context = await window.farcasterSDK.context;
-            if (context && context.user && context.user.fid) {
-                currentUserID = "user_" + context.user.fid;
-                console.log("👤 Kullanıcı Tanımlandı:", currentUserID);
+      async function identifyUser() {
+        try {
+            if (window.farcasterSDK) {
+                const context = await window.farcasterSDK.context;
+                if (context && context.user && context.user.fid) {
+                    currentUserID = "user_" + context.user.fid;
+                    console.log("👤 Kullanıcı Tanımlandı:", currentUserID);
+                }
             }
+        } catch (e) {
+            console.warn("Kullanıcı kimliği alınamadı, test modunda devam ediliyor.");
         }
-    } catch (e) {
-        console.warn("Kullanıcı kimliği alınamadı, test modunda devam ediliyor.");
-    }
-}
+      }
 
       const imgBG = new Image();
-      imgBG.src =
-        "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/bg-H8I42XFyjR45PCLXsG4fQp7B323kKw.webp?37vf";
+      imgBG.src = "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/bg-H8I42XFyjR45PCLXsG4fQp7B323kKw.webp?37vf";
       const imgDayi = new Image();
-      imgDayi.src =
-        "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/dayi-removebg-preview-9XEJ3aO8Iwnas0qrRC6kST14YUZeab.webp?yQ69";
+      imgDayi.src = "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/dayi-removebg-preview-9XEJ3aO8Iwnas0qrRC6kST14YUZeab.webp?yQ69";
       const imgMiner1 = new Image();
-      imgMiner1.src =
-        "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner1-removebg-preview-49BIGjfxcrYSez39WOvCLyIxeY56q2.webp?pMVT";
+      imgMiner1.src = "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner1-removebg-preview-49BIGjfxcrYSez39WOvCLyIxeY56q2.webp?pMVT";
       const imgMiner2 = new Image();
-      imgMiner2.src =
-        "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner2-removebg-preview-d2bFviiOsn7cXyHcptbNJtKdHoMuvp.webp?1b6n";
+      imgMiner2.src = "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner2-removebg-preview-d2bFviiOsn7cXyHcptbNJtKdHoMuvp.webp?1b6n";
       const imgInfected = new Image();
-      imgInfected.src =
-        "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/infect-removebg-preview-5HhmhH4V5DqNbYNXhiFg3o9Z0RkEIj.webp?uN63";
+      imgInfected.src = "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/infect-removebg-preview-5HhmhH4V5DqNbYNXhiFg3o9Z0RkEIj.webp?uN63";
       
       function openHowToPlay() {
         document.getElementById("howToPlayScreen").style.display = "flex";
@@ -1289,8 +1113,11 @@ async function identifyUser() {
       function closeEndGameConfirmation() {
         document.getElementById("endGameModal").style.display = "none";
       }
-      function triggerManualEndGame() {
+      async function triggerManualEndGame() {
         closeEndGameConfirmation();
+        // Manuel Save al ve bitir
+        await saveData(true); 
+        
         if (window.isMiniApp && window.farcasterSDK) {
           console.log("Game Over! Score: " + Math.floor(tranium));
           alert("Game Over! Your score: " + Math.floor(tranium) + " TRANIUM");
@@ -1314,10 +1141,8 @@ async function identifyUser() {
         let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
         document.getElementById("swapAmountInput").value = Math.floor(maxRefine * pct);
       }
-      function executeSwap() {
+      async function executeSwap() {
         let inputVal = document.getElementById("swapAmountInput").value;
-        
-        // Boş veya geçersiz giriş kontrolü
         if (!inputVal || inputVal.trim() === "") {
              alert("Lütfen geçerli bir miktar girin.");
              return;
@@ -1326,20 +1151,31 @@ async function identifyUser() {
         let amount = parseInt(inputVal);
         let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
 
-        // NaN kontrolü ve bakiye kontrolü
         if (!isNaN(amount) && amount > 0 && amount <= maxRefine) {
           tranium += amount;
           metal -= amount;
           kristal -= amount;
           updateUI();
-          saveData();
+          
+          // CRITICAL SAVE
+          await saveData(true);
+          
           closeSwapModal();
         } else {
           alert("Geçersiz miktar veya yetersiz kaynak!");
         }
       }
 
-    
+      // --- SAVE INDICATOR UTILS ---
+      function showSaveIcon() {
+        const el = document.getElementById("saveStatus");
+        if(el) el.style.display = "flex";
+      }
+      function hideSaveIcon() {
+        const el = document.getElementById("saveStatus");
+        if(el) el.style.display = "none";
+      }
+
       async function setupRealtimeListener() {
         console.log("📡 Realtime Bağlantı Kuruluyor...");
         
@@ -1355,21 +1191,11 @@ async function identifyUser() {
         const db = window.firebaseDB;
 
         try {
-            // onSnapshot: Veritabanındaki değişikliği anında yakalar!
             const docRef = doc(db, "players", currentUserID);
             
-            // Bu kısım sürekli açık kalır ve her değişiklikte çalışır
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    
-                    // Veri tabanından gelen yeni veriyi değişkenlere eşitle
-                    // Not: Sadece değerleri güncelliyoruz, oyun akışını bozmuyoruz.
-                    
-                    // Değişkenleri güncelle
-                    // Eğer yerel değer sunucudan çok farklıysa (örn: harcama yapıldıysa) sunucuyu kabul et.
-                    // Küçük farklar (mining) için yerel akışı bozmamaya çalışabiliriz ama
-                    // tam senkronizasyon için sunucuyu otorite kabul etmek en iyisidir.
                     
                     metal = parseFloat(data.metal) || 0;
                     kristal = parseFloat(data.kristal) || 0;
@@ -1377,7 +1203,6 @@ async function identifyUser() {
                     metalWorkers = parseInt(data.metalWorkers) || 0;
                     kristalWorkers = parseInt(data.kristalWorkers) || 0;
                     
-                    // Factory seviyeleri değiştiyse güncelle
                     if (metalFacLvl !== (parseInt(data.metalFacLvl) || 1)) {
                         metalFacLvl = parseInt(data.metalFacLvl) || 1;
                     }
@@ -1385,9 +1210,7 @@ async function identifyUser() {
                         kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
                     }
 
-                    // Enerji senkronizasyonu
                     const serverEnergy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
-                    // Enerji sadece sunucuda arttıysa veya azaldıysa al (yerel sayaçla çakışmaması için)
                     if (Math.abs(serverEnergy - energy) > 0) {
                          energy = serverEnergy;
                     }
@@ -1397,10 +1220,8 @@ async function identifyUser() {
                     metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
                     kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
 
-                    // UI'ı anında güncelle
                     updateUI();
                     
-                    // İlk yükleme kontrolü: Eğer oyun daha başlamadıysa verileri yükleyip başlat
                     if (!window.hasInitialLoadCompleted) {
                         console.log("✅ İlk Veriler Yüklendi.");
                         updateOfflineEnergyRegeneration();
@@ -1429,24 +1250,15 @@ async function identifyUser() {
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "flex";
-        
-        // Show the Enter button after a short delay
         setTimeout(() => {
            const btn = document.getElementById("enterBtn");
            if(btn) btn.style.display = "block";
         }, 800);
       }
 
-      // NEW: User Interaction to start the flow
       function userEnterGame() {
-        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
-        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
-        
-        // 2. Hide Intro
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "none";
-        
-        // 3. Start Loading
         startLoading();
       }
 
@@ -1501,21 +1313,22 @@ async function identifyUser() {
       }
 
       function completeLoading() {
-    clearInterval(loadingInterval);
-    const progressBar = document.querySelector(".loading-progress-bar");
-    const percentageText = document.querySelector(".loading-percentage");
-    const loadingText = document.querySelector(".loading-text");
+        clearInterval(loadingInterval);
+        const progressBar = document.querySelector(".loading-progress-bar");
+        const percentageText = document.querySelector(".loading-percentage");
+        const loadingText = document.querySelector(".loading-text");
 
-    progressBar.style.width = "100%";
-    percentageText.textContent = "100%";
-    loadingText.textContent = "Connecting Database..."; // Yazıyı değiştirdik
+        progressBar.style.width = "100%";
+        percentageText.textContent = "100%";
+        loadingText.textContent = "Connecting Database...";
 
-    setTimeout(() => {
-        document.getElementById("loadingOverlay").style.display = "none";
-        document.getElementById("overlay").style.display = "flex";
-        setupRealtimeListener();
-    }, 1000);
-}
+        setTimeout(() => {
+            document.getElementById("loadingOverlay").style.display = "none";
+            document.getElementById("overlay").style.display = "flex";
+            setupRealtimeListener(); 
+        }, 1000);
+      }
+
       function updateOfflineEnergyRegeneration() {
         const now = Date.now();
         if (energy < 10 && energyRegenerationStartTime > 0) {
@@ -1664,189 +1477,158 @@ async function identifyUser() {
         return `${hours}h ${minutes}m`;
       }
 
-      // --- BU KISMI SCRIPT'İN EN BAŞINA, DEĞİŞKEN TANIMLARININ ALTINA EKLEYİN ---
+      const PROJECT_ID = '2c7a5c244856e6edb4c52e0d4e61fadb'; 
+      let appKitModal = null;
+      let appKitAdapter = null;
 
-// WalletConnect Project ID (Burası ücretsizdir, kendi ID'nizi cloud.reown.com'dan almanız önerilir)
-// Test için bu ID'yi kullanabilirsin ama prodüksiyon için kendi ID'ni al.
-const PROJECT_ID = '2c7a5c244856e6edb4c52e0d4e61fadb'; 
+      async function initWalletSystem() {
+          if (!window.AppKitLib) {
+              console.log("⚠️ AppKit kütüphanesi henüz hazır değil, bekleniyor...");
+              setTimeout(initWalletSystem, 1000);
+              return;
+          }
+          if (appKitModal) return;
 
-let appKitModal = null;
-let appKitAdapter = null;
+          try {
+              const { createAppKit, EthersAdapter, networks } = window.AppKitLib;
+              const metadata = {
+                  name: 'Tranium Verse',
+                  description: 'Resource Mining Game',
+                  url: 'https://tranium-xi.vercel.app', 
+                  icons: ['https://tranium-xi.vercel.app/preview.jpg']
+              };
 
+              appKitModal = createAppKit({
+                  adapters: [new EthersAdapter()],
+                  networks,
+                  metadata,
+                  projectId: PROJECT_ID,
+                  features: {
+                      analytics: true 
+                  }
+              });
+              console.log("✅ PC Cüzdan Sistemi (AppKit) Hazır");
+          } catch (e) {
+              console.error("AppKit Başlatma Hatası:", e);
+          }
+      }
 
-// Sistemi Başlatan Fonksiyon
-async function initWalletSystem() {
-    // 1. Kütüphane kontrolü (Eğer yüklenmediyse 1 saniye sonra tekrar dener)
-    if (!window.AppKitLib) {
-        console.log("⚠️ AppKit kütüphanesi henüz hazır değil, bekleniyor...");
-        setTimeout(initWalletSystem, 1000);
-        return;
-    }
+      document.addEventListener('DOMContentLoaded', initWalletSystem);
+      window.addEventListener('load', initWalletSystem);
 
-    // 2. Eğer zaten yüklendiyse tekrar yükleme
-    if (appKitModal) return;
+      async function sendETHPayment(amountETH) {
+          console.log("🚀 Ödeme süreci başlatılıyor...");
+          const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
 
-    try {
-        const { createAppKit, EthersAdapter, networks } = window.AppKitLib;
+          try {
+              let signer;
+              let provider;
 
-        const metadata = {
-            name: 'Tranium Verse',
-            description: 'Resource Mining Game',
-            url: 'https://tranium-xi.vercel.app', 
-            icons: ['https://tranium-xi.vercel.app/preview.jpg']
-        };
+              if (window.farcasterSDK && window.farcasterSDK.wallet && window.farcasterSDK.wallet.ethProvider) {
+                  console.log("📱 Mobil Ortam: Farcaster Provider");
+                  const ethProvider = window.farcasterSDK.wallet.ethProvider;
+                  provider = new ethers.BrowserProvider(ethProvider);
+                  
+                  await provider.send("eth_requestAccounts", []);
+                  
+                  const network = await provider.getNetwork();
+                  if (Number(network.chainId) !== 8453) {
+                       try {
+                          await ethProvider.request({
+                              method: 'wallet_switchEthereumChain',
+                              params: [{ chainId: '0x2105' }], 
+                          });
+                      } catch (e) {
+                          alert("Lütfen cüzdan ağınızı Base Network yapın.");
+                          return false;
+                      }
+                  }
+                  signer = await provider.getSigner();
+              } 
+              else {
+                  console.log("💻 PC Ortamı: AppKit");
+                  if (!window.AppKitLib) {
+                      alert("Sistem hazırlanıyor, lütfen 3 saniye sonra tekrar deneyin.");
+                      initWalletSystem(); 
+                      return false;
+                  }
 
-        appKitModal = createAppKit({
-            adapters: [new EthersAdapter()],
-            networks,
-            metadata,
-            projectId: PROJECT_ID,
-            features: {
-                analytics: true 
-            }
-        });
-        console.log("✅ PC Cüzdan Sistemi (AppKit) Hazır");
-    } catch (e) {
-        console.error("AppKit Başlatma Hatası:", e);
-    }
-}
+                  if (!appKitModal) {
+                      await initWalletSystem();
+                      if(!appKitModal) {
+                          alert("Bağlantı modülü yüklenemedi. Sayfayı yenileyip tekrar deneyin.");
+                          return false;
+                      }
+                  }
 
-// Sayfa yüklenince başlat
-document.addEventListener('DOMContentLoaded', initWalletSystem);
-// Yedek olarak pencere tam yüklendiğinde de tetikle (PC'deki tepkisizliği önlemek için)
-window.addEventListener('load', initWalletSystem);
+                  if (!appKitModal.getIsConnected()) {
+                      await appKitModal.open();
+                      return new Promise((resolve) => {
+                          const checkInterval = setInterval(async () => {
+                              if (appKitModal.getIsConnected()) {
+                                  clearInterval(checkInterval);
+                                  setTimeout(async () => {
+                                      resolve(await proceedWithPayment(amountETH));
+                                  }, 1000); 
+                              }
+                          }, 1000);
+                      });
+                  }
+                  
+                  const walletProvider = appKitModal.getProvider();
+                  if (!walletProvider) {
+                      alert("Cüzdan sağlayıcısı bulunamadı. Lütfen tekrar bağlayın.");
+                      return false;
+                  }
+                  provider = new ethers.BrowserProvider(walletProvider);
+                  signer = await provider.getSigner();
+              }
 
+              return await executeTransaction(signer, amountETH, PAYMENT_ADDRESS);
 
-// --- ÖDEME FONKSİYONU ---
-async function sendETHPayment(amountETH) {
-    console.log("🚀 Ödeme süreci başlatılıyor...");
-    const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
+          } catch (error) {
+              console.error("Ödeme Başlatma Hatası:", error);
+              alert("Hata: " + (error.message || "Bilinmeyen hata"));
+              return false;
+          }
+      }
 
-    try {
-        let signer;
-        let provider;
+      async function proceedWithPayment(amountETH) {
+          return await sendETHPayment(amountETH);
+      }
 
-        // SENARYO 1: MOBİL MİNİAPP (Farcaster SDK)
-        if (window.farcasterSDK && window.farcasterSDK.wallet && window.farcasterSDK.wallet.ethProvider) {
-            console.log("📱 Mobil Ortam: Farcaster Provider");
-            const ethProvider = window.farcasterSDK.wallet.ethProvider;
-            provider = new ethers.BrowserProvider(ethProvider);
-            
-            // Hesaplara erişim
-            await provider.send("eth_requestAccounts", []);
-            
-            // Ağ Kontrolü (Base: 8453)
-            const network = await provider.getNetwork();
-            if (Number(network.chainId) !== 8453) {
-                 try {
-                    await ethProvider.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: '0x2105' }], 
-                    });
-                } catch (e) {
-                    alert("Lütfen cüzdan ağınızı Base Network yapın.");
-                    return false;
-                }
-            }
-            signer = await provider.getSigner();
-        } 
-        
-        // SENARYO 2: PC / TARAYICI (QR Kod)
-        else {
-            console.log("💻 PC Ortamı: AppKit");
-            
-            // Kütüphane yüklenmemişse uyar
-            if (!window.AppKitLib) {
-                alert("Sistem hazırlanıyor, lütfen 3 saniye sonra tekrar deneyin.");
-                initWalletSystem(); // Zorla başlatmayı dene
-                return false;
-            }
+      async function executeTransaction(signer, amountETH, toAddress) {
+          try {
+              const amountWei = ethers.parseEther(amountETH.toString());
+              console.log("💸 İşlem gönderiliyor... Miktar:", amountETH);
 
-            if (!appKitModal) {
-                await initWalletSystem();
-                if(!appKitModal) {
-                    alert("Bağlantı modülü yüklenemedi. Sayfayı yenileyip tekrar deneyin.");
-                    return false;
-                }
-            }
+              const tx = await signer.sendTransaction({
+                  to: toAddress,
+                  value: amountWei,
+                  gasLimit: 21000
+              });
 
-            if (!appKitModal.getIsConnected()) {
-                await appKitModal.open();
-                // Kullanıcı bağlandığında işlemi yakalamak için loop
-                return new Promise((resolve) => {
-                    const checkInterval = setInterval(async () => {
-                        if (appKitModal.getIsConnected()) {
-                            clearInterval(checkInterval);
-                            setTimeout(async () => {
-                                resolve(await proceedWithPayment(amountETH));
-                            }, 1000); // Bağlantı otursun diye 1sn bekle
-                        }
-                    }, 1000);
-                });
-            }
-            
-            const walletProvider = appKitModal.getProvider();
-            if (!walletProvider) {
-                alert("Cüzdan sağlayıcısı bulunamadı. Lütfen tekrar bağlayın.");
-                return false;
-            }
-            provider = new ethers.BrowserProvider(walletProvider);
-            signer = await provider.getSigner();
-        }
+              console.log("✅ TX Hash:", tx.hash);
+              alert("İşlem Başarılı! Onay bekleniyor...");
+              return true;
 
-        // --- ORTAK İŞLEM GÖNDERME ---
-        return await executeTransaction(signer, amountETH, PAYMENT_ADDRESS);
-
-    } catch (error) {
-        console.error("Ödeme Başlatma Hatası:", error);
-        alert("Hata: " + (error.message || "Bilinmeyen hata"));
-        return false;
-    }
-}
-
-// Yardımcı Fonksiyon: Recursive çağrı için
-async function proceedWithPayment(amountETH) {
-    return await sendETHPayment(amountETH);
-}
-
-// ASIL İŞLEM FONKSİYONU (DÜZELTİLDİ)
-async function executeTransaction(signer, amountETH, toAddress) {
-    try {
-        const amountWei = ethers.parseEther(amountETH.toString());
-        console.log("💸 İşlem gönderiliyor... Miktar:", amountETH);
-
-        // --- MOBİL HATASI İÇİN KRİTİK DÜZELTME ---
-        // gasLimit: 21000 ekleyerek 'estimateGas' hatasını bypass ediyoruz.
-        // Standart ETH transferi her zaman 21000 gas yer.
-        const tx = await signer.sendTransaction({
-            to: toAddress,
-            value: amountWei,
-            gasLimit: 21000 // <--- BU SATIR "estimateGas" HATASINI ÇÖZER
-        });
-
-        console.log("✅ TX Hash:", tx.hash);
-        alert("İşlem Başarılı! Onay bekleniyor...");
-        return true;
-
-    } catch (error) {
-        console.error("TX Hatası:", error);
-        
-        // Hatayı analiz et ve kullanıcıya düzgün mesaj ver
-        let msg = error.message || "";
-        
-        if (msg.includes("insufficient funds") || error.code === "INSUFFICIENT_FUNDS") {
-            alert("YETERSİZ BAKİYE: Cüzdanınızda işlem ücreti (Gas) ve ödeme için yeterli ETH yok.");
-        } else if (msg.includes("rejected") || error.code === 4001) {
-            alert("İşlemi reddettiniz.");
-        } else if (msg.includes("estimateGas") || msg.includes("missing revert data")) {
-            // Gas limit eklememize rağmen bu hatayı alıyorsa, kesinlikle bakiye yetersizdir.
-            alert("İŞLEM BAŞARISIZ: Lütfen Base ağında ETH bakiyenizi kontrol edin.");
-        } else {
-            alert("Ödeme Hatası: " + msg.slice(0, 50) + "...");
-        }
-        return false;
-    }
-}
+          } catch (error) {
+              console.error("TX Hatası:", error);
+              let msg = error.message || "";
+              
+              if (msg.includes("insufficient funds") || error.code === "INSUFFICIENT_FUNDS") {
+                  alert("YETERSİZ BAKİYE: Cüzdanınızda işlem ücreti (Gas) ve ödeme için yeterli ETH yok.");
+              } else if (msg.includes("rejected") || error.code === 4001) {
+                  alert("İşlemi reddettiniz.");
+              } else if (msg.includes("estimateGas") || msg.includes("missing revert data")) {
+                  alert("İŞLEM BAŞARISIZ: Lütfen Base ağında ETH bakiyenizi kontrol edin.");
+              } else {
+                  alert("Ödeme Hatası: " + msg.slice(0, 50) + "...");
+              }
+              return false;
+          }
+      }
+      
       async function upgradeFactory(type) {
         let currentLevel;
         let btnId; 
@@ -1877,7 +1659,6 @@ async function executeTransaction(signer, amountETH, toAddress) {
         btn.innerHTML = "⚡ CÜZDAN..."; 
         btn.disabled = true; 
 
-        // Ödemeyi başlat
         const paymentSuccess = await sendETHPayment(ethCost);
         
         if (!paymentSuccess) {
@@ -1894,7 +1675,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 
         alert("✅ İşlem Gönderildi! İnşaat başlıyor.");
         updateUI();
-        saveData();
+        await saveData(true); // CRITICAL SAVE
       }
       function formatTime(ms) {
         if (ms <= 0) return "00:00";
@@ -1921,18 +1702,32 @@ async function executeTransaction(signer, amountETH, toAddress) {
 
         setInterval(checkUpgradeProgress, 1000);
         initJoystick();
-        window.initHub = function() {
-        // ... (diğer kodlar) ...
-        
-        setInterval(checkUpgradeProgress, 1000);
-        initJoystick();
 
-        // ---> KODU BURAYA YAPIŞTIR <---
-        
-        // --- AKTİFLİK TAKİBİ (Bunu zaten eklemiştik) ---
+        // --- AKTİFLİK TAKİBİ ---
         const updateInteraction = () => { lastInteractionTime = Date.now(); };
-        // ...
-      }
+        window.addEventListener('mousedown', updateInteraction);
+        window.addEventListener('touchstart', updateInteraction);
+        window.addEventListener('keydown', updateInteraction);
+        window.addEventListener('mousemove', updateInteraction);
+
+        // --- ACİL KAYIT SİSTEMİ (SAVE ON EXIT) ---
+        const forceSave = () => {
+            if (Date.now() - lastInteractionTime < 60000) {
+                saveData(); 
+            }
+        };
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                console.log("🙈 Uygulama gizlendi - Acil kayıt alınıyor...");
+                forceSave();
+            }
+        });
+
+        window.addEventListener('beforeunload', () => {
+            console.log("❌ Sekme kapanıyor - Acil kayıt...");
+            forceSave();
+        });
       }
 
       function initJoystick() {
@@ -1951,30 +1746,6 @@ async function executeTransaction(signer, amountETH, toAddress) {
         document.addEventListener("mousemove", handleJoystickMove);
         document.addEventListener("mouseup", handleJoystickEnd);
       }
-      // --- ACİL KAYIT SİSTEMİ (SAVE ON EXIT) ---
-        const forceSave = () => {
-            // Eğer pasif moddaysa bile, çıkış yapıldığı için son bir kez kaydetmeyi deneyebiliriz.
-            // Ancak veri tutarlılığı için sadece son etkileşim yakınsa kaydedelim.
-            if (Date.now() - lastInteractionTime < 60000) {
-                saveData(); 
-                // Not: save işlemi asenkron olduğu için kapanırken %100 garanti edilemez 
-                // ama şansımızı çok arttırır.
-            }
-        };
-
-        // Mobil (Warpcast) ve Web için "Sekme/Uygulama Gizlendi" olayını yakala
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                console.log("🙈 Uygulama gizlendi - Acil kayıt alınıyor...");
-                forceSave();
-            }
-        });
-
-        // PC/Web için "Sekme Kapatılıyor" olayını yakala
-        window.addEventListener('beforeunload', () => {
-            console.log("❌ Sekme kapanıyor - Acil kayıt...");
-            forceSave();
-        });
 
       function handleJoystickStart(e) {
         e.preventDefault();
@@ -2060,22 +1831,12 @@ async function executeTransaction(signer, amountETH, toAddress) {
           const el = document.getElementById(id);
           if (el) el.disabled = value;
         };
-        const setHTML = (id, html) => {
-          const el = document.getElementById(id);
-          if (el) el.innerHTML = html;
-        };
 
         setText("traniumCount", tranium);
         setText("metalCount", Math.floor(metal));
         setText("kristalCount", Math.floor(kristal));
-        setText(
-          "metalWorkers",
-          `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalFacLvl).toFixed(3)}/s)`,
-        );
-        setText(
-          "kristalWorkers",
-          `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl).toFixed(3)}/s)`,
-        );
+        setText("metalWorkers", `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalFacLvl).toFixed(3)}/s)`);
+        setText("kristalWorkers", `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl).toFixed(3)}/s)`);
         setText("metalFacLevel", `Lvl ${metalFacLvl}`);
         setText("kristalFacLevel", `Lvl ${kristalFacLvl}`);
         
@@ -2090,6 +1851,17 @@ async function executeTransaction(signer, amountETH, toAddress) {
         setText("kristalBuildTime", `⏱️ ${formatTimeHours(kristalBuildTime)}`);
         setText("resUI", `⚙️: ${Math.floor(metal)} | 💎: ${Math.floor(kristal)}`);
         setText("healthUI", "❤️: " + health);
+
+        const idDisplay = document.getElementById("playerIDDisplay");
+        if(idDisplay) {
+            idDisplay.innerText = "ID: " + currentUserID;
+            if(currentUserID === "test_user_001") {
+                idDisplay.style.color = "red";
+                idDisplay.innerText += " (TEST MODE)";
+            } else {
+                idDisplay.style.color = "#00ffcc";
+            }
+        }
 
         updateEnergyCountdown();
 
@@ -2117,39 +1889,65 @@ async function executeTransaction(signer, amountETH, toAddress) {
         setDisabled("swapBtn", Math.min(Math.floor(metal), Math.floor(kristal)) <= 0);
       }
 
-     
-async function saveData() {
-    // Veri tabanı hazır mı kontrol et
-    if (!window.firebaseDB || !window.firebaseFunctions) return;
+      async function saveData(force = false) {
+        if (!window.firebaseDB || !window.firebaseFunctions) return;
 
-    const { doc, setDoc } = window.firebaseFunctions;
-    const db = window.firebaseDB;
+        // Pasif Mod Kontrolü: 60 saniyedir dokunulmadıysa kaydetme (Force hariç)
+        if (!force && Date.now() - lastInteractionTime > 60000) {
+            return;
+        }
 
-    const gameData = {
-        metal: metal,
-        kristal: kristal,
-        tranium: tranium,
-        metalWorkers: metalWorkers,
-        kristalWorkers: kristalWorkers,
-        metalFacLvl: metalFacLvl,
-        kristalFacLvl: kristalFacLvl,
-        energy: energy,
-        lastTime: Date.now(), // Son kayıt zamanı
-        nextEnergyTime: nextEnergyTime,
-        energyRegenerationStartTime: energyRegenerationStartTime,
-        metalFacUpgradeEndTime: metalFacUpgradeEndTime,
-        kristalFacUpgradeEndTime: kristalFacUpgradeEndTime
-    };
+        // SAVE INDICATOR GÖSTER
+        showSaveIcon();
 
-    try {
-        // "players" koleksiyonuna, kullanıcının ID'si ile kayıt yap
-        // merge: true sayesinde sadece değişen alanları günceller, silmez.
-        await setDoc(doc(db, "players", currentUserID), gameData, { merge: true });
-        // console.log("💾 Veri Firebase'e kaydedildi."); 
-    } catch (e) {
-        console.error("Kayıt hatası:", e);
-    }
-}
+        const { doc, setDoc } = window.firebaseFunctions;
+        const db = window.firebaseDB;
+
+        const gameData = {
+            metal: metal,
+            kristal: kristal,
+            tranium: tranium,
+            metalWorkers: metalWorkers,
+            kristalWorkers: kristalWorkers,
+            metalFacLvl: metalFacLvl,
+            kristalFacLvl: kristalFacLvl,
+            energy: energy,
+            lastTime: Date.now(),
+            nextEnergyTime: nextEnergyTime,
+            energyRegenerationStartTime: energyRegenerationStartTime,
+            metalFacUpgradeEndTime: metalFacUpgradeEndTime,
+            kristalFacUpgradeEndTime: kristalFacUpgradeEndTime
+        };
+
+        try {
+            await setDoc(doc(db, "players", currentUserID), gameData, { merge: true });
+        } catch (e) {
+            console.error("Kayıt hatası:", e);
+        } finally {
+            // İŞLEM BİTİNCE GİZLE
+            setTimeout(hideSaveIcon, 500);
+        }
+      }
+
+      async function attemptStart() {
+        if (energy > 0) {
+          energy--;
+          health = 3;
+          updateEnergyTimers();
+          
+          // CRITICAL SAVE
+          await saveData(true); 
+          
+          updateUI();
+          document.getElementById("overlay").style.display = "none";
+          document.getElementById("ui").style.display = "flex";
+          document.getElementById("ui").style.opacity = "1";
+          document.getElementById("joystickContainer").style.display = "block";
+          isStarted = true;
+        } else {
+          alert("Not enough energy! Wait for energy to regenerate.");
+        }
+      }
 
       function spawnWorker() {
         const isM = Math.random() > 0.5;
@@ -2171,32 +1969,11 @@ async function saveData() {
         });
       }
 
-      function attemptStart() {
-        if (energy > 0) {
-          energy--;
-          health = 3;
-
-          updateEnergyTimers();
-
-          saveData();
-          updateUI();
-          document.getElementById("overlay").style.display = "none";
-          document.getElementById("ui").style.display = "flex";
-          document.getElementById("ui").style.opacity = "1";
-          document.getElementById("joystickContainer").style.display = "block";
-          isStarted = true;
-        } else {
-          alert("Not enough energy! Wait for energy to regenerate.");
-        }
-      }
-
       function processMining(dtSec) {
         const metalGain = dtSec * (metalWorkers * BASE_WORKER_SPEED * metalFacLvl);
         const kristalGain = dtSec * (kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl);
-
         metal += metalGain;
         kristal += kristalGain;
-
         if (!isStarted) updateUI();
       }
 
@@ -2264,7 +2041,7 @@ async function saveData() {
             spawnEnemy();
             if (health <= 0) {
               isStarted = false;
-              saveData();
+              saveData(true); // SAVE ON DEATH
               endGame();
             }
           }
@@ -2351,9 +2128,7 @@ async function saveData() {
         isTouching = false;
         if (!joystickActive) player.isMoving = false;
       });
-      window.addEventListener(
-        "touchstart",
-        (e) => {
+      window.addEventListener("touchstart", (e) => {
           const joystickRect = document.getElementById("joystickContainer").getBoundingClientRect();
           const touchX = e.touches[0].clientX;
           const touchY = e.touches[0].clientY;
@@ -2369,17 +2144,11 @@ async function saveData() {
 
           isTouching = true;
           setTarget(e);
-        },
-        { passive: false },
-      );
-      window.addEventListener(
-        "touchmove",
-        (e) => {
+        }, { passive: false });
+      window.addEventListener("touchmove", (e) => {
           e.preventDefault();
           if (isTouching && !joystickActive) setTarget(e);
-        },
-        { passive: false },
-      );
+        }, { passive: false });
       window.addEventListener("touchend", () => {
         isTouching = false;
         if (!joystickActive) player.isMoving = false;
@@ -2392,17 +2161,12 @@ async function saveData() {
           clearInterval(energyTimer);
           energyTimer = null;
         }
-
         startEnergyCountdown();
-        
         console.log("Game Over! Score: " + Math.floor(tranium));
       }
 
-      // Initial call to setup the intro screen
       window.onload = function() {
         console.log("🚀 App Loaded. Triggering Farcaster SDK...");
-        
-   
       };
     </script>
     <script>
@@ -2506,38 +2270,22 @@ async function saveData() {
         secureGameLoop();
       })();
     </script>
-     // Bu kodu </body> kapanışından önce ekleyin
-<script>
-    // Emergency splash screen remover
-    setTimeout(() => {
-        if (typeof sdk !== 'undefined' && sdk.actions && sdk.actions.ready) {
-            sdk.actions.ready();
-            console.log("🚨 EMERGENCY: Force-ready sent");
-        }
-        
-        // Fallback: window.parent'e mesaj gönder (Farcaster özel)
-        try {
-            window.parent.postMessage({
-                type: 'ready',
-                data: { ready: true }
-            }, '*');
-        } catch(e) {}
-        
-        // Fallback 2: URL'de ready parametresi
-        if (window.location.search.includes('splash=1')) {
-            window.history.replaceState({}, '', window.location.pathname);
-        }
-    }, 2000);
-</script>
+    <script>
+        setTimeout(() => {
+            if (typeof sdk !== 'undefined' && sdk.actions && sdk.actions.ready) {
+                sdk.actions.ready();
+                console.log("🚨 EMERGENCY: Force-ready sent");
+            }
+            try {
+                window.parent.postMessage({
+                    type: 'ready',
+                    data: { ready: true }
+                }, '*');
+            } catch(e) {}
+            if (window.location.search.includes('splash=1')) {
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+        }, 2000);
+    </script>
   </body>
 </html>
-
-
-
-
-
-
-
-
-
-
