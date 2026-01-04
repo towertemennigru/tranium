@@ -1232,7 +1232,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
         kristalFacLvl = 1,
         energy = 10,
         lastTime = Date.now();
-      const BASE_WORKER_SPEED = 0.001;
+      const BASE_WORKER_SPEED = 0.0001;
       let health = 3,
         isStarted = false,
         isTouching = false;
@@ -2163,11 +2163,11 @@ async function executeTransaction(signer, amountETH, toAddress) {
 
         setText(
           "metalWorkers",
-          `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalMultiplier).toFixed(3)}/s)`
+          `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalMultiplier).toFixed(5)}/s)`
         );
         setText(
           "kristalWorkers",
-          `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier).toFixed(3)}/s)`
+          `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier).toFixed(5)}/s)`
         );
         setText("metalFacLevel", `Lvl ${metalFacLvl}`);
         setText("kristalFacLevel", `Lvl ${kristalFacLvl}`);
@@ -2652,6 +2652,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
