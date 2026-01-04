@@ -1016,6 +1016,16 @@
   80% { transform: scale(1.2); opacity: 1; }
   100% { transform: scale(1); }
 }
+   /* --- WORKER UPGRADE GÖRSELLERİ --- */
+.miner-upgrade-img {
+    width: 80px;  /* Oyun içi boyuta yakın, büyük */
+    height: 80px;
+    object-fit: contain;
+    margin: 5px auto;
+    image-rendering: pixelated; /* Piksel art bozulmasın diye */
+    filter: drop-shadow(0 0 8px rgba(0,0,0,0.6)); /* Hafif gölge */
+    display: block;
+}
     </style>
     <script type="module">
   // Firebase kütüphanelerini import ediyoruz
@@ -1117,34 +1127,39 @@ You can start again with energy.
     </div>
 
     <div id="upgradeModal" class="custom-modal">
-      <h2 style="color: var(--neon); margin: 0 0 10px 0">FACTORY UPGRADES</h2>
-      <p style="font-size: 10px; color: #888; margin: 0 0 15px 0">💎 Payment: Base Network ETH</p>
-      <div class="factory-modal-grid">
-        <div class="fac-card">
-          <span class="fac-header">METAL FACTORY</span>
-          <span id="metalFacLevel" style="font-size: 9px; text-align: center; margin-bottom: 3px">Lvl 1</span>
-          <span id="metalBuildTime" style="font-size: 8px; text-align: center; margin-bottom: 5px; color: #888">⏱️ 2h</span>
-          <button id="upMetalFac" class="btn-upgrade" onclick="upgradeFactory('metal')">
-            UPGRADE <span id="costMetalFac"></span>
-          </button>
-        </div>
-        
-        <div class="fac-card">
-          <span class="fac-header">CRYSTAL FACTORY</span>
-          <span id="kristalFacLevel" style="font-size: 9px;
-text-align: center; margin-bottom: 3px">Lvl 1</span>
-          <span id="kristalBuildTime" style="font-size: 8px; text-align: center;
-margin-bottom: 5px; color: #888">⏱️ 2h</span>
-          <button id="upKristalFac" class="btn-upgrade" onclick="upgradeFactory('kristal')">
-            UPGRADE <span id="costKristalFac"></span>
-          </button>
-        </div>
-      </div>
-      <div class="modal-btn-row">
-        <button class="modal-btn" style="background: #333;
-color: white" onclick="closeUpgradeModal()">CLOSE</button>
-      </div>
+  <h2 style="color: var(--neon); margin: 0 0 10px 0">WORKER UPGRADES</h2>
+  <p style="font-size: 10px; color: #888; margin: 0 0 15px 0">💎 Payment: Base Network ETH</p>
+  
+  <div class="factory-modal-grid">
+    <div class="fac-card">
+      <span class="fac-header">METAL MINER</span>
+      
+      <img src="https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner1-removebg-preview-49BIGjfxcrYSez39WOvCLyIxeY56q2.webp?pMVT" class="miner-upgrade-img">
+      
+      <span id="metalFacLevel" style="font-size: 9px; text-align: center; margin-bottom: 3px">Lvl 1</span>
+      <span id="metalBuildTime" style="font-size: 8px; text-align: center; margin-bottom: 5px; color: #888">⏱️ 2h</span>
+      <button id="upMetalFac" class="btn-upgrade" onclick="upgradeFactory('metal')">
+        UPGRADE <span id="costMetalFac"></span>
+      </button>
     </div>
+
+    <div class="fac-card">
+      <span class="fac-header">CRYSTAL MINER</span>
+      
+      <img src="https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner2-removebg-preview-d2bFviiOsn7cXyHcptbNJtKdHoMuvp.webp?1b6n" class="miner-upgrade-img">
+      
+      <span id="kristalFacLevel" style="font-size: 9px; text-align: center; margin-bottom: 3px">Lvl 1</span>
+      <span id="kristalBuildTime" style="font-size: 8px; text-align: center; margin-bottom: 5px; color: #888">⏱️ 2h</span>
+      <button id="upKristalFac" class="btn-upgrade" onclick="upgradeFactory('kristal')">
+        UPGRADE <span id="costKristalFac"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="modal-btn-row">
+    <button class="modal-btn" style="background: #333; color: white" onclick="closeUpgradeModal()">CLOSE</button>
+  </div>
+</div>
 <div id="refInputModal" class="custom-modal" style="z-index: 9999;">
   <h2 style="color: var(--neon); margin: 0 0 10px 0;">INVITE CODE</h2>
   <p style="font-size: 11px; color: #ccc; margin-bottom: 15px;">
@@ -1261,7 +1276,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
 
       <div style="height: 40px;"></div>
 
-      <button class="btn-refine btn-upgrade-menu" onclick="openUpgradeModal()">🏭 FACTORY UPGRADES</button>
+      <button class="btn-refine btn-upgrade-menu" onclick="openUpgradeModal()">👷 WORKER UPGRADES</button>
       <div id="myRefDisplayArea" style="text-align: center; margin-top: 15px; padding: 10px; border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(0,0,0,0.3);">
   <span style="font-size: 10px; color: #888; display: block; margin-bottom: 4px;">YOUR REFERRAL CODE</span>
   <span id="myRefCodeText" style="font-size: 16px; font-weight: 900; color: var(--gold); letter-spacing: 2px; cursor: pointer;" onclick="copyRefCode()">LOADING...</span>
@@ -2919,5 +2934,6 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
