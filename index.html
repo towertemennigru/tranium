@@ -2397,10 +2397,11 @@ function updateParticles() {
 function drawParticles() {
     particles.forEach(p => {
         ctx.save();
-        ctx.globalAlpha = p.life; // Saydamlık
+        ctx.globalAlpha = p.life;
         ctx.fillStyle = p.color;
-        // Kameraya göre pozisyonla (camera.x ve camera.y çıkarılır)
-        ctx.fillRect(p.x - camera.x, p.y - camera.y, 6, 6); 
+        // DÜZELTME: -camera.x ve -camera.y KALDIRILDI.
+        // Çünkü ana draw fonksiyonu zaten sahneyi kaydırıyor.
+        ctx.fillRect(p.x, p.y, 10, 10); 
         ctx.restore();
     });
 }
@@ -2565,12 +2566,13 @@ function showFloatingText(text, color) {
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
+        // Kamera takibi burada yapılıyor
         ctx.translate(-camera.x, -camera.y);
         
-        // Arkaplan
+        // 1. Arkaplan
         if (imgBG.complete) ctx.drawImage(imgBG, 0, 0, WORLD_SIZE, WORLD_SIZE);
         
-        // Madenciler
+        // 2. Madenciler
         workers.forEach((w) => {
           ctx.save();
           ctx.shadowBlur = 10;
@@ -2579,7 +2581,7 @@ function showFloatingText(text, color) {
           ctx.restore();
         });
 
-        // Düşmanlar
+        // 3. Düşmanlar (İçindeki drawParticles silindi)
         enemies.forEach((en) => {
           ctx.save();
           ctx.shadowBlur = 20;
@@ -2596,10 +2598,10 @@ function showFloatingText(text, color) {
           ctx.restore();
         });
 
-        // --- PARÇACIKLAR (BURAYA ALINDI) ---
+        // 4. EFEKTLER (Düşmanlardan sonra, oyuncudan önce)
         drawParticles(); 
 
-        // Oyuncu (Player)
+        // 5. Oyuncu (Player)
         ctx.save();
         let bounce = player.isMoving ? Math.abs(Math.sin(walkCycle)) * 14 : 0;
         ctx.translate(player.x, player.y - bounce);
@@ -3034,6 +3036,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
