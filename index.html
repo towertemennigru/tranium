@@ -1107,7 +1107,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
       const ctx = canvas.getContext("2d");
       const WORLD_SIZE = 2500;
       // --- GOOGLE SHEETS ENTEGRASYONU ---
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxj6gCx4sWNmVF1X56OxfdMAUl0f0NQyj4I-XH9pNcMQFEd_man1MwcRY_kzHlKSL6c/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznmYXTvKMPMMYVUozMJJA74mN3VFi9UEAeI6RaKrtwcCzEkzngh8QgMoMgWDSCn4cSpg/exec";
 // Buluttan Veri Çekme (LOAD)
 async function loadCloudData(fid) {
     try {
@@ -1892,8 +1892,15 @@ async function executeTransaction(signer, amountETH, toAddress) {
     
     requestAnimationFrame(gameLoop);
     
-    // Hem LocalStorage hem de Cloud'a kaydet (30 saniyede bir)
-    setInterval(saveData, 30000);
+    // 1. Düzenli Kayıt (30 saniyede bir) - Fonksiyon içine parametre göndermek için arrow function kullan
+    setInterval(() => {
+        if(window.currentUserFID) saveCloudData(window.currentUserFID);
+    }, 30000);
+    
+    // 2. [YENİ] Arka Plan Senkronizasyonunu Başlat (5 saniyede bir)
+    startCloudSync();
+
+    // ... (diğer pagehide event listener'ları aynen kalsın) ...
     
     // Sayfa kapanırken kaydet
     window.addEventListener("visibilitychange", () => {
@@ -2062,26 +2069,74 @@ async function executeTransaction(signer, amountETH, toAddress) {
         setDisabled("swapBtn", Math.min(Math.floor(metal), Math.floor(kristal)) <= 0);
       }
 
-      function saveData() {
-    // 1. LocalStorage (Hızlı yedek)
-    localStorage.setItem("w_metal", metal);
-    localStorage.setItem("w_kristal", kristal);
-    localStorage.setItem("w_tranium", tranium);
-    localStorage.setItem("w_mw", metalWorkers);
-    localStorage.setItem("w_kw", kristalWorkers);
-    localStorage.setItem("w_mfl", metalFacLvl);
-    localStorage.setItem("w_kfl", kristalFacLvl);
-    localStorage.setItem("w_energy", energy);
-    localStorage.setItem("w_last_time", Date.now());
-    localStorage.setItem("w_next_energy_time", nextEnergyTime);
-    localStorage.setItem("w_energy_reg_start", energyRegenerationStartTime);
-    localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
-    localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
+function saveCloudData(fid) {
+    const payload = {
+        fid: String(fid),
+        metal: Math.floor(metal),
+        kristal: Math.floor(kristal),
+        tranium: Math.floor(tranium),
+        metal_lvl: metalFacLvl,
+        kristal_lvl: kristalFacLvl,
+        energy: energy,
+        metal_workers: metalWorkers,
+        kristal_workers: kristalWorkers,
+        last_save_time: Date.now(),
+        // Enerji başlangıç zamanını asla değiştirme, sabiti gönder
+        energy_reg_start: energyRegenerationStartTime 
+    };
 
-    // 2. Google Sheets (Bulut Kayıt)
-    if (window.currentUserFID) {
-        saveCloudData(window.currentUserFID);
-    }
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(response => {
+        // Eğer sunucu veriyi geri döndürdüyse (Echo)
+        if (response.status === "success" && response.server_data) {
+            const sd = response.server_data;
+            // Nadir durum: Eğer sunucu o an başka bir işlem yaptıysa ve saati ilerideyse onu kabul et
+            if (sd.last_save_time > lastTime) {
+                lastTime = sd.last_save_time;
+                // Gerekirse diğer verileri de burada güncelleyebilirsin ama genelde save anında gerekmez
+            }
+            console.log("☁️ Kayıt Başarılı. Sunucu Zamanı:", new Date(sd.last_save_time).toLocaleTimeString());
+        }
+    })
+    .catch(err => console.error("❌ Kayıt Hatası:", err));
+}
+      // --- YENİ EKLENECEK FONKSİYON: startCloudSync ---
+function startCloudSync() {
+    setInterval(async () => {
+        // Eğer kullanıcı ID yoksa veya local test ise çalışma
+        if (!window.currentUserFID || window.currentUserFID === "local_user") return;
+
+        // Sessizce buluttan veri çek
+        const cloudData = await loadCloudData(window.currentUserFID);
+
+        // KRİTİK KONTROL: Eğer buluttaki veri, benim şu anki verimden daha yeniyse...
+        // (Yani PC'de oynadın, bulut güncellendi, şimdi telefona o veriyi çekiyoruz)
+        if (cloudData && cloudData.last_save_time > lastTime) {
+            console.log("🔄 SENKRONİZASYON: Başka cihazdan yeni veri algılandı!");
+            
+            // Değişkenleri eşitle
+            metal = cloudData.metal;
+            kristal = cloudData.kristal;
+            tranium = cloudData.tranium;
+            metalFacLvl = cloudData.metal_lvl;
+            kristalFacLvl = cloudData.kristal_lvl;
+            energy = cloudData.energy;
+            metalWorkers = cloudData.metal_workers;
+            kristalWorkers = cloudData.kristal_workers;
+            
+            // Enerji zamanlayıcısını sunucuya kilitle
+            energyRegenerationStartTime = parseInt(cloudData.energy_reg_start);
+            lastTime = parseInt(cloudData.last_save_time);
+
+            // Enerjiyi ve Arayüzü yeniden hesapla
+            updateOfflineEnergyRegeneration();
+            updateUI();
+        }
+    }, 5000); // 5 Saniyede bir kontrol et
 }
       function spawnWorker() {
         const isM = Math.random() > 0.5;
@@ -2466,3 +2521,4 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
