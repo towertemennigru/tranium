@@ -104,6 +104,36 @@
 </script>
 
     <style>
+      #transactionOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85); /* Arkası görünür ama tıklanamaz */
+  z-index: 999999; /* Her şeyin üstünde */
+  display: none; /* Varsayılan gizli */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(5px); /* Arkası bulanıklaşır */
+}
+.tx-spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #333;
+  border-top: 6px solid #ffcc00; /* Sarı renk */
+  border-radius: 50%;
+  animation: spin 1s infinite linear;
+  margin-bottom: 20px;
+}
+.tx-text {
+  color: #ffcc00;
+  font-weight: 900;
+  letter-spacing: 2px;
+  font-size: 18px;
+  animation: pulse 1.5s infinite;
+}
       :root {
         --gold: #ffcc00;
         --neon: #00ffcc;
@@ -991,6 +1021,10 @@ const firebaseConfig = {
 </script>
   </head>
    <body>
+     <div id="transactionOverlay">
+  <div class="tx-spinner"></div>
+  <div class="tx-text">PROCESSING DATA...</div>
+</div>
      <div id="desktop-blocker" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:red; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
     <h1>ONLY FOR FARCASTER</h1>
     <p>This game can only be played through Farcaster</p>
@@ -1268,6 +1302,14 @@ async function identifyUser() {
       const imgInfected = new Image();
       imgInfected.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/infect-removebg-preview-5HhmhH4V5DqNbYNXhiFg3o9Z0RkEIj.webp?uN63";
+
+      function showBlockingLoader() {
+    document.getElementById("transactionOverlay").style.display = "flex";
+}
+
+      function hideBlockingLoader() {
+    document.getElementById("transactionOverlay").style.display = "none";
+}
       
       function openHowToPlay() {
         document.getElementById("howToPlayScreen").style.display = "flex";
@@ -1314,30 +1356,37 @@ async function identifyUser() {
         let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
         document.getElementById("swapAmountInput").value = Math.floor(maxRefine * pct);
       }
-      function executeSwap() {
-        let inputVal = document.getElementById("swapAmountInput").value;
-        
-        // Boş veya geçersiz giriş kontrolü
-        if (!inputVal || inputVal.trim() === "") {
-             alert("Lütfen geçerli bir miktar girin.");
-             return;
-        }
-        
-        let amount = parseInt(inputVal);
-        let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
+      async function executeSwap() {
+    let inputVal = document.getElementById("swapAmountInput").value;
+    if (!inputVal || inputVal.trim() === "") {
+         alert("Lütfen geçerli bir miktar girin.");
+         return;
+    }
+    
+    let amount = parseInt(inputVal);
+    let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
 
-        // NaN kontrolü ve bakiye kontrolü
-        if (!isNaN(amount) && amount > 0 && amount <= maxRefine) {
-          tranium += amount;
-          metal -= amount;
-          kristal -= amount;
-          updateUI();
-          saveData();
-          closeSwapModal();
-        } else {
-          alert("Geçersiz miktar veya yetersiz kaynak!");
-        }
-      }
+    if (!isNaN(amount) && amount > 0 && amount <= maxRefine) {
+      // 1. ÖNCE PERDEYİ İNDİR
+      closeSwapModal(); // Küçük pencereyi kapat
+      showBlockingLoader(); // Büyük yükleniyor ekranını aç
+
+      // 2. VERİLERİ GÜNCELLE
+      tranium += amount;
+      metal -= amount;
+      kristal -= amount;
+
+      // 3. VERİTABANINA KESİN KAYIT YAPILMASINI BEKLE
+      await saveData(true); 
+
+      // 4. EKRANI GÜNCELLE VE PERDEYİ KALDIR
+      updateUI();
+      hideBlockingLoader();
+      
+    } else {
+      alert("Geçersiz miktar veya yetersiz kaynak!");
+    }
+}
 
     
       async function setupRealtimeListener() {
@@ -1877,7 +1926,6 @@ async function executeTransaction(signer, amountETH, toAddress) {
         btn.innerHTML = "⚡ CÜZDAN..."; 
         btn.disabled = true; 
 
-        // Ödemeyi başlat
         const paymentSuccess = await sendETHPayment(ethCost);
         
         if (!paymentSuccess) {
@@ -1886,15 +1934,23 @@ async function executeTransaction(signer, amountETH, toAddress) {
           return;
         }
 
+        // 1. Show Blocking Loader
+        showBlockingLoader();
+
+        // 2. Set Timers
         if (type === "metal") {
           metalFacUpgradeEndTime = Date.now() + upgradeTime;
         } else if (type === "kristal") {
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
-        alert("✅ İşlem Gönderildi! İnşaat başlıyor.");
+        // 3. FORCE SAVE and WAIT
+        await saveData(true); 
+
+        // 4. Update UI & Hide
         updateUI();
-        saveData();
+        hideBlockingLoader();
+        alert("✅ İşlem Gönderildi! İnşaat başlıyor.");
       }
       function formatTime(ms) {
         if (ms <= 0) return "00:00";
@@ -2171,25 +2227,32 @@ async function saveData() {
         });
       }
 
-      function attemptStart() {
-        if (energy > 0) {
-          energy--;
-          health = 3;
+      async function attemptStart() {
+    if (energy > 0) {
+      // 1. PERDEYİ İNDİR
+      showBlockingLoader();
 
-          updateEnergyTimers();
+      // 2. ENERJİYİ DÜŞÜR
+      energy--;
+      health = 3;
+      updateEnergyTimers();
 
-          saveData();
-          updateUI();
-          document.getElementById("overlay").style.display = "none";
-          document.getElementById("ui").style.display = "flex";
-          document.getElementById("ui").style.opacity = "1";
-          document.getElementById("joystickContainer").style.display = "block";
-          isStarted = true;
-        } else {
-          alert("Not enough energy! Wait for energy to regenerate.");
-        }
-      }
+      // 3. VERİTABANINA YAZILMASINI BEKLE
+      await saveData(true);
 
+      // 4. ANCAK KAYIT BİTTİKTEN SONRA OYUNU BAŞLAT
+      updateUI();
+      hideBlockingLoader();
+
+      document.getElementById("overlay").style.display = "none";
+      document.getElementById("ui").style.display = "flex";
+      document.getElementById("ui").style.opacity = "1";
+      document.getElementById("joystickContainer").style.display = "block";
+      isStarted = true;
+    } else {
+      alert("Not enough energy! Wait for energy to regenerate.");
+    }
+}
       function processMining(dtSec) {
         const metalGain = dtSec * (metalWorkers * BASE_WORKER_SPEED * metalFacLvl);
         const kristalGain = dtSec * (kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl);
