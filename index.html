@@ -2231,32 +2231,51 @@ async function saveData() {
         });
       }
 
-      async function attemptStart() {
-    if (energy > 0) {
-      // 1. PERDEYİ İNDİR
-      showBlockingLoader();
+     async function attemptStart() {
+        if (energy > 0) {
+          // 1. EKRANI KİLİTLE (Blocking Loader)
+          showBlockingLoader();
 
-      // 2. ENERJİYİ DÜŞÜR
-      energy--;
-      health = 3;
-      updateEnergyTimers();
+          // 2. ENERJİ VE CANI AYARLA
+          energy--;
+          health = 3;
+          updateEnergyTimers();
+          
+          // --- KRİTİK EKLEME: SAHAYI SIFIRLA VE YENİDEN DOLDUR ---
+          workers = []; // Eski listeyi sil
+          enemies = []; // Eski düşmanları sil
+          
+          // 50 Tane Yeni Madenci Koy
+          for (let i = 0; i < 50; i++) spawnWorker();
+          
+          // 15 Tane Yeni Düşman Koy
+          for (let i = 0; i < 15; i++) spawnEnemy();
+          // -------------------------------------------------------
 
-      // 3. VERİTABANINA YAZILMASINI BEKLE
-      await saveData(true);
+          // 3. KESİN KAYIT AL (FORCE SAVE)
+          await saveData(true); 
+          
+          // 4. EKRANI GÜNCELLE, YÜKLEMEYİ KAPAT VE BAŞLA
+          updateUI();
+          hideBlockingLoader();
 
-      // 4. ANCAK KAYIT BİTTİKTEN SONRA OYUNU BAŞLAT
-      updateUI();
-      hideBlockingLoader();
+          document.getElementById("overlay").style.display = "none";
+          document.getElementById("ui").style.display = "flex";
+          document.getElementById("ui").style.opacity = "1";
+          document.getElementById("joystickContainer").style.display = "block";
+          
+          // Oyuncu her başladığında merkeze dönsün (İstersen kaldırabilirsin)
+          player.x = WORLD_SIZE / 2;
+          player.y = WORLD_SIZE / 2;
+          player.targetX = player.x;
+          player.targetY = player.y;
+          player.isMoving = false;
 
-      document.getElementById("overlay").style.display = "none";
-      document.getElementById("ui").style.display = "flex";
-      document.getElementById("ui").style.opacity = "1";
-      document.getElementById("joystickContainer").style.display = "block";
-      isStarted = true;
-    } else {
-      alert("Not enough energy! Wait for energy to regenerate.");
-    }
-}
+          isStarted = true;
+        } else {
+          alert("Not enough energy! Wait for energy to regenerate.");
+        }
+      }
       function processMining(dtSec) {      
         const metalMultiplier = Math.pow(2, metalFacLvl - 1);
         const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
@@ -2600,6 +2619,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
