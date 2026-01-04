@@ -2342,6 +2342,7 @@ async function saveData() {
     </script>
     <script>
       (function () {
+        // FPS Göstergesi (Sol üstte)
         const fpsBox = document.createElement("div");
         fpsBox.id = "pc-fps-counter";
         fpsBox.style.cssText =
@@ -2349,6 +2350,7 @@ async function saveData() {
         fpsBox.innerHTML = "FPS:...";
         document.body.appendChild(fpsBox);
 
+        // Hız Koruma (Hile önleyici basit yapı)
         function lockPlayerSpeed() {
           try {
             if (typeof player !== "undefined" && player.speed !== 7.0) {
@@ -2363,28 +2365,34 @@ async function saveData() {
         }
 
         const originalInitHub = window.initHub;
+        
+        // --- KRİTİK DÜZELTME BURADA ---
         window.initHub = function () {
+          // 1. Önce oyunun verilerini yükleyen orijinal başlatıcıyı çalıştır
           if (originalInitHub) originalInitHub();
 
+          // 2. EKRAN ÇÖZÜNÜRLÜĞÜ AYARI (ZOOM SORUNU ÇÖZÜMÜ)
           const cvs = document.getElementById("gameCanvas");
           if (cvs) {
-            let targetWidth = window.innerWidth;
-            let targetHeight = window.innerHeight;
+            // Telefon ekranı ne olursa olsun, oyun kendini 1920px genişlikte sanacak.
+            // Bu sayede karakter küçük, harita geniş görünecek.
+            const targetRatio = window.innerWidth / window.innerHeight;
+            
+            const virtualWidth = 1920; 
+            const virtualHeight = virtualWidth / targetRatio;
 
-            if (targetWidth > 1920) {
-              const ratio = window.innerHeight / window.innerWidth;
-              targetWidth = 1920;
-              targetHeight = 1920 * ratio;
-            }
+            // Canvas'ın iç çözünürlüğünü yüksek yapıyoruz
+            cvs.width = virtualWidth;
+            cvs.height = virtualHeight;
 
-            cvs.width = targetWidth;
-            cvs.height = targetHeight;
+            // Ama CSS ile telefona sığdırıyoruz
             cvs.style.width = "100vw";
             cvs.style.height = "100vh";
             cvs.style.transform = "translate3d(0,0,0)";
             cvs.style.imageRendering = "pixelated";
           }
 
+          // 3. Joystick Mobilde Görünsün (PC'de Gizlensin)
           if (!("ontouchstart" in window) && navigator.maxTouchPoints === 0) {
             const joyContainer = document.getElementById("joystickContainer");
             if (joyContainer) joyContainer.style.display = "none";
@@ -2393,17 +2401,23 @@ async function saveData() {
             document.head.appendChild(style);
           }
 
+          // 4. Hız kilidini aç ve FPS göster
           lockPlayerSpeed();
           fpsBox.style.display = "block";
-          console.log("✅ TURBO MODE: Player 7.0 | Enemy Max 6.6");
+          console.log("✅ SYSTEM: Virtual Resolution 1920px Active");
+
+          // 5. Oyun Döngüsünü BAŞLAT
+          secureGameLoop();
         };
 
+        // --- OYUN DÖNGÜSÜ ---
         let lastTime = performance.now();
         let frameCount = 0;
         let lastFpsTime = performance.now();
         const targetFPS = 60;
         const frameDelay = 1000 / targetFPS;
         const originalRAF = window.requestAnimationFrame;
+
         function secureGameLoop() {
           originalRAF(secureGameLoop);
 
@@ -2412,10 +2426,13 @@ async function saveData() {
 
           if (elapsed < frameDelay) return;
           lastTime = now - (elapsed % frameDelay);
+          
+          // Hız kontrolü
           if (typeof player !== "undefined") {
             if (player.speed !== 7.0) player.speed = 7.0;
           }
 
+          // Düşman hız kontrolü
           if (typeof enemies !== "undefined" && Array.isArray(enemies)) {
             enemies.forEach((en) => {
               if (en.currentSpeed > 6.6) {
@@ -2424,6 +2441,7 @@ async function saveData() {
             });
           }
 
+          // FPS Sayacı
           frameCount++;
           if (now - lastFpsTime >= 1000) {
             fpsBox.innerHTML = "FPS: " + frameCount;
@@ -2431,14 +2449,15 @@ async function saveData() {
             lastFpsTime = now;
           }
 
+          // Oyunu çiz
           if (typeof window.update === "function" && typeof window.draw === "function") {
             window.update(0.016);
             window.draw();
           }
         }
 
-        window.gameLoop = function () {};
-        secureGameLoop();
+        // Orijinal loop'u iptal edip kendi secureLoop'umuzu initHub içinde çağırıyoruz
+        window.gameLoop = function () {}; 
       })();
     </script>
      // Bu kodu </body> kapanışından önce ekleyin
@@ -2466,6 +2485,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
