@@ -1163,12 +1163,14 @@ Energy regenerates over time (1 per hour) even when you are offline.
   };
 
   // 3. Senkronizasyon (SYNC)
+  // 3. Senkronizasyon (SYNC) - DÜZELTİLMİŞ HALİ
   window.startCloudSync = function() {
+      // DİKKAT: Buradaki hatalı "if(window.startCloudSync)..." satırı silindi.
+      
       if (!window.currentUserFID || window.currentUserFID === "local_user") return;
       
       onValue(ref(db, 'users/' + window.currentUserFID), (snapshot) => {
           const data = snapshot.val();
-          // Eğer gelen veri, bizim son kaydettiğimizden daha yeniyse güncelle
           if (data && data.last_save_time > (window.lastTime || 0)) {
               console.log("🔥 Sync: Yeni veri geldi!");
               window.metal = data.metal;
@@ -2036,8 +2038,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
     window.energyRegenerationStartTime = energyRegenerationStartTime;
     // ---------------------------------------------
 
-    // ... (Eski updateUI kodları buradan devam etsin) ...
-    const setText = (id, text) => { ... } {
+    const setText = (id, text) => { ... } 
         const setText = (id, text) => {
           const el = document.getElementById(id);
           if (el) el.innerText = text;
@@ -2490,6 +2491,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
 </body>
 </html>
+
 
 
 
