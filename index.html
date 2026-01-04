@@ -1425,11 +1425,10 @@ async function identifyUser() {
         const docRef = doc(db, "players", currentUserID);
 
         onSnapshot(docRef, (docSnap) => {
-            // --- SENARYO 1: MEVCUT KULLANICI İSE ---
             if (docSnap.exists()) {
                 const data = docSnap.data();
 
-                // 1. Verileri Çek
+                // --- 1. Temel Verileri Çek ---
                 let savedMetal = parseFloat(data.metal) || 0;
                 let savedKristal = parseFloat(data.kristal) || 0;
                 let savedLastTime = parseInt(data.lastTime) || Date.now();
@@ -1448,7 +1447,7 @@ async function identifyUser() {
                 metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
                 kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
 
-                // 2. Offline Kazanç Hesapla (Sadece ilk girişte)
+                // --- 2. Offline Kazanç (Sadece ilk yüklemede) ---
                 if (!window.hasInitialLoadCompleted) {
                     const now = Date.now();
                     const secondsPassed = (now - savedLastTime) / 1000;
@@ -1469,27 +1468,34 @@ async function identifyUser() {
                 metal = savedMetal;
                 kristal = savedKristal;
 
-                // --- REF CODE MANTIĞI (MEVCUT KULLANICI İÇİN) ---
+                // --- 3. REFERANS SİSTEMİ MANTIĞI (DÜZELTİLDİ) ---
+                // Kullanıcı daha önce işlem yaptı mı? (Skip veya Enter dedi mi?)
+                const refActionTaken = data.refActionTaken || false;
                 let myRefCode = data.myRefCode;
-                let hasUsedRef = data.usedRefCode || false;
 
-                // Eğer eski bir kullanıcıysa ve kodu yoksa oluştur
-                if (!myRefCode) {
-                    myRefCode = generateRefCode();
-                    // Hemen veritabanına yazmıyoruz, saveData döngüsü veya bir sonraki işlem yazacak.
-                    // Ama ekranda görünsün diye değişkene atıyoruz.
+                // Ekranda kendi kodunu göster (Varsa göster, yoksa LOADING... kalır)
+                const refTextEl = document.getElementById("myRefCodeText");
+                if (refTextEl) {
+                    if (myRefCode) {
+                        refTextEl.innerText = myRefCode;
+                        window.currentUserRefCode = myRefCode; // Global değişkene ata
+                    } else if (refActionTaken) {
+                        // İşlem yapmış ama kodu yoksa (eski veri hatası vs.), şimdi oluştur
+                        myRefCode = generateRefCode();
+                        refTextEl.innerText = myRefCode;
+                        window.currentUserRefCode = myRefCode;
+                        // saveData bir sonraki döngüde bunu kaydedecek
+                    } else {
+                        refTextEl.innerText = "WAITING...";
+                    }
                 }
 
-                // Ekrana Yazdır (LOADING... yazısını kaldırır)
-                const refTextEl = document.getElementById("myRefCodeText");
-                if (refTextEl) refTextEl.innerText = myRefCode;
-
-                // Ref Code Pop-up Gösterimi (Eğer daha önce girmediyse)
-                if (!hasUsedRef && !window.refModalShown) {
+                // Pop-up Kontrolü: İşlem yapmadıysa ve modal daha önce açılmadıysa aç
+                if (!refActionTaken && !window.refModalShown) {
                     setTimeout(() => {
                         const modal = document.getElementById("refInputModal");
                         if (modal) modal.style.display = "block";
-                    }, 2500); // 2.5 saniye sonra aç
+                    }, 2500);
                     window.refModalShown = true;
                 }
 
@@ -1502,20 +1508,14 @@ async function identifyUser() {
                     window.hasInitialLoadCompleted = true;
                 }
 
-            } 
-            // --- SENARYO 2: YENİ KULLANICI İSE (Senin durumun) ---
-            else {
+            } else {
+                // --- SENARYO 2: YENİ KULLANICI ---
                 console.log("🆕 Yeni kullanıcı. Kayıt oluşturulacak.");
                 energy = 10;
                 
-                // 1. Yeni Ref Kodu Oluştur
-                const newRefCode = generateRefCode();
-                
-                // 2. Ekrana Hemen Yazdır (Kritik nokta burasıydı)
-                const refTextEl = document.getElementById("myRefCodeText");
-                if (refTextEl) refTextEl.innerText = newRefCode;
+                // Yeni kullanıcı henüz seçim yapmadı, o yüzden kod oluşturmuyoruz.
+                // Sadece oyunu başlatıyoruz ve pop-up açıyoruz.
 
-                // 3. Pop-up'ı planla
                 if (!window.refModalShown) {
                     setTimeout(() => {
                         const modal = document.getElementById("refInputModal");
@@ -1524,13 +1524,12 @@ async function identifyUser() {
                     window.refModalShown = true;
                 }
 
-                // 4. Oyunu Başlat
                 if (!window.hasInitialLoadCompleted) {
                     initHub();
                     window.hasInitialLoadCompleted = true;
                 }
                 
-                // 5. İlk Kaydı Hemen Yap (Ref kodunu kaydetmek için)
+                // Temel verileri kaydet (Ref kodu YOK, refActionTaken YOK)
                 saveData(true);
             }
         }, (error) => {
@@ -2246,24 +2245,36 @@ async function executeTransaction(signer, amountETH, toAddress) {
       }
 
      
-async function saveData() {
-    // Veri tabanı hazır mı kontrol et
+async function saveData(force = false) {
     if (!window.firebaseDB || !window.firebaseFunctions) return;
 
     const { doc, setDoc } = window.firebaseFunctions;
     const db = window.firebaseDB;
 
+    // UI'dan veya global değişkenden güncel kodu al
+    let currentRefCodeToSave = window.currentUserRefCode;
+    if (!currentRefCodeToSave) {
+        const uiText = document.getElementById("myRefCodeText").innerText;
+        if (uiText && uiText !== "LOADING..." && uiText !== "WAITING...") {
+            currentRefCodeToSave = uiText;
+        }
+    }
+
     const gameData = {
         metal: metal,
         kristal: kristal,
         tranium: tranium,
-        myRefCode: document.getElementById("myRefCodeText").innerText, // Ekrandan alıp kaydediyoruz
+        // myRefCode'u sadece varsa kaydet, yoksa undefined gönder (Firebase merge silmez)
+        ...(currentRefCodeToSave && { myRefCode: currentRefCodeToSave }),
+        // refActionTaken'i skipRefCode'da hata olursa diye buradan da destekle
+        ...(window.tempRefActionTaken && { refActionTaken: true }),
+        
         metalWorkers: metalWorkers,
         kristalWorkers: kristalWorkers,
         metalFacLvl: metalFacLvl,
         kristalFacLvl: kristalFacLvl,
         energy: energy,
-        lastTime: Date.now(), // Son kayıt zamanı
+        lastTime: Date.now(),
         nextEnergyTime: nextEnergyTime,
         energyRegenerationStartTime: energyRegenerationStartTime,
         metalFacUpgradeEndTime: metalFacUpgradeEndTime,
@@ -2271,10 +2282,7 @@ async function saveData() {
     };
 
     try {
-        // "players" koleksiyonuna, kullanıcının ID'si ile kayıt yap
-        // merge: true sayesinde sadece değişen alanları günceller, silmez.
         await setDoc(doc(db, "players", currentUserID), gameData, { merge: true });
-        // console.log("💾 Veri Firebase'e kaydedildi."); 
     } catch (e) {
         console.error("Kayıt hatası:", e);
     }
@@ -2584,9 +2592,43 @@ function copyRefCode() {
 }
 
 // "SKIP" Butonuna Basılınca
-function skipRefCode() {
-    document.getElementById("refInputModal").style.display = "none";
-    // Veritabanına "ref kodu girmeyi reddetti" veya "gördü" diye işaretleyebiliriz ama şimdilik gerek yok.
+async function skipRefCode() {
+    showBlockingLoader();
+    
+    // 1. Kendi kodunu oluştur
+    const newRefCode = generateRefCode();
+    
+    // 2. Veritabanına "seçim yapıldı" ve "kod oluşturuldu" bilgisini işle
+    const db = window.firebaseDB;
+    const { doc, updateDoc } = window.firebaseFunctions;
+    const myRef = doc(db, "players", currentUserID);
+
+    try {
+        await updateDoc(myRef, {
+            refActionTaken: true, // Artık bir daha sorma
+            myRefCode: newRefCode, // Kendi kodunu ver
+            usedRefCode: false     // Başkasının kodunu kullanmadı
+        });
+
+        // 3. UI Güncelle
+        document.getElementById("refInputModal").style.display = "none";
+        const refTextEl = document.getElementById("myRefCodeText");
+        if (refTextEl) refTextEl.innerText = newRefCode;
+        window.currentUserRefCode = newRefCode;
+
+        hideBlockingLoader();
+
+    } catch (e) {
+        console.error("Skip Error:", e);
+        // Yeni kullanıcıysa updateDoc hata verebilir, setDoc ile deneyelim
+        // (Gerçi setupRealtimeListener'da ilk kayıt atılıyor ama garanti olsun)
+        hideBlockingLoader();
+        document.getElementById("refInputModal").style.display = "none";
+        // Bir sonraki saveData döngüsünde kaydedilmesi için globale at
+        window.currentUserRefCode = newRefCode;
+        window.tempRefActionTaken = true; 
+        saveData(true);
+    }
 }
 
 // "ENTER" Butonuna Basılınca (Ref Kodu Kullanma)
@@ -2787,6 +2829,7 @@ async function submitRefCode() {
 </script>
   </body>
 </html>
+
 
 
 
