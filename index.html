@@ -1232,6 +1232,24 @@ Energy regenerates over time (1 per hour) even when you are offline.
       let metalFacUpgradeEndTime = 0;
       let kristalFacUpgradeEndTime = 0;
 
+      // Global değişkenler kısmına ekle
+let currentUserID = "test_user_001"; // Varsayılan test kullanıcısı
+
+async function identifyUser() {
+    try {
+        // Eğer Farcaster içindeysek gerçek ID'yi al
+        if (window.farcasterSDK) {
+            const context = await window.farcasterSDK.context;
+            if (context && context.user && context.user.fid) {
+                currentUserID = "user_" + context.user.fid;
+                console.log("👤 Kullanıcı Tanımlandı:", currentUserID);
+            }
+        }
+    } catch (e) {
+        console.warn("Kullanıcı kimliği alınamadı, test modunda devam ediliyor.");
+    }
+}
+
       const imgBG = new Image();
       imgBG.src =
         "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/bg-H8I42XFyjR45PCLXsG4fQp7B323kKw.webp?37vf";
@@ -1318,32 +1336,62 @@ Energy regenerates over time (1 per hour) even when you are offline.
         }
       }
 
-      if (localStorage.getItem("w_last_time")) {
-        metal = parseFloat(localStorage.getItem("w_metal")) || 0;
-        kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
-        tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
-        metalWorkers = parseInt(localStorage.getItem("w_mw")) || 0;
-        kristalWorkers = parseInt(localStorage.getItem("w_kw")) || 0;
-        metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
-        kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
+      async function loadDataFromFirebase() {
+    console.log("☁️ Firebase'den veri indiriliyor...");
+    
+    // Önce kullanıcı kimliğini netleştir
+    await identifyUser();
 
-        let savedEnergy = localStorage.getItem("w_energy");
-        if (savedEnergy !== null) {
-          energy = parseInt(savedEnergy);
+    if (!window.firebaseDB || !window.firebaseFunctions) {
+        console.error("Firebase bulunamadı!");
+        initHub(); // Veri olmasa da oyunu başlat
+        return;
+    }
+
+    const { doc, getDoc } = window.firebaseFunctions;
+    const db = window.firebaseDB;
+
+    try {
+        const docRef = doc(db, "players", currentUserID);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            
+            // Verileri değişkenlere ata
+            metal = parseFloat(data.metal) || 0;
+            kristal = parseFloat(data.kristal) || 0;
+            tranium = parseInt(data.tranium) || 0;
+            metalWorkers = parseInt(data.metalWorkers) || 0;
+            kristalWorkers = parseInt(data.kristalWorkers) || 0;
+            metalFacLvl = parseInt(data.metalFacLvl) || 1;
+            kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
+            
+            // Enerji verileri
+            energy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
+            
+            lastTime = parseInt(data.lastTime) || Date.now();
+            
+            nextEnergyTime = parseInt(data.nextEnergyTime) || 0;
+            energyRegenerationStartTime = parseInt(data.energyRegenerationStartTime) || 0;
+            
+            metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
+            kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
+
+            console.log("✅ Veriler yüklendi. Çevrimdışı kazanç hesaplanacak.");
+            updateOfflineEnergyRegeneration();
+            
         } else {
-          energy = 10;
+            console.log("🆕 Yeni kullanıcı veya kayıt yok. Sıfırdan başlanıyor.");
+            energy = 10; // Yeni başlayanlara tam enerji
         }
+    } catch (error) {
+        console.error("Veri çekme hatası:", error);
+    }
 
-        lastTime = parseInt(localStorage.getItem("w_last_time")) || Date.now();
-
-        nextEnergyTime = parseInt(localStorage.getItem("w_next_energy_time")) || 0;
-        energyRegenerationStartTime = parseInt(localStorage.getItem("w_energy_reg_start")) || 0;
-
-        metalFacUpgradeEndTime = parseInt(localStorage.getItem("w_mfue")) || 0;
-        kristalFacUpgradeEndTime = parseInt(localStorage.getItem("w_kfue")) || 0;
-
-        updateOfflineEnergyRegeneration();
-      }
+    // Veri yükleme işi bitti, ARTIK oyunu başlatabiliriz
+    initHub();
+}
 
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
@@ -1420,22 +1468,21 @@ Energy regenerates over time (1 per hour) even when you are offline.
       }
 
       function completeLoading() {
-        clearInterval(loadingInterval);
-        const progressBar = document.querySelector(".loading-progress-bar");
-        const percentageText = document.querySelector(".loading-percentage");
-        const loadingText = document.querySelector(".loading-text");
+    clearInterval(loadingInterval);
+    const progressBar = document.querySelector(".loading-progress-bar");
+    const percentageText = document.querySelector(".loading-percentage");
+    const loadingText = document.querySelector(".loading-text");
 
-        progressBar.style.width = "100%";
-        percentageText.textContent = "100%";
-        loadingText.textContent = "Ready to Mine!";
+    progressBar.style.width = "100%";
+    percentageText.textContent = "100%";
+    loadingText.textContent = "Connecting Database..."; // Yazıyı değiştirdik
 
-        setTimeout(() => {
-          document.getElementById("loadingOverlay").style.display = "none";
-          document.getElementById("overlay").style.display = "flex";
-          initHub();
-        }, 1000);
-      }
-
+    setTimeout(() => {
+        document.getElementById("loadingOverlay").style.display = "none";
+        document.getElementById("overlay").style.display = "flex";
+        loadDataFromFirebase();
+    }, 1000);
+}
       function updateOfflineEnergyRegeneration() {
         const now = Date.now();
         if (energy < 10 && energyRegenerationStartTime > 0) {
@@ -2001,21 +2048,39 @@ async function executeTransaction(signer, amountETH, toAddress) {
         setDisabled("swapBtn", Math.min(Math.floor(metal), Math.floor(kristal)) <= 0);
       }
 
-      function saveData() {
-        localStorage.setItem("w_metal", metal);
-        localStorage.setItem("w_kristal", kristal);
-        localStorage.setItem("w_tranium", tranium);
-        localStorage.setItem("w_mw", metalWorkers);
-        localStorage.setItem("w_kw", kristalWorkers);
-        localStorage.setItem("w_mfl", metalFacLvl);
-        localStorage.setItem("w_kfl", kristalFacLvl);
-        localStorage.setItem("w_energy", energy);
-        localStorage.setItem("w_last_time", Date.now());
-        localStorage.setItem("w_next_energy_time", nextEnergyTime);
-        localStorage.setItem("w_energy_reg_start", energyRegenerationStartTime);
-        localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
-        localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
-      }
+     
+async function saveData() {
+    // Veri tabanı hazır mı kontrol et
+    if (!window.firebaseDB || !window.firebaseFunctions) return;
+
+    const { doc, setDoc } = window.firebaseFunctions;
+    const db = window.firebaseDB;
+
+    const gameData = {
+        metal: metal,
+        kristal: kristal,
+        tranium: tranium,
+        metalWorkers: metalWorkers,
+        kristalWorkers: kristalWorkers,
+        metalFacLvl: metalFacLvl,
+        kristalFacLvl: kristalFacLvl,
+        energy: energy,
+        lastTime: Date.now(), // Son kayıt zamanı
+        nextEnergyTime: nextEnergyTime,
+        energyRegenerationStartTime: energyRegenerationStartTime,
+        metalFacUpgradeEndTime: metalFacUpgradeEndTime,
+        kristalFacUpgradeEndTime: kristalFacUpgradeEndTime
+    };
+
+    try {
+        // "players" koleksiyonuna, kullanıcının ID'si ile kayıt yap
+        // merge: true sayesinde sadece değişen alanları günceller, silmez.
+        await setDoc(doc(db, "players", currentUserID), gameData, { merge: true });
+        // console.log("💾 Veri Firebase'e kaydedildi."); 
+    } catch (e) {
+        console.error("Kayıt hatası:", e);
+    }
+}
 
       function spawnWorker() {
         const isM = Math.random() > 0.5;
@@ -2397,6 +2462,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
