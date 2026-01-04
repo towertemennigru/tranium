@@ -1892,9 +1892,9 @@ async function executeTransaction(signer, amountETH, toAddress) {
     
     requestAnimationFrame(gameLoop);
     
-    // 1. Düzenli Kayıt (30 saniyede bir) - Fonksiyon içine parametre göndermek için arrow function kullan
+   // 1. Düzenli Kayıt (30 saniyede bir) - ARTIK SMART SAVE KULLANIYORUZ
     setInterval(() => {
-        if(window.currentUserFID) saveCloudData(window.currentUserFID);
+        smartAutoSave();
     }, 30000);
     
     // 2. [YENİ] Arka Plan Senkronizasyonunu Başlat (5 saniyede bir)
@@ -2103,6 +2103,56 @@ function saveCloudData(fid) {
         }
     })
     .catch(err => console.error("❌ Kayıt Hatası:", err));
+}
+      // --- YENİ EKLENECEK: Akıllı Kayıt Sistemi ---
+async function smartAutoSave() {
+    if (!window.currentUserFID || window.currentUserFID === "local_user") return;
+
+    // 1. Önce Sunucuyu Kontrol Et
+    // (Normal loadCloudData fonksiyonunu kullanıyoruz ama logları kirletmesin diye sessizce)
+    try {
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=load&fid=${window.currentUserFID}`);
+        const cloudData = await response.json();
+
+        // Eğer sunucu hatası veya yeni kullanıcı ise normal kayıt dene
+        if (!cloudData || cloudData.status === "new") {
+            saveCloudData(window.currentUserFID);
+            return;
+        }
+
+        // 2. KRİTİK KARŞILAŞTIRMA
+        // Sunucudaki kayıt zamanı (cloudData.last_save_time), bizim bildiğimiz zamandan (lastTime) 
+        // BÜYÜKSE, demek ki başka bir cihazda işlem yapılmış.
+        if (parseInt(cloudData.last_save_time) > lastTime) {
+            console.log("🛑 KAYIT DURDURULDU: Başka cihazdan işlem yapılmış. Veriler güncelleniyor...");
+            
+            // Kaydetmek yerine, PC'deki veriyi sunucuyla eşitle (Rollback)
+            metal = cloudData.metal;
+            kristal = cloudData.kristal;
+            tranium = cloudData.tranium;
+            metalFacLvl = cloudData.metal_lvl;
+            kristalFacLvl = cloudData.kristal_lvl;
+            energy = cloudData.energy;
+            metalWorkers = cloudData.metal_workers;
+            kristalWorkers = cloudData.kristal_workers;
+            
+            energyRegenerationStartTime = parseInt(cloudData.energy_reg_start);
+            lastTime = parseInt(cloudData.last_save_time);
+            
+            updateOfflineEnergyRegeneration();
+            updateUI();
+            
+            // Fonksiyondan çık, KAYIT YAPMA.
+            return; 
+        }
+
+        // 3. Eğer sunucudaki veri eskiyse veya aynısıysa, GÜVENLE KAYDET
+        // Buraya geldiysek "En güncel veri bende" demektir.
+        saveCloudData(window.currentUserFID);
+
+    } catch (e) {
+        console.error("Smart save check failed:", e);
+    }
 }
       // --- YENİ EKLENECEK FONKSİYON: startCloudSync ---
 function startCloudSync() {
@@ -2521,5 +2571,6 @@ function startCloudSync() {
 </script>
   </body>
 </html>
+
 
 
