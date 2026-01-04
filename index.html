@@ -2163,11 +2163,11 @@ async function executeTransaction(signer, amountETH, toAddress) {
 
         setText(
           "metalWorkers",
-          `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalMultiplier).toFixed(5)}/s)`
+          `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalMultiplier).toFixed(4)}/s)`
         );
         setText(
           "kristalWorkers",
-          `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier).toFixed(5)}/s)`
+          `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier).toFixed(4)}/s)`
         );
         setText("metalFacLevel", `Lvl ${metalFacLvl}`);
         setText("kristalFacLevel", `Lvl ${kristalFacLvl}`);
@@ -2652,6 +2652,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
