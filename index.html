@@ -1134,9 +1134,9 @@ async function loadCloudData(fid) {
 }
 // Buluta Veri Kaydetme (SAVE)
 function saveCloudData(fid) {
-    // Kaydedilecek veri paketi
+    // Veriyi hazırla
     const payload = {
-        fid: String(fid), // String garantiye al
+        fid: String(fid), // Frontend tarafında da String'e zorluyoruz
         metal: Math.floor(metal),
         kristal: Math.floor(kristal),
         tranium: Math.floor(tranium),
@@ -1146,15 +1146,25 @@ function saveCloudData(fid) {
         metal_workers: metalWorkers,
         kristal_workers: kristalWorkers,
         last_save_time: Date.now(),
-        energy_reg_start: energyRegenerationStartTime // YENİ EKLENEN KRİTİK VERİ
+        energy_reg_start: energyRegenerationStartTime
     };
+
+    console.log("☁️ Veri gönderiliyor...", payload);
 
     fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
+        mode: "no-cors", // Bazen CORS hatalarını bypass etmek için gerekir ama yanıtı okuyamazsın.
+                         // Eğer 'no-cors' ile çalışmazsa bu satırı silip tekrar dene.
+        headers: {
+            "Content-Type": "text/plain;charset=utf-8", // Google Script JSON yerine text/plain sever
+        },
         body: JSON.stringify(payload)
-    }).then(res => res.json())
-      .then(response => console.log("☁️ Kayıt Başarılı:", response))
-      .catch(err => console.error("❌ Kayıt Hatası:", err));
+    })
+    .then(response => {
+        // no-cors modunda response.json() çalışmaz, sadece işlemin gittiğini varsayarız.
+        console.log("☁️ Kayıt isteği sunucuya iletildi.");
+    })
+    .catch(err => console.error("❌ Kayıt Hatası:", err));
 }
       function saveData() {
     // Eğer geçerli bir kullanıcı ID'si varsa buluta kaydet
@@ -2504,6 +2514,7 @@ function startCloudSync() {
 </script>
   </body>
 </html>
+
 
 
 
