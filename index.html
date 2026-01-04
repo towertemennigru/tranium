@@ -1182,18 +1182,9 @@ Energy regenerates over time (1 per hour) even when you are offline.
     <canvas id="gameCanvas"></canvas>
 
     <script>
-      // --- GLOBALS & CONFIG ---
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
-      
-      // Daha net görüntü için pixel art ayarı
-      ctx.imageSmoothingEnabled = false;
-
       const WORLD_SIZE = 2500;
-      
-      // SANAL ÇÖZÜNÜRLÜK (ZOOM SORUNU İÇİN KESİN ÇÖZÜM)
-      // Telefon ekranı ne olursa olsun oyun kendini 1280px genişlikte çizecek.
-      const VIRTUAL_WIDTH = 1280; 
 
       let metal = 0,
         kristal = 0,
@@ -1213,13 +1204,13 @@ Energy regenerates over time (1 per hour) even when you are offline.
       let player = {
         x: WORLD_SIZE / 2,
         y: WORLD_SIZE / 2,
-        speed: 7.5, // Hız sabitlendi
+        speed: 7.5,
         targetX: WORLD_SIZE / 2,
         targetY: WORLD_SIZE / 2,
         flipX: false,
         isMoving: false,
       };
-      
+      let lastUpdate = Date.now();
       let workers = [],
         enemies = [];
       let joystickActive = false;
@@ -1241,136 +1232,844 @@ Energy regenerates over time (1 per hour) even when you are offline.
       let metalFacUpgradeEndTime = 0;
       let kristalFacUpgradeEndTime = 0;
 
-      // FPS & Loop Variables
-      let loopLastTime = performance.now();
-      let frameCount = 0;
-      let lastFpsTime = performance.now();
-      const targetFPS = 60;
-      const frameDelay = 1000 / targetFPS;
-
-      // Kullanıcı Kimliği
-      let currentUserID = "test_user_001";
-
-      // --- ASSETS ---
       const imgBG = new Image();
-      imgBG.src = "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/bg-H8I42XFyjR45PCLXsG4fQp7B323kKw.webp?37vf";
+      imgBG.src =
+        "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/bg-H8I42XFyjR45PCLXsG4fQp7B323kKw.webp?37vf";
       const imgDayi = new Image();
-      imgDayi.src = "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/dayi-removebg-preview-9XEJ3aO8Iwnas0qrRC6kST14YUZeab.webp?yQ69";
+      imgDayi.src =
+        "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/dayi-removebg-preview-9XEJ3aO8Iwnas0qrRC6kST14YUZeab.webp?yQ69";
       const imgMiner1 = new Image();
-      imgMiner1.src = "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner1-removebg-preview-49BIGjfxcrYSez39WOvCLyIxeY56q2.webp?pMVT";
+      imgMiner1.src =
+        "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner1-removebg-preview-49BIGjfxcrYSez39WOvCLyIxeY56q2.webp?pMVT";
       const imgMiner2 = new Image();
-      imgMiner2.src = "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner2-removebg-preview-d2bFviiOsn7cXyHcptbNJtKdHoMuvp.webp?1b6n";
+      imgMiner2.src =
+        "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/miner2-removebg-preview-d2bFviiOsn7cXyHcptbNJtKdHoMuvp.webp?1b6n";
       const imgInfected = new Image();
-      imgInfected.src = "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/infect-removebg-preview-5HhmhH4V5DqNbYNXhiFg3o9Z0RkEIj.webp?uN63";
+      imgInfected.src =
+        "https://remix.gg/blob/87995662-1e06-43e7-9408-0e20e9de2c7e/infect-removebg-preview-5HhmhH4V5DqNbYNXhiFg3o9Z0RkEIj.webp?uN63";
+      
+      function openHowToPlay() {
+        document.getElementById("howToPlayScreen").style.display = "flex";
+      }
+      function closeHowToPlay() {
+        document.getElementById("howToPlayScreen").style.display = "none";
+      }
 
-      // --- FPS COUNTER ELEMENT ---
-      const fpsBox = document.createElement("div");
-      fpsBox.id = "pc-fps-counter";
-      fpsBox.style.cssText = "position:fixed; top:60px; left:10px; color:#00ffcc; font-family:monospace; font-size:11px; font-weight:bold; z-index:2147483647; background:rgba(0,0,0,0.6); padding:4px 8px; border:1px solid #00ffcc; border-radius:4px; pointer-events:none; display:none;";
-      fpsBox.innerHTML = "FPS:...";
-      document.body.appendChild(fpsBox);
+      function openUpgradeModal() {
+        document.getElementById("upgradeModal").style.display = "block";
+      }
+      function closeUpgradeModal() {
+        document.getElementById("upgradeModal").style.display = "none";
+      }
 
-      // --- CORE FUNCTIONS ---
-
-      async function identifyUser() {
-        try {
-          if (window.farcasterSDK) {
-            const context = await window.farcasterSDK.context;
-            if (context && context.user && context.user.fid) {
-              currentUserID = "user_" + context.user.fid;
-              console.log("👤 Kullanıcı Tanımlandı:", currentUserID);
-            }
+      function openEndGameConfirmation() {
+        document.getElementById("endGameModal").style.display = "block";
+      }
+      function closeEndGameConfirmation() {
+        document.getElementById("endGameModal").style.display = "none";
+      }
+      function triggerManualEndGame() {
+        closeEndGameConfirmation();
+        if (window.isMiniApp && window.farcasterSDK) {
+          console.log("Game Over! Score: " + Math.floor(tranium));
+          alert("Game Over! Your score: " + Math.floor(tranium) + " TRANIUM");
+          if (window.farcasterSDK.actions && window.farcasterSDK.actions.close) {
+            window.farcasterSDK.actions.close();
           }
-        } catch (e) {
-          console.warn("Kullanıcı kimliği alınamadı, test modunda devam ediliyor.");
+        } else {
+          alert("Game Over Triggered! Score sent: " + Math.floor(tranium));
+          location.reload();
         }
       }
 
-      function resizeCanvas() {
-        // Ekran oranını hesapla
-        const targetRatio = window.innerWidth / window.innerHeight;
+      function openSwapModal() {
+        document.getElementById("swapModal").style.display = "block";
+        document.getElementById("swapAmountInput").value = "";
+      }
+      function closeSwapModal() {
+        document.getElementById("swapModal").style.display = "none";
+      }
+      function setSwapPct(pct) {
+        let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
+        document.getElementById("swapAmountInput").value = Math.floor(maxRefine * pct);
+      }
+      function executeSwap() {
+        let inputVal = document.getElementById("swapAmountInput").value;
         
-        // Sanal yüksekliği orana göre belirle
-        const virtualHeight = VIRTUAL_WIDTH / targetRatio;
-
-        // Canvas'ın iç çözünürlüğünü ayarla (Yüksek Kalite / Zoom Out etkisi)
-        canvas.width = VIRTUAL_WIDTH;
-        canvas.height = virtualHeight;
-
-        // CSS ile ekrana sığdır
-        canvas.style.width = "100vw";
-        canvas.style.height = "100vh";
+        // Boş veya geçersiz giriş kontrolü
+        if (!inputVal || inputVal.trim() === "") {
+             alert("Lütfen geçerli bir miktar girin.");
+             return;
+        }
         
-        // Pikselleşme ayarını koru
-        ctx.imageSmoothingEnabled = false;
+        let amount = parseInt(inputVal);
+        let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
+
+        // NaN kontrolü ve bakiye kontrolü
+        if (!isNaN(amount) && amount > 0 && amount <= maxRefine) {
+          tranium += amount;
+          metal -= amount;
+          kristal -= amount;
+          updateUI();
+          saveData();
+          closeSwapModal();
+        } else {
+          alert("Geçersiz miktar veya yetersiz kaynak!");
+        }
       }
 
-      // Pencere boyutu değişirse canvas'ı güncelle
-      window.addEventListener('resize', resizeCanvas);
+      if (localStorage.getItem("w_last_time")) {
+        metal = parseFloat(localStorage.getItem("w_metal")) || 0;
+        kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
+        tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
+        metalWorkers = parseInt(localStorage.getItem("w_mw")) || 0;
+        kristalWorkers = parseInt(localStorage.getItem("w_kw")) || 0;
+        metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
+        kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
+
+        let savedEnergy = localStorage.getItem("w_energy");
+        if (savedEnergy !== null) {
+          energy = parseInt(savedEnergy);
+        } else {
+          energy = 10;
+        }
+
+        lastTime = parseInt(localStorage.getItem("w_last_time")) || Date.now();
+
+        nextEnergyTime = parseInt(localStorage.getItem("w_next_energy_time")) || 0;
+        energyRegenerationStartTime = parseInt(localStorage.getItem("w_energy_reg_start")) || 0;
+
+        metalFacUpgradeEndTime = parseInt(localStorage.getItem("w_mfue")) || 0;
+        kristalFacUpgradeEndTime = parseInt(localStorage.getItem("w_kfue")) || 0;
+
+        updateOfflineEnergyRegeneration();
+      }
+
+      function startIntro() {
+        const introOverlay = document.getElementById("introOverlay");
+        introOverlay.style.display = "flex";
+        
+        // Show the Enter button after a short delay
+        setTimeout(() => {
+           const btn = document.getElementById("enterBtn");
+           if(btn) btn.style.display = "block";
+        }, 800);
+      }
+
+      // NEW: User Interaction to start the flow
+      function userEnterGame() {
+        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
+        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
+        
+        // 2. Hide Intro
+        const introOverlay = document.getElementById("introOverlay");
+        introOverlay.style.display = "none";
+        
+        // 3. Start Loading
+        startLoading();
+      }
+
+      function startLoading() {
+        const loadingOverlay = document.getElementById("loadingOverlay");
+        const progressBar = document.querySelector(".loading-progress-bar");
+        const percentageText = document.querySelector(".loading-percentage");
+        const loadingText = document.querySelector(".loading-text");
+
+        loadingOverlay.style.display = "flex";
+
+        let progress = 0;
+        const loadingMessages = ["Initializing...", "Connecting to Verse...", "Loading Assets...", "Syncing Energy..."];
+        let messageIndex = 0;
+
+        loadingInterval = setInterval(() => {
+          if (progress < 100) {
+            progress += Math.random() * 10 + 5;
+            if (progress > 100) progress = 100;
+
+            if (progress % 15 < 5 && messageIndex < loadingMessages.length - 1) {
+              messageIndex = Math.min(Math.floor(progress / 15), loadingMessages.length - 1);
+              loadingText.textContent = loadingMessages[messageIndex];
+            }
+
+            progressBar.style.width = progress + "%";
+            percentageText.textContent = Math.floor(progress) + "%";
+          }
+        }, 150);
+        loadAssets();
+      }
+
+      function loadAssets() {
+        totalAssets = 5;
+        const images = [imgBG, imgDayi, imgMiner1, imgMiner2, imgInfected];
+
+        images.forEach((img) => {
+          if (img.complete) {
+            assetLoaded();
+          } else {
+            img.onload = assetLoaded;
+            img.onerror = assetLoaded;
+          }
+        });
+      }
+
+      function assetLoaded() {
+        loadedAssets++;
+        if (loadedAssets >= totalAssets) {
+          setTimeout(completeLoading, 500);
+        }
+      }
+
+      function completeLoading() {
+        clearInterval(loadingInterval);
+        const progressBar = document.querySelector(".loading-progress-bar");
+        const percentageText = document.querySelector(".loading-percentage");
+        const loadingText = document.querySelector(".loading-text");
+
+        progressBar.style.width = "100%";
+        percentageText.textContent = "100%";
+        loadingText.textContent = "Ready to Mine!";
+
+        setTimeout(() => {
+          document.getElementById("loadingOverlay").style.display = "none";
+          document.getElementById("overlay").style.display = "flex";
+          initHub();
+        }, 1000);
+      }
+
+      function updateOfflineEnergyRegeneration() {
+        const now = Date.now();
+        if (energy < 10 && energyRegenerationStartTime > 0) {
+          const timePassed = now - energyRegenerationStartTime;
+          const energyToAdd = Math.floor(timePassed / 3600000);
+
+          if (energyToAdd > 0) {
+            const newEnergy = Math.min(10, energy + energyToAdd);
+            const addedEnergy = newEnergy - energy;
+
+            if (addedEnergy > 0) {
+              energy = newEnergy;
+              energyRegenerationStartTime = now - (timePassed % 3600000);
+              if (energy >= 10) {
+                energyRegenerationStartTime = 0;
+                nextEnergyTime = 0;
+              } else {
+                nextEnergyTime = energyRegenerationStartTime + 3600000;
+              }
+
+              saveData();
+              updateUI();
+            }
+          } else if (nextEnergyTime > 0 && nextEnergyTime <= now) {
+            if (energy < 10) {
+              energy++;
+              updateEnergyTimers();
+              saveData();
+              updateUI();
+            }
+          }
+        } else if (energy < 10 && energyRegenerationStartTime === 0) {
+          updateEnergyTimers();
+        }
+      }
+
+      function updateEnergyTimers() {
+        const now = Date.now();
+        if (energy < 10) {
+          if (energyRegenerationStartTime === 0) {
+            energyRegenerationStartTime = now;
+          }
+
+          const timeSinceStart = now - energyRegenerationStartTime;
+          const energyGained = Math.floor(timeSinceStart / 3600000);
+          const nextEnergyIn = 3600000 - (timeSinceStart % 3600000);
+          nextEnergyTime = now + nextEnergyIn;
+          if (energy >= 10) {
+            energyRegenerationStartTime = 0;
+            nextEnergyTime = 0;
+          }
+        } else {
+          energyRegenerationStartTime = 0;
+          nextEnergyTime = 0;
+        }
+
+        saveData();
+      }
+
+      function updateEnergyCountdown() {
+        const energyStatus = document.getElementById("energyStatus");
+        const energyUI = document.getElementById("energyUI");
+        if (!energyStatus || !energyUI) return;
+
+        const now = Date.now();
+        if (energy >= 10) {
+          energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (FULL)`;
+          energyUI.innerHTML = `⚡: ${energy}/10`;
+          energyRegenerationStartTime = 0;
+          nextEnergyTime = 0;
+          return;
+        }
+
+        if (energyRegenerationStartTime === 0) {
+          updateEnergyTimers();
+        }
+
+        if (nextEnergyTime > 0 && now >= nextEnergyTime) {
+          if (energy < 10) {
+            energy++;
+            updateEnergyTimers();
+            saveData();
+            updateUI();
+          }
+        }
+
+        if (nextEnergyTime > now) {
+          const timeLeft = nextEnergyTime - now;
+          const minutesLeft = Math.floor(timeLeft / 60000);
+          const secondsLeft = Math.floor((timeLeft % 60000) / 1000);
+
+          const formattedMinutes = minutesLeft.toString().padStart(2, "0");
+          const formattedSeconds = secondsLeft.toString().padStart(2, "0");
+
+          const currentEnergyBeingRegenerated = energy + 1;
+          energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (Next ${currentEnergyBeingRegenerated}/10 in ${formattedMinutes}:${formattedSeconds})`;
+          energyUI.innerHTML = `⚡: ${energy}/10`;
+        } else {
+          energyStatus.innerHTML = `⚡ ENERGY: ${energy}/10 (Next energy ready!)`;
+          energyUI.innerHTML = `⚡: ${energy}/10`;
+        }
+      }
+
+      function startEnergyCountdown() {
+        if (energyTimer) {
+          clearInterval(energyTimer);
+        }
+
+        updateOfflineEnergyRegeneration();
+        updateEnergyCountdown();
+        energyTimer = setInterval(updateEnergyCountdown, 1000);
+      }
+
+      function checkUpgradeProgress() {
+        const now = Date.now();
+        if (metalFacUpgradeEndTime > 0 && now >= metalFacUpgradeEndTime) {
+          metalFacLvl++;
+          metalFacUpgradeEndTime = 0;
+          updateUI();
+          saveData();
+        }
+
+        if (kristalFacUpgradeEndTime > 0 && now >= kristalFacUpgradeEndTime) {
+          kristalFacLvl++;
+          kristalFacUpgradeEndTime = 0;
+          updateUI();
+          saveData();
+        }
+      }
+
+      const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
+      const BASE_ETH_COST = 0.0005;
+      const BASE_UPGRADE_TIME = 2 * 60 * 60 * 1000;
+      const BASE_CHAIN_ID = 8453;
+      function getUpgradeCost(level) {
+        return BASE_ETH_COST * Math.pow(2, level - 1);
+      }
+
+      function getUpgradeTime(level) {
+        return BASE_UPGRADE_TIME * Math.pow(2, level - 1);
+      }
+
+      function formatTimeHours(ms) {
+        const hours = Math.floor(ms / 3600000);
+        const minutes = Math.floor((ms % 3600000) / 60000);
+        return `${hours}h ${minutes}m`;
+      }
+
+      // --- BU KISMI SCRIPT'İN EN BAŞINA, DEĞİŞKEN TANIMLARININ ALTINA EKLEYİN ---
+
+// WalletConnect Project ID (Burası ücretsizdir, kendi ID'nizi cloud.reown.com'dan almanız önerilir)
+// Test için bu ID'yi kullanabilirsin ama prodüksiyon için kendi ID'ni al.
+const PROJECT_ID = '2c7a5c244856e6edb4c52e0d4e61fadb'; 
+
+let appKitModal = null;
+let appKitAdapter = null;
+
+
+// Sistemi Başlatan Fonksiyon
+async function initWalletSystem() {
+    // 1. Kütüphane kontrolü (Eğer yüklenmediyse 1 saniye sonra tekrar dener)
+    if (!window.AppKitLib) {
+        console.log("⚠️ AppKit kütüphanesi henüz hazır değil, bekleniyor...");
+        setTimeout(initWalletSystem, 1000);
+        return;
+    }
+
+    // 2. Eğer zaten yüklendiyse tekrar yükleme
+    if (appKitModal) return;
+
+    try {
+        const { createAppKit, EthersAdapter, networks } = window.AppKitLib;
+
+        const metadata = {
+            name: 'Tranium Verse',
+            description: 'Resource Mining Game',
+            url: 'https://tranium-xi.vercel.app', 
+            icons: ['https://tranium-xi.vercel.app/preview.jpg']
+        };
+
+        appKitModal = createAppKit({
+            adapters: [new EthersAdapter()],
+            networks,
+            metadata,
+            projectId: PROJECT_ID,
+            features: {
+                analytics: true 
+            }
+        });
+        console.log("✅ PC Cüzdan Sistemi (AppKit) Hazır");
+    } catch (e) {
+        console.error("AppKit Başlatma Hatası:", e);
+    }
+}
+
+// Sayfa yüklenince başlat
+document.addEventListener('DOMContentLoaded', initWalletSystem);
+// Yedek olarak pencere tam yüklendiğinde de tetikle (PC'deki tepkisizliği önlemek için)
+window.addEventListener('load', initWalletSystem);
+
+
+// --- ÖDEME FONKSİYONU ---
+async function sendETHPayment(amountETH) {
+    console.log("🚀 Ödeme süreci başlatılıyor...");
+    const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
+
+    try {
+        let signer;
+        let provider;
+
+        // SENARYO 1: MOBİL MİNİAPP (Farcaster SDK)
+        if (window.farcasterSDK && window.farcasterSDK.wallet && window.farcasterSDK.wallet.ethProvider) {
+            console.log("📱 Mobil Ortam: Farcaster Provider");
+            const ethProvider = window.farcasterSDK.wallet.ethProvider;
+            provider = new ethers.BrowserProvider(ethProvider);
+            
+            // Hesaplara erişim
+            await provider.send("eth_requestAccounts", []);
+            
+            // Ağ Kontrolü (Base: 8453)
+            const network = await provider.getNetwork();
+            if (Number(network.chainId) !== 8453) {
+                 try {
+                    await ethProvider.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x2105' }], 
+                    });
+                } catch (e) {
+                    alert("Lütfen cüzdan ağınızı Base Network yapın.");
+                    return false;
+                }
+            }
+            signer = await provider.getSigner();
+        } 
+        
+        // SENARYO 2: PC / TARAYICI (QR Kod)
+        else {
+            console.log("💻 PC Ortamı: AppKit");
+            
+            // Kütüphane yüklenmemişse uyar
+            if (!window.AppKitLib) {
+                alert("Sistem hazırlanıyor, lütfen 3 saniye sonra tekrar deneyin.");
+                initWalletSystem(); // Zorla başlatmayı dene
+                return false;
+            }
+
+            if (!appKitModal) {
+                await initWalletSystem();
+                if(!appKitModal) {
+                    alert("Bağlantı modülü yüklenemedi. Sayfayı yenileyip tekrar deneyin.");
+                    return false;
+                }
+            }
+
+            if (!appKitModal.getIsConnected()) {
+                await appKitModal.open();
+                // Kullanıcı bağlandığında işlemi yakalamak için loop
+                return new Promise((resolve) => {
+                    const checkInterval = setInterval(async () => {
+                        if (appKitModal.getIsConnected()) {
+                            clearInterval(checkInterval);
+                            setTimeout(async () => {
+                                resolve(await proceedWithPayment(amountETH));
+                            }, 1000); // Bağlantı otursun diye 1sn bekle
+                        }
+                    }, 1000);
+                });
+            }
+            
+            const walletProvider = appKitModal.getProvider();
+            if (!walletProvider) {
+                alert("Cüzdan sağlayıcısı bulunamadı. Lütfen tekrar bağlayın.");
+                return false;
+            }
+            provider = new ethers.BrowserProvider(walletProvider);
+            signer = await provider.getSigner();
+        }
+
+        // --- ORTAK İŞLEM GÖNDERME ---
+        return await executeTransaction(signer, amountETH, PAYMENT_ADDRESS);
+
+    } catch (error) {
+        console.error("Ödeme Başlatma Hatası:", error);
+        alert("Hata: " + (error.message || "Bilinmeyen hata"));
+        return false;
+    }
+}
+
+// Yardımcı Fonksiyon: Recursive çağrı için
+async function proceedWithPayment(amountETH) {
+    return await sendETHPayment(amountETH);
+}
+
+// ASIL İŞLEM FONKSİYONU (DÜZELTİLDİ)
+async function executeTransaction(signer, amountETH, toAddress) {
+    try {
+        const amountWei = ethers.parseEther(amountETH.toString());
+        console.log("💸 İşlem gönderiliyor... Miktar:", amountETH);
+
+        // --- MOBİL HATASI İÇİN KRİTİK DÜZELTME ---
+        // gasLimit: 21000 ekleyerek 'estimateGas' hatasını bypass ediyoruz.
+        // Standart ETH transferi her zaman 21000 gas yer.
+        const tx = await signer.sendTransaction({
+            to: toAddress,
+            value: amountWei,
+            gasLimit: 21000 // <--- BU SATIR "estimateGas" HATASINI ÇÖZER
+        });
+
+        console.log("✅ TX Hash:", tx.hash);
+        alert("İşlem Başarılı! Onay bekleniyor...");
+        return true;
+
+    } catch (error) {
+        console.error("TX Hatası:", error);
+        
+        // Hatayı analiz et ve kullanıcıya düzgün mesaj ver
+        let msg = error.message || "";
+        
+        if (msg.includes("insufficient funds") || error.code === "INSUFFICIENT_FUNDS") {
+            alert("YETERSİZ BAKİYE: Cüzdanınızda işlem ücreti (Gas) ve ödeme için yeterli ETH yok.");
+        } else if (msg.includes("rejected") || error.code === 4001) {
+            alert("İşlemi reddettiniz.");
+        } else if (msg.includes("estimateGas") || msg.includes("missing revert data")) {
+            // Gas limit eklememize rağmen bu hatayı alıyorsa, kesinlikle bakiye yetersizdir.
+            alert("İŞLEM BAŞARISIZ: Lütfen Base ağında ETH bakiyenizi kontrol edin.");
+        } else {
+            alert("Ödeme Hatası: " + msg.slice(0, 50) + "...");
+        }
+        return false;
+    }
+}
+      async function upgradeFactory(type) {
+        let currentLevel;
+        let btnId; 
+
+        if (type === "metal") {
+          if (metalFacUpgradeEndTime > Date.now()) {
+            alert("Şu an zaten geliştirme yapılıyor!");
+            return;
+          }
+          currentLevel = metalFacLvl;
+          btnId = "upMetalFac";
+        } else if (type === "kristal") {
+          if (kristalFacUpgradeEndTime > Date.now()) {
+            alert("Şu an zaten geliştirme yapılıyor!");
+            return;
+          }
+          currentLevel = kristalFacLvl;
+          btnId = "upKristalFac";
+        }
+
+        const ethCost = getUpgradeCost(currentLevel);
+        const upgradeTime = getUpgradeTime(currentLevel);
+        
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "⚡ CÜZDAN..."; 
+        btn.disabled = true; 
+
+        // Ödemeyi başlat
+        const paymentSuccess = await sendETHPayment(ethCost);
+        
+        if (!paymentSuccess) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
+        if (type === "metal") {
+          metalFacUpgradeEndTime = Date.now() + upgradeTime;
+        } else if (type === "kristal") {
+          kristalFacUpgradeEndTime = Date.now() + upgradeTime;
+        }
+
+        alert("✅ İşlem Gönderildi! İnşaat başlıyor.");
+        updateUI();
+        saveData();
+      }
+      function formatTime(ms) {
+        if (ms <= 0) return "00:00";
+        const minutes = Math.floor(ms / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
+        return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+      }
 
       window.initHub = function() {
-        // 1. Önce Canvas Boyutlarını Ayarla
-        resizeCanvas();
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        canvas.style.imageRendering = "pixelated";
 
-        // 2. Diğer Başlatıcılar
         const now = Date.now();
         const secondsPassed = Math.floor((now - lastTime) / 1000);
         processMining(secondsPassed);
         checkUpgradeProgress();
         updateUI();
         startEnergyCountdown();
-
-        // 3. Spawn İşlemleri (Temizleyip yeniden oluşturuyoruz ki çakışma olmasın)
-        workers = [];
-        enemies = [];
         for (let i = 0; i < 40; i++) spawnWorker();
         for (let i = 0; i < 15; i++) spawnEnemy();
-
-        // 4. Joystick ve FPS
-        initJoystick();
-        fpsBox.style.display = "block";
-
-        // 5. Veri kaydını başlat
+        requestAnimationFrame(gameLoop);
         setInterval(saveData, 3000);
-        setInterval(checkUpgradeProgress, 1000);
 
-        // 6. OYUN DÖNGÜSÜNÜ BAŞLAT (Tek ve Güvenli Loop)
-        console.log("✅ Game Initialized at Virtual Resolution: " + VIRTUAL_WIDTH + "px width");
-        secureGameLoop();
+        setInterval(checkUpgradeProgress, 1000);
+        initJoystick();
       }
 
-      function secureGameLoop() {
-        requestAnimationFrame(secureGameLoop);
+      function initJoystick() {
+        const joystickContainer = document.getElementById("joystickContainer");
+        const rect = joystickContainer.getBoundingClientRect();
+        joystickCenterX = rect.left + rect.width / 2;
+        joystickCenterY = rect.top + rect.height / 2;
+        joystickHandleX = joystickCenterX;
+        joystickHandleY = joystickCenterY;
 
-        const now = performance.now();
-        const elapsed = now - loopLastTime;
+        joystickContainer.addEventListener("touchstart", handleJoystickStart, { passive: false });
+        joystickContainer.addEventListener("touchmove", handleJoystickMove, { passive: false });
+        joystickContainer.addEventListener("touchend", handleJoystickEnd, { passive: false });
 
-        // FPS Limitleme (60 FPS)
-        if (elapsed < frameDelay) return;
-        loopLastTime = now - (elapsed % frameDelay);
+        joystickContainer.addEventListener("mousedown", handleJoystickStart);
+        document.addEventListener("mousemove", handleJoystickMove);
+        document.addEventListener("mouseup", handleJoystickEnd);
+      }
 
-        // Hız Koruması
-        if (player.speed !== 7.5) player.speed = 7.5; // Orijinal hıza geri çektim
+      function handleJoystickStart(e) {
+        e.preventDefault();
+        joystickActive = true;
+        const joystickContainer = document.getElementById("joystickContainer");
+        const rect = joystickContainer.getBoundingClientRect();
+        joystickCenterX = rect.left + rect.width / 2;
+        joystickCenterY = rect.top + rect.height / 2;
 
-        // FPS Sayacı
-        frameCount++;
-        if (now - lastFpsTime >= 1000) {
-          fpsBox.innerHTML = "FPS: " + frameCount;
-          frameCount = 0;
-          lastFpsTime = now;
+        updateJoystickPosition(e);
+      }
+
+      function handleJoystickMove(e) {
+        if (!joystickActive) return;
+        e.preventDefault();
+        updateJoystickPosition(e);
+      }
+
+      function handleJoystickEnd(e) {
+        if (!joystickActive) return;
+        e.preventDefault();
+        joystickActive = false;
+
+        joystickHandleX = joystickCenterX;
+        joystickHandleY = joystickCenterY;
+        joystickDirection = { x: 0, y: 0 };
+
+        updateJoystickVisual();
+        player.isMoving = false;
+      }
+
+      function updateJoystickPosition(e) {
+        let clientX, clientY;
+        if (e.type.includes("touch")) {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
         }
 
-        // Oyun Mantığı
-        let dt = 0.016; // Sabit delta time
-        update(dt);
-        draw();
+        const dx = clientX - joystickCenterX;
+        const dy = clientY - joystickCenterY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        const limitedDistance = Math.min(distance, JOYSTICK_RADIUS);
+        const angle = Math.atan2(dy, dx);
+        joystickHandleX = joystickCenterX + Math.cos(angle) * limitedDistance;
+        joystickHandleY = joystickCenterY + Math.sin(angle) * limitedDistance;
+
+        joystickDirection.x = limitedDistance > 0 ? dx / distance : 0;
+        joystickDirection.y = limitedDistance > 0 ? dy / distance : 0;
+
+        updateJoystickVisual();
+        player.isMoving = true;
+      }
+
+      function updateJoystickVisual() {
+        const joystickHandle = document.getElementById("joystickHandle");
+        if (joystickHandle) {
+          const joystickContainer = document.getElementById("joystickContainer");
+          const rect = joystickContainer.getBoundingClientRect();
+          const x = joystickHandleX - rect.left - JOYSTICK_HANDLE_RADIUS;
+          const y = joystickHandleY - rect.top - JOYSTICK_HANDLE_RADIUS;
+
+          joystickHandle.style.transform = `translate(${x}px, ${y}px)`;
+          if (joystickActive) {
+            joystickHandle.style.background = "rgba(255, 204, 0, 1)";
+            joystickHandle.style.boxShadow = "0 0 20px rgba(255, 204, 0, 0.8)";
+          } else {
+            joystickHandle.style.background = "rgba(255, 204, 0, 0.9)";
+            joystickHandle.style.boxShadow = "0 0 15px rgba(255, 204, 0, 0.5)";
+          }
+        }
+      }
+
+      function updateUI() {
+        const setText = (id, text) => {
+          const el = document.getElementById(id);
+          if (el) el.innerText = text;
+        };
+        const setDisabled = (id, value) => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = value;
+        };
+        const setHTML = (id, html) => {
+          const el = document.getElementById(id);
+          if (el) el.innerHTML = html;
+        };
+
+        setText("traniumCount", tranium);
+        setText("metalCount", Math.floor(metal));
+        setText("kristalCount", Math.floor(kristal));
+        setText(
+          "metalWorkers",
+          `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalFacLvl).toFixed(3)}/s)`,
+        );
+        setText(
+          "kristalWorkers",
+          `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl).toFixed(3)}/s)`,
+        );
+        setText("metalFacLevel", `Lvl ${metalFacLvl}`);
+        setText("kristalFacLevel", `Lvl ${kristalFacLvl}`);
+        
+        const metalEthCost = getUpgradeCost(metalFacLvl);
+        const kristalEthCost = getUpgradeCost(kristalFacLvl);
+        const metalBuildTime = getUpgradeTime(metalFacLvl);
+        const kristalBuildTime = getUpgradeTime(kristalFacLvl);
+        
+        setText("costMetalFac", `Ξ${metalEthCost} ETH`);
+        setText("costKristalFac", `Ξ${kristalEthCost} ETH`);
+        setText("metalBuildTime", `⏱️ ${formatTimeHours(metalBuildTime)}`);
+        setText("kristalBuildTime", `⏱️ ${formatTimeHours(kristalBuildTime)}`);
+        setText("resUI", `⚙️: ${Math.floor(metal)} | 💎: ${Math.floor(kristal)}`);
+        setText("healthUI", "❤️: " + health);
+
+        updateEnergyCountdown();
+
+        const upMetalFacBtn = document.getElementById("upMetalFac");
+        const now = Date.now();
+        if (metalFacUpgradeEndTime > now) {
+          const remainingTime = metalFacUpgradeEndTime - now;
+          upMetalFacBtn.innerHTML = `⏳ UPGRADING... ${formatTime(remainingTime)}`;
+          upMetalFacBtn.disabled = true;
+        } else {
+          upMetalFacBtn.innerHTML = `UPGRADE <span id="costMetalFac">Ξ${metalEthCost} ETH</span>`;
+          upMetalFacBtn.disabled = false;
+        }
+
+        const upKristalFacBtn = document.getElementById("upKristalFac");
+        if (kristalFacUpgradeEndTime > now) {
+          const remainingTime = kristalFacUpgradeEndTime - now;
+          upKristalFacBtn.innerHTML = `⏳ UPGRADING... ${formatTime(remainingTime)}`;
+          upKristalFacBtn.disabled = true;
+        } else {
+          upKristalFacBtn.innerHTML = `UPGRADE <span id="costKristalFac">Ξ${kristalEthCost} ETH</span>`;
+          upKristalFacBtn.disabled = false;
+        }
+
+        setDisabled("swapBtn", Math.min(Math.floor(metal), Math.floor(kristal)) <= 0);
+      }
+
+      function saveData() {
+        localStorage.setItem("w_metal", metal);
+        localStorage.setItem("w_kristal", kristal);
+        localStorage.setItem("w_tranium", tranium);
+        localStorage.setItem("w_mw", metalWorkers);
+        localStorage.setItem("w_kw", kristalWorkers);
+        localStorage.setItem("w_mfl", metalFacLvl);
+        localStorage.setItem("w_kfl", kristalFacLvl);
+        localStorage.setItem("w_energy", energy);
+        localStorage.setItem("w_last_time", Date.now());
+        localStorage.setItem("w_next_energy_time", nextEnergyTime);
+        localStorage.setItem("w_energy_reg_start", energyRegenerationStartTime);
+        localStorage.setItem("w_mfue", metalFacUpgradeEndTime);
+        localStorage.setItem("w_kfue", kristalFacUpgradeEndTime);
+      }
+
+      function spawnWorker() {
+        const isM = Math.random() > 0.5;
+        workers.push({
+          x: 100 + Math.random() * (WORLD_SIZE - 200),
+          y: 100 + Math.random() * (WORLD_SIZE - 200),
+          img: isM ? imgMiner1 : imgMiner2,
+          type: isM ? "metal" : "kristal",
+        });
+      }
+
+      function spawnEnemy() {
+        enemies.push({
+          x: Math.random() * WORLD_SIZE,
+          y: Math.random() * WORLD_SIZE,
+          isChasing: false,
+          spawnTime: Date.now(),
+          currentSpeed: 3.8,
+        });
+      }
+
+      function attemptStart() {
+        if (energy > 0) {
+          energy--;
+          health = 3;
+
+          updateEnergyTimers();
+
+          saveData();
+          updateUI();
+          document.getElementById("overlay").style.display = "none";
+          document.getElementById("ui").style.display = "flex";
+          document.getElementById("ui").style.opacity = "1";
+          document.getElementById("joystickContainer").style.display = "block";
+          isStarted = true;
+        } else {
+          alert("Not enough energy! Wait for energy to regenerate.");
+        }
+      }
+
+      function processMining(dtSec) {
+        const metalGain = dtSec * (metalWorkers * BASE_WORKER_SPEED * metalFacLvl);
+        const kristalGain = dtSec * (kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl);
+
+        metal += metalGain;
+        kristal += kristalGain;
+
+        if (!isStarted) updateUI();
       }
 
       window.update = function(dt) {
         processMining(dt);
+        checkUpgradeProgress();
         if (!isStarted) return;
-
-        // --- JOYSTICK LOGIC ---
         if (joystickActive) {
           const moveSpeed = player.speed;
           player.x += joystickDirection.x * moveSpeed;
@@ -1379,7 +2078,6 @@ Energy regenerates over time (1 per hour) even when you are offline.
           player.isMoving = true;
           walkCycle += 0.35;
         } else {
-          // --- CLICK/TOUCH TO MOVE LOGIC ---
           if (isTouching) {
             let dx = player.targetX - player.x,
               dy = player.targetY - player.y,
@@ -1391,20 +2089,13 @@ Energy regenerates over time (1 per hour) even when you are offline.
               player.isMoving = true;
               walkCycle += 0.35;
             } else player.isMoving = false;
-          } else {
-             player.isMoving = false;
           }
         }
 
-        // Sınırlar
         player.x = Math.max(50, Math.min(WORLD_SIZE - 50, player.x));
         player.y = Math.max(50, Math.min(WORLD_SIZE - 50, player.y));
-
-        // Kamera Takibi
         camera.x = Math.max(0, Math.min(WORLD_SIZE - canvas.width, player.x - canvas.width / 2));
         camera.y = Math.max(0, Math.min(WORLD_SIZE - canvas.height, player.y - canvas.height / 2));
-
-        // Worker Toplama
         workers.forEach((w, i) => {
           if (Math.hypot(player.x - w.x, player.y - w.y) < 70) {
             if (w.type === "metal") metalWorkers++;
@@ -1415,12 +2106,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
           }
         });
 
-        // Düşman Mantığı
         const now = Date.now();
         enemies.forEach((en, i) => {
-          // Hız Limiti Kontrolü
-          if (en.currentSpeed > 6.6) en.currentSpeed = 6.6;
-
           if (en.isChasing && now - en.chaseStartTime > 5000) {
             enemies.splice(i, 1);
             spawnEnemy();
@@ -1454,11 +2141,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.translate(-camera.x, -camera.y);
-        
-        // Arkaplan
         if (imgBG.complete) ctx.drawImage(imgBG, 0, 0, WORLD_SIZE, WORLD_SIZE);
-        
-        // İşçiler
         workers.forEach((w) => {
           ctx.save();
           ctx.shadowBlur = 10;
@@ -1466,8 +2149,6 @@ Energy regenerates over time (1 per hour) even when you are offline.
           ctx.drawImage(w.img, w.x - 40, w.y - 40, 80, 80);
           ctx.restore();
         });
-        
-        // Düşmanlar
         enemies.forEach((en) => {
           ctx.save();
           ctx.shadowBlur = 20;
@@ -1483,188 +2164,92 @@ Energy regenerates over time (1 per hour) even when you are offline.
           ctx.drawImage(imgInfected, en.x - 40, en.y - 50, 80, 100);
           ctx.restore();
         });
-        
-        // Oyuncu
         ctx.save();
         let bounce = player.isMoving ? Math.abs(Math.sin(walkCycle)) * 14 : 0;
         ctx.translate(player.x, player.y - bounce);
         if (player.flipX) ctx.scale(-1, 1);
         ctx.drawImage(imgDayi, -50, -60, 100, 120);
         ctx.restore();
-        
         ctx.restore();
       }
 
-      // --- INPUT HANDLING (JOYSTICK & TOUCH) ---
-      
+      function gameLoop() {
+        let now = Date.now();
+        let dt = (now - lastUpdate) / 1000;
+        lastUpdate = now;
+        update(dt);
+        draw();
+        requestAnimationFrame(gameLoop);
+      }
+
       const setTarget = (e) => {
         if (joystickActive) return;
         const rect = canvas.getBoundingClientRect();
-        
-        // Canvas içindeki sanal koordinatları hesapla
-        // (Ekran koordinatını -> Sanal çözünürlüğe çeviriyoruz)
+        const cx = e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+        const cy = e.touches ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
-
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        const cx = clientX - rect.left;
-        const cy = clientY - rect.top;
 
         player.targetX = cx * scaleX + camera.x;
         player.targetY = cy * scaleY + camera.y;
         player.isMoving = true;
       };
 
-      // Mouse Events
       window.addEventListener("mousedown", (e) => {
-        const joyRect = document.getElementById("joystickContainer").getBoundingClientRect();
-        // Joystick alanına tıklanmadıysa hareket et
-        if (!(e.clientX >= joyRect.left && e.clientX <= joyRect.right && 
-              e.clientY >= joyRect.top && e.clientY <= joyRect.bottom)) {
-           isTouching = true;
-           setTarget(e);
+        const joystickRect = document.getElementById("joystickContainer").getBoundingClientRect();
+        if (
+          e.clientX >= joystickRect.left &&
+          e.clientX <= joystickRect.right &&
+          e.clientY >= joystickRect.top &&
+          e.clientY <= joystickRect.bottom
+        ) {
+          return;
         }
+
+        isTouching = true;
+        setTarget(e);
       });
-      
       window.addEventListener("mousemove", (e) => {
         if (isTouching && !joystickActive) setTarget(e);
       });
-      
       window.addEventListener("mouseup", () => {
         isTouching = false;
         if (!joystickActive) player.isMoving = false;
       });
+      window.addEventListener(
+        "touchstart",
+        (e) => {
+          const joystickRect = document.getElementById("joystickContainer").getBoundingClientRect();
+          const touchX = e.touches[0].clientX;
+          const touchY = e.touches[0].clientY;
 
-      // Touch Events
-      window.addEventListener("touchstart", (e) => {
-        const joyRect = document.getElementById("joystickContainer").getBoundingClientRect();
-        const t = e.touches[0];
-        // Joystick alanına dokunulmadıysa
-        if (!(t.clientX >= joyRect.left && t.clientX <= joyRect.right && 
-              t.clientY >= joyRect.top && t.clientY <= joyRect.bottom)) {
-           isTouching = true;
-           setTarget(e);
-        }
-      }, { passive: false });
+          if (
+            touchX >= joystickRect.left &&
+            touchX <= joystickRect.right &&
+            touchY >= joystickRect.top &&
+            touchY <= joystickRect.bottom
+          ) {
+            return;
+          }
 
-      window.addEventListener("touchmove", (e) => {
-        if (isTouching && !joystickActive) {
-           e.preventDefault();
-           setTarget(e);
-        }
-      }, { passive: false });
-
+          isTouching = true;
+          setTarget(e);
+        },
+        { passive: false },
+      );
+      window.addEventListener(
+        "touchmove",
+        (e) => {
+          e.preventDefault();
+          if (isTouching && !joystickActive) setTarget(e);
+        },
+        { passive: false },
+      );
       window.addEventListener("touchend", () => {
         isTouching = false;
         if (!joystickActive) player.isMoving = false;
       });
-
-      // --- UI & GAME LOGIC HELPERS ---
-
-      function openHowToPlay() { document.getElementById("howToPlayScreen").style.display = "flex"; }
-      function closeHowToPlay() { document.getElementById("howToPlayScreen").style.display = "none"; }
-      function openUpgradeModal() { document.getElementById("upgradeModal").style.display = "block"; }
-      function closeUpgradeModal() { document.getElementById("upgradeModal").style.display = "none"; }
-      function openEndGameConfirmation() { document.getElementById("endGameModal").style.display = "block"; }
-      function closeEndGameConfirmation() { document.getElementById("endGameModal").style.display = "none"; }
-      
-      function triggerManualEndGame() {
-        closeEndGameConfirmation();
-        if (window.isMiniApp && window.farcasterSDK) {
-          alert("Game Over! Your score: " + Math.floor(tranium));
-          if (window.farcasterSDK.actions && window.farcasterSDK.actions.close) {
-            window.farcasterSDK.actions.close();
-          }
-        } else {
-          alert("Game Over! Score sent: " + Math.floor(tranium));
-          location.reload();
-        }
-      }
-
-      function openSwapModal() {
-        document.getElementById("swapModal").style.display = "block";
-        document.getElementById("swapAmountInput").value = "";
-      }
-      function closeSwapModal() { document.getElementById("swapModal").style.display = "none"; }
-      
-      function setSwapPct(pct) {
-        let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
-        document.getElementById("swapAmountInput").value = Math.floor(maxRefine * pct);
-      }
-      
-      function executeSwap() {
-        let inputVal = document.getElementById("swapAmountInput").value;
-        if (!inputVal || inputVal.trim() === "") return;
-        let amount = parseInt(inputVal);
-        let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
-        if (!isNaN(amount) && amount > 0 && amount <= maxRefine) {
-          tranium += amount;
-          metal -= amount;
-          kristal -= amount;
-          updateUI();
-          saveData();
-          closeSwapModal();
-        } else {
-          alert("Invalid amount!");
-        }
-      }
-
-      // --- SPAWN LOGIC ---
-      function spawnWorker() {
-        const isM = Math.random() > 0.5;
-        workers.push({
-          x: 100 + Math.random() * (WORLD_SIZE - 200),
-          y: 100 + Math.random() * (WORLD_SIZE - 200),
-          img: isM ? imgMiner1 : imgMiner2,
-          type: isM ? "metal" : "kristal",
-        });
-      }
-
-      function spawnEnemy() {
-        enemies.push({
-          x: Math.random() * WORLD_SIZE,
-          y: Math.random() * WORLD_SIZE,
-          isChasing: false,
-          spawnTime: Date.now(),
-          currentSpeed: 3.8,
-        });
-      }
-
-      // --- START GAME ---
-      function attemptStart() {
-        if (energy > 0) {
-          energy--;
-          health = 3;
-          updateEnergyTimers();
-          saveData();
-          updateUI();
-          document.getElementById("overlay").style.display = "none";
-          document.getElementById("ui").style.display = "flex";
-          document.getElementById("ui").style.opacity = "1";
-          
-          // Mobilde joystick aç
-          if (!("ontouchstart" in window) && navigator.maxTouchPoints === 0) {
-             document.getElementById("joystickContainer").style.display = "none";
-          } else {
-             document.getElementById("joystickContainer").style.display = "block";
-          }
-          
-          isStarted = true;
-        } else {
-          alert("Not enough energy!");
-        }
-      }
-
-      function processMining(dtSec) {
-        const metalGain = dtSec * (metalWorkers * BASE_WORKER_SPEED * metalFacLvl);
-        const kristalGain = dtSec * (kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl);
-        metal += metalGain;
-        kristal += kristalGain;
-        if (!isStarted) updateUI();
-      }
-
       function endGame() {
         document.getElementById("overlay").style.display = "flex";
         document.getElementById("ui").style.display = "none";
@@ -1673,361 +2258,145 @@ Energy regenerates over time (1 per hour) even when you are offline.
           clearInterval(energyTimer);
           energyTimer = null;
         }
+
         startEnergyCountdown();
-      }
-
-      // --- JOYSTICK INIT ---
-      function initJoystick() {
-        const joystickContainer = document.getElementById("joystickContainer");
-        // Koordinatları al
-        const rect = joystickContainer.getBoundingClientRect();
-        joystickCenterX = rect.left + rect.width / 2;
-        joystickCenterY = rect.top + rect.height / 2;
-        joystickHandleX = joystickCenterX;
-        joystickHandleY = joystickCenterY;
-
-        joystickContainer.addEventListener("touchstart", handleJoystickStart, { passive: false });
-        joystickContainer.addEventListener("touchmove", handleJoystickMove, { passive: false });
-        joystickContainer.addEventListener("touchend", handleJoystickEnd, { passive: false });
         
-        joystickContainer.addEventListener("mousedown", handleJoystickStart);
+        console.log("Game Over! Score: " + Math.floor(tranium));
       }
 
-      function handleJoystickStart(e) {
-        e.preventDefault();
-        joystickActive = true;
-        const joystickContainer = document.getElementById("joystickContainer");
-        const rect = joystickContainer.getBoundingClientRect();
-        joystickCenterX = rect.left + rect.width / 2;
-        joystickCenterY = rect.top + rect.height / 2;
-        updateJoystickPosition(e);
-      }
-
-      function handleJoystickMove(e) {
-        if (!joystickActive) return;
-        e.preventDefault();
-        updateJoystickPosition(e);
-      }
-
-      function handleJoystickEnd(e) {
-        if (!joystickActive) return;
-        e.preventDefault();
-        joystickActive = false;
-        joystickHandleX = joystickCenterX;
-        joystickHandleY = joystickCenterY;
-        joystickDirection = { x: 0, y: 0 };
-        updateJoystickVisual();
-        player.isMoving = false;
-      }
-
-      function updateJoystickPosition(e) {
-        let clientX, clientY;
-        if (e.type.includes("touch")) {
-          clientX = e.touches[0].clientX;
-          clientY = e.touches[0].clientY;
-        } else {
-          clientX = e.clientX;
-          clientY = e.clientY;
-        }
-        const dx = clientX - joystickCenterX;
-        const dy = clientY - joystickCenterY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const limitedDistance = Math.min(distance, JOYSTICK_RADIUS);
-        const angle = Math.atan2(dy, dx);
-        
-        joystickHandleX = joystickCenterX + Math.cos(angle) * limitedDistance;
-        joystickHandleY = joystickCenterY + Math.sin(angle) * limitedDistance;
-        
-        joystickDirection.x = limitedDistance > 0 ? dx / distance : 0;
-        joystickDirection.y = limitedDistance > 0 ? dy / distance : 0;
-        
-        updateJoystickVisual();
-        player.isMoving = true;
-      }
-
-      function updateJoystickVisual() {
-        const joystickHandle = document.getElementById("joystickHandle");
-        if (joystickHandle) {
-          const joystickContainer = document.getElementById("joystickContainer");
-          const rect = joystickContainer.getBoundingClientRect();
-          const x = joystickHandleX - rect.left - JOYSTICK_HANDLE_RADIUS;
-          const y = joystickHandleY - rect.top - JOYSTICK_HANDLE_RADIUS;
-          joystickHandle.style.transform = `translate(${x}px, ${y}px)`;
-        }
-      }
-
-      // --- FIREBASE DATA HANDLING ---
-      
-      async function loadDataFromFirebase() {
-        console.log("☁️ RTDB Data Loading...");
-        await identifyUser();
-
-        if (!window.firebaseDB || !window.firebaseFunctions) {
-          console.error("Firebase not found, starting local.");
-          initHub();
-          return;
-        }
-
-        const { ref, get, child } = window.firebaseFunctions;
-        const dbRef = ref(window.firebaseDB);
-
-        try {
-          const snapshot = await get(child(dbRef, `players/${currentUserID}`));
-          if (snapshot.exists()) {
-            const data = snapshot.val();
-            metal = parseFloat(data.metal) || 0;
-            kristal = parseFloat(data.kristal) || 0;
-            tranium = parseInt(data.tranium) || 0;
-            metalWorkers = parseInt(data.metalWorkers) || 0;
-            kristalWorkers = parseInt(data.kristalWorkers) || 0;
-            metalFacLvl = parseInt(data.metalFacLvl) || 1;
-            kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
-            energy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
-            lastTime = parseInt(data.lastTime) || Date.now();
-            nextEnergyTime = parseInt(data.nextEnergyTime) || 0;
-            energyRegenerationStartTime = parseInt(data.energyRegenerationStartTime) || 0;
-            metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
-            kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
-            updateOfflineEnergyRegeneration();
-          } else {
-            energy = 10;
-          }
-        } catch (error) {
-          console.error("Data load error:", error);
-        }
-        initHub();
-      }
-
-      async function saveData() {
-        if (!window.firebaseDB || !window.firebaseFunctions) return;
-        const { ref, update } = window.firebaseFunctions;
-        const db = window.firebaseDB;
-        const gameData = {
-          metal: metal,
-          kristal: kristal,
-          tranium: tranium,
-          metalWorkers: metalWorkers,
-          kristalWorkers: kristalWorkers,
-          metalFacLvl: metalFacLvl,
-          kristalFacLvl: kristalFacLvl,
-          energy: energy,
-          lastTime: Date.now(),
-          nextEnergyTime: nextEnergyTime,
-          energyRegenerationStartTime: energyRegenerationStartTime,
-          metalFacUpgradeEndTime: metalFacUpgradeEndTime,
-          kristalFacUpgradeEndTime: kristalFacUpgradeEndTime
-        };
-        try {
-          const userRef = ref(db, 'players/' + currentUserID);
-          await update(userRef, gameData);
-        } catch (e) {
-          console.error("Save error:", e);
-        }
-      }
-
-      // --- ASSET LOADING ---
-      function loadAssets() {
-        totalAssets = 5;
-        loadedAssets = 0;
-        const images = [imgBG, imgDayi, imgMiner1, imgMiner2, imgInfected];
-        images.forEach((img) => {
-          if (img.complete) assetLoaded();
-          else {
-            img.onload = assetLoaded;
-            img.onerror = assetLoaded;
-          }
-        });
-      }
-
-      function assetLoaded() {
-        loadedAssets++;
-        if (loadedAssets >= totalAssets) setTimeout(completeLoading, 500);
-      }
-
-      function startLoading() {
-        const loadingOverlay = document.getElementById("loadingOverlay");
-        const progressBar = document.querySelector(".loading-progress-bar");
-        const percentageText = document.querySelector(".loading-percentage");
-        const loadingText = document.querySelector(".loading-text");
-        loadingOverlay.style.display = "flex";
-        let progress = 0;
-        const loadingMessages = ["Initializing...", "Loading Assets...", "Syncing DB..."];
-        let messageIndex = 0;
-        
-        loadingInterval = setInterval(() => {
-          if (progress < 100) {
-            progress += Math.random() * 10 + 5;
-            if (progress > 100) progress = 100;
-            if (progress % 20 < 5 && messageIndex < loadingMessages.length - 1) {
-               messageIndex++;
-               loadingText.textContent = loadingMessages[messageIndex];
-            }
-            progressBar.style.width = progress + "%";
-            percentageText.textContent = Math.floor(progress) + "%";
-          }
-        }, 100);
-        loadAssets();
-      }
-
-      function completeLoading() {
-        clearInterval(loadingInterval);
-        document.querySelector(".loading-progress-bar").style.width = "100%";
-        document.querySelector(".loading-text").textContent = "Connecting...";
-        setTimeout(() => {
-          document.getElementById("loadingOverlay").style.display = "none";
-          document.getElementById("overlay").style.display = "flex";
-          // KESİN SIRALAMA: Önce veri çek, sonra initHub çalışsın.
-          loadDataFromFirebase();
-        }, 1000);
-      }
-
-      function userEnterGame() {
-        document.getElementById("introOverlay").style.display = "none";
-        startLoading();
-      }
-
-      function startIntro() {
-        document.getElementById("introOverlay").style.display = "flex";
-        setTimeout(() => {
-           const btn = document.getElementById("enterBtn");
-           if(btn) btn.style.display = "block";
-        }, 800);
-      }
-
-      // --- HELPER UI UPDATES ---
-      // (Kısaltmak için buraya önceki energy/updateUI fonksiyonlarını ekliyorum)
-      // NOT: Bu blokta daha önce tanımlanmış tüm UI fonksiyonları (updateUI, formatTime vb.)
-      // yukarıdaki initHub içinde kullanıldığı için burada da olması şart.
-      
-      function updateUI() {
-        document.getElementById("traniumCount").innerText = tranium;
-        document.getElementById("metalCount").innerText = Math.floor(metal);
-        document.getElementById("kristalCount").innerText = Math.floor(kristal);
-        document.getElementById("metalWorkers").innerText = `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalFacLvl).toFixed(3)}/s)`;
-        document.getElementById("kristalWorkers").innerText = `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl).toFixed(3)}/s)`;
-        document.getElementById("metalFacLevel").innerText = `Lvl ${metalFacLvl}`;
-        document.getElementById("kristalFacLevel").innerText = `Lvl ${kristalFacLvl}`;
-        
-        const mCost = getUpgradeCost(metalFacLvl);
-        const kCost = getUpgradeCost(kristalFacLvl);
-        document.getElementById("costMetalFac").innerText = `Ξ${mCost} ETH`;
-        document.getElementById("costKristalFac").innerText = `Ξ${kCost} ETH`;
-        document.getElementById("metalBuildTime").innerText = `⏱️ ${formatTimeHours(getUpgradeTime(metalFacLvl))}`;
-        document.getElementById("kristalBuildTime").innerText = `⏱️ ${formatTimeHours(getUpgradeTime(kristalFacLvl))}`;
-        
-        document.getElementById("resUI").innerText = `⚙️: ${Math.floor(metal)} | 💎: ${Math.floor(kristal)}`;
-        document.getElementById("healthUI").innerText = "❤️: " + health;
-        updateEnergyCountdown();
-        
-        // Button States
-        document.getElementById("swapBtn").disabled = Math.min(Math.floor(metal), Math.floor(kristal)) <= 0;
-        
-        // Upgrade Buttons State
-        const now = Date.now();
-        const upMetal = document.getElementById("upMetalFac");
-        if (metalFacUpgradeEndTime > now) {
-           upMetal.innerHTML = `⏳ UPGRADING... ${formatTime(metalFacUpgradeEndTime - now)}`;
-           upMetal.disabled = true;
-        } else {
-           upMetal.innerHTML = `UPGRADE <span>Ξ${mCost} ETH</span>`;
-           upMetal.disabled = false;
-        }
-        
-        const upKristal = document.getElementById("upKristalFac");
-        if (kristalFacUpgradeEndTime > now) {
-           upKristal.innerHTML = `⏳ UPGRADING... ${formatTime(kristalFacUpgradeEndTime - now)}`;
-           upKristal.disabled = true;
-        } else {
-           upKristal.innerHTML = `UPGRADE <span>Ξ${kCost} ETH</span>`;
-           upKristal.disabled = false;
-        }
-      }
-
-      // Energy Helpers
-      function updateOfflineEnergyRegeneration() { /* ... aynı kod ... */ 
-         const now = Date.now();
-         if (energy < 10 && energyRegenerationStartTime > 0) {
-            const passed = now - energyRegenerationStartTime;
-            const add = Math.floor(passed / 3600000);
-            if (add > 0) {
-               energy = Math.min(10, energy + add);
-               energyRegenerationStartTime = now - (passed % 3600000);
-               if(energy >= 10) { energyRegenerationStartTime=0; nextEnergyTime=0; }
-               else nextEnergyTime = energyRegenerationStartTime + 3600000;
-               saveData(); updateUI();
-            }
-         } else if (energy < 10 && energyRegenerationStartTime === 0) updateEnergyTimers();
-      }
-      function updateEnergyTimers() {
-         const now = Date.now();
-         if (energy < 10) {
-            if (energyRegenerationStartTime === 0) energyRegenerationStartTime = now;
-            const passed = now - energyRegenerationStartTime;
-            nextEnergyTime = now + (3600000 - (passed % 3600000));
-         } else { energyRegenerationStartTime = 0; nextEnergyTime = 0; }
-         saveData();
-      }
-      function updateEnergyCountdown() {
-         const status = document.getElementById("energyStatus");
-         const ui = document.getElementById("energyUI");
-         if(!status || !ui) return;
-         if(energy >= 10) {
-            status.innerHTML = `⚡ ENERGY: ${energy}/10 (FULL)`;
-            ui.innerHTML = `⚡: ${energy}/10`;
-            return;
-         }
-         const now = Date.now();
-         if(nextEnergyTime > 0 && now >= nextEnergyTime) {
-            energy++; updateEnergyTimers(); saveData(); updateUI();
-         }
-         if(nextEnergyTime > now) {
-            const left = nextEnergyTime - now;
-            const m = Math.floor(left / 60000).toString().padStart(2,"0");
-            const s = Math.floor((left % 60000)/1000).toString().padStart(2,"0");
-            status.innerHTML = `⚡ ENERGY: ${energy}/10 (Next in ${m}:${s})`;
-            ui.innerHTML = `⚡: ${energy}/10`;
-         }
-      }
-      function startEnergyCountdown() {
-         if(energyTimer) clearInterval(energyTimer);
-         updateOfflineEnergyRegeneration();
-         updateEnergyCountdown();
-         energyTimer = setInterval(updateEnergyCountdown, 1000);
-      }
-      
-      // Utility Helpers
-      function checkUpgradeProgress() {
-         const now = Date.now();
-         if (metalFacUpgradeEndTime > 0 && now >= metalFacUpgradeEndTime) {
-            metalFacLvl++; metalFacUpgradeEndTime = 0; updateUI(); saveData();
-         }
-         if (kristalFacUpgradeEndTime > 0 && now >= kristalFacUpgradeEndTime) {
-            kristalFacLvl++; kristalFacUpgradeEndTime = 0; updateUI(); saveData();
-         }
-      }
-      function formatTime(ms) {
-         if (ms <= 0) return "00:00";
-         const m = Math.floor(ms / 60000).toString().padStart(2,"0");
-         const s = Math.floor((ms % 60000) / 1000).toString().padStart(2,"0");
-         return `${m}:${s}`;
-      }
-      function formatTimeHours(ms) {
-         const h = Math.floor(ms / 3600000);
-         const m = Math.floor((ms % 3600000) / 60000);
-         return `${h}h ${m}m`;
-      }
-      function getUpgradeCost(lvl) { return 0.0005 * Math.pow(2, lvl - 1); }
-      function getUpgradeTime(lvl) { return 2 * 3600000 * Math.pow(2, lvl - 1); }
-
-      // Window Load
+      // Initial call to setup the intro screen
       window.onload = function() {
-         console.log("🚀 System Ready.");
+        console.log("🚀 App Loaded. Triggering Farcaster SDK...");
+        
+   
       };
     </script>
+    <script>
+      (function () {
+        const fpsBox = document.createElement("div");
+        fpsBox.id = "pc-fps-counter";
+        fpsBox.style.cssText =
+          "position:fixed; top:60px; left:10px; color:#00ffcc; font-family:monospace; font-size:11px; font-weight:bold; z-index:2147483647; background:rgba(0,0,0,0.6); padding:4px 8px; border:1px solid #00ffcc; border-radius:4px; pointer-events:none; display:none;";
+        fpsBox.innerHTML = "FPS:...";
+        document.body.appendChild(fpsBox);
+
+        function lockPlayerSpeed() {
+          try {
+            if (typeof player !== "undefined" && player.speed !== 7.0) {
+              player.speed = 7.0;
+              Object.defineProperty(player, "speed", {
+                value: 7.0,
+                writable: false,
+                configurable: true,
+              });
+            }
+          } catch (e) {}
+        }
+
+        const originalInitHub = window.initHub;
+        window.initHub = function () {
+          if (originalInitHub) originalInitHub();
+
+          const cvs = document.getElementById("gameCanvas");
+          if (cvs) {
+            let targetWidth = window.innerWidth;
+            let targetHeight = window.innerHeight;
+
+            if (targetWidth > 1920) {
+              const ratio = window.innerHeight / window.innerWidth;
+              targetWidth = 1920;
+              targetHeight = 1920 * ratio;
+            }
+
+            cvs.width = targetWidth;
+            cvs.height = targetHeight;
+            cvs.style.width = "100vw";
+            cvs.style.height = "100vh";
+            cvs.style.transform = "translate3d(0,0,0)";
+            cvs.style.imageRendering = "pixelated";
+          }
+
+          if (!("ontouchstart" in window) && navigator.maxTouchPoints === 0) {
+            const joyContainer = document.getElementById("joystickContainer");
+            if (joyContainer) joyContainer.style.display = "none";
+            const style = document.createElement("style");
+            style.innerHTML = "#joystickContainer { display: none!important; }";
+            document.head.appendChild(style);
+          }
+
+          lockPlayerSpeed();
+          fpsBox.style.display = "block";
+          console.log("✅ TURBO MODE: Player 7.0 | Enemy Max 6.6");
+        };
+
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let lastFpsTime = performance.now();
+        const targetFPS = 60;
+        const frameDelay = 1000 / targetFPS;
+        const originalRAF = window.requestAnimationFrame;
+        function secureGameLoop() {
+          originalRAF(secureGameLoop);
+
+          const now = performance.now();
+          const elapsed = now - lastTime;
+
+          if (elapsed < frameDelay) return;
+          lastTime = now - (elapsed % frameDelay);
+          if (typeof player !== "undefined") {
+            if (player.speed !== 7.0) player.speed = 7.0;
+          }
+
+          if (typeof enemies !== "undefined" && Array.isArray(enemies)) {
+            enemies.forEach((en) => {
+              if (en.currentSpeed > 6.6) {
+                en.currentSpeed = 6.6;
+              }
+            });
+          }
+
+          frameCount++;
+          if (now - lastFpsTime >= 1000) {
+            fpsBox.innerHTML = "FPS: " + frameCount;
+            frameCount = 0;
+            lastFpsTime = now;
+          }
+
+          if (typeof window.update === "function" && typeof window.draw === "function") {
+            window.update(0.016);
+            window.draw();
+          }
+        }
+
+        window.gameLoop = function () {};
+        secureGameLoop();
+      })();
+    </script>
+     // Bu kodu </body> kapanışından önce ekleyin
+<script>
+    // Emergency splash screen remover
+    setTimeout(() => {
+        if (typeof sdk !== 'undefined' && sdk.actions && sdk.actions.ready) {
+            sdk.actions.ready();
+            console.log("🚨 EMERGENCY: Force-ready sent");
+        }
+        
+        // Fallback: window.parent'e mesaj gönder (Farcaster özel)
+        try {
+            window.parent.postMessage({
+                type: 'ready',
+                data: { ready: true }
+            }, '*');
+        } catch(e) {}
+        
+        // Fallback 2: URL'de ready parametresi
+        if (window.location.search.includes('splash=1')) {
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+    }, 2000);
+</script>
   </body>
 </html>
-
-
 
 
 
