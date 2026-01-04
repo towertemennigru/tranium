@@ -2363,15 +2363,20 @@ async function saveData(force = false) {
 // --- PARÇACIK EFEKTİ (PARTICLE SYSTEM) ---
 let particles = []; // Parçacıkları tutacak liste
 
+// --- PARÇACIK EFEKTİ OLUŞTURMA (Güncellenmiş) ---
 function createExplosion(x, y, color) {
-    // Tek seferde 10-15 parça oluştur
-    for (let i = 0; i < 12; i++) {
+    // Parçacık sayısını 12'den 20'ye çıkardık daha dolgun görünsün
+    for (let i = 0; i < 20; i++) {
         particles.push({
             x: x,
             y: y,
-            vx: (Math.random() - 0.5) * 10, // Rastgele yatay hız
-            vy: (Math.random() - 0.5) * 10, // Rastgele dikey hız
-            life: 1.0, // Ömür (1'den başlayıp 0'a düşecek)
+            // Hız aralığını artırdık (-8 ile +8 arası rastgele hız)
+            vx: (Math.random() - 0.5) * 16, 
+            vy: (Math.random() - 0.5) * 16,
+            // Ömürleri rastgele olsun (0.8 ile 1.2 arası)
+            life: Math.random() * 0.4 + 0.8, 
+            // Boyut varyasyonu ekleyelim (4 ile 7 arası yarıçap)
+            size: Math.random() * 3 + 4,
             color: color
         });
     }
@@ -2390,14 +2395,28 @@ function updateParticles() {
     }
 }
 
+// --- PARÇACIKLARI ÇİZME (Yeni Şekil: Parlayan Retro Elmas) ---
 function drawParticles() {
     particles.forEach(p => {
         ctx.save();
-        ctx.globalAlpha = p.life;
+        // Ömür azaldıkça sönükleşsin
+        ctx.globalAlpha = p.life; 
+        
+        // Hafif bir parlama efekti ekleyelim
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 10; 
         ctx.fillStyle = p.color;
-        // DÜZELTME: -camera.x ve -camera.y KALDIRILDI.
-        // Çünkü ana draw fonksiyonu zaten sahneyi kaydırıyor.
-        ctx.fillRect(p.x, p.y, 10, 10); 
+
+        // --- ELMAS ŞEKLİ ÇİZİMİ (Kare yerine) ---
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - p.size); // Üst uç
+        ctx.lineTo(p.x + p.size, p.y); // Sağ uç
+        ctx.lineTo(p.x, p.y + p.size); // Alt uç
+        ctx.lineTo(p.x - p.size, p.y); // Sol uç
+        ctx.closePath();
+        ctx.fill();
+        // ----------------------------------------
+
         ctx.restore();
     });
 }
@@ -3037,6 +3056,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
