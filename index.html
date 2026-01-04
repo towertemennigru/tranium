@@ -1921,6 +1921,18 @@ async function executeTransaction(signer, amountETH, toAddress) {
 
         setInterval(checkUpgradeProgress, 1000);
         initJoystick();
+        window.initHub = function() {
+        // ... (diğer kodlar) ...
+        
+        setInterval(checkUpgradeProgress, 1000);
+        initJoystick();
+
+        // ---> KODU BURAYA YAPIŞTIR <---
+        
+        // --- AKTİFLİK TAKİBİ (Bunu zaten eklemiştik) ---
+        const updateInteraction = () => { lastInteractionTime = Date.now(); };
+        // ...
+      }
       }
 
       function initJoystick() {
@@ -1939,6 +1951,30 @@ async function executeTransaction(signer, amountETH, toAddress) {
         document.addEventListener("mousemove", handleJoystickMove);
         document.addEventListener("mouseup", handleJoystickEnd);
       }
+      // --- ACİL KAYIT SİSTEMİ (SAVE ON EXIT) ---
+        const forceSave = () => {
+            // Eğer pasif moddaysa bile, çıkış yapıldığı için son bir kez kaydetmeyi deneyebiliriz.
+            // Ancak veri tutarlılığı için sadece son etkileşim yakınsa kaydedelim.
+            if (Date.now() - lastInteractionTime < 60000) {
+                saveData(); 
+                // Not: save işlemi asenkron olduğu için kapanırken %100 garanti edilemez 
+                // ama şansımızı çok arttırır.
+            }
+        };
+
+        // Mobil (Warpcast) ve Web için "Sekme/Uygulama Gizlendi" olayını yakala
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                console.log("🙈 Uygulama gizlendi - Acil kayıt alınıyor...");
+                forceSave();
+            }
+        });
+
+        // PC/Web için "Sekme Kapatılıyor" olayını yakala
+        window.addEventListener('beforeunload', () => {
+            console.log("❌ Sekme kapanıyor - Acil kayıt...");
+            forceSave();
+        });
 
       function handleJoystickStart(e) {
         e.preventDefault();
@@ -2495,6 +2531,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
