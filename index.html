@@ -22,38 +22,42 @@
     <title>TRANIUM VERSE - Strategy Hub</title>
     
    <script type="module">
-    import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
-    import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@1.6.0';
-    import { base } from 'https://esm.sh/@reown/appkit/networks@1.6.0';
+    // En güncel Frame SDK'sını çekiyoruz
+    import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
 
-    // Global değişkenler
-    window.appKitModal = null;
-    window.appKitAdapter = new EthersAdapter();
-    
-    const projectId = '2c7a5c244856e6edb4c52e0d4e61fadb';
+    // SDK'yı global değişkene atıyoruz ki her yerden erişelim
+    window.farcasterSDK = sdk;
+    window.isMiniApp = true;
 
-    const metadata = {
-        name: 'Tranium Verse',
-        description: 'Resource Mining Game',
-        url: 'https://tranium-xi.vercel.app', 
-        icons: ['https://tranium-xi.vercel.app/preview.jpg']
-    };
-
-    // AppKit'i anında başlat (Await bekleme, direkt instance oluştur)
+    const triggerReady = async () => {
     try {
-        window.appKitModal = createAppKit({
-            adapters: [window.appKitAdapter],
-            networks: [base],
-            metadata,
-            projectId,
-            features: {
-                analytics: true 
-            }
-        });
-        console.log("✅ AppKit Global Olarak Başlatıldı");
+        // SDK'nın context (bağlam) bilgisini bekle
+        const context = await sdk.context;
+
+        // Eğer context gelirse (yani Farcaster içindeysek)
+        if (context) {
+            console.log("✅ Farcaster Environment Detected");
+            
+            // Engelleyici ekranı kaldır
+            document.getElementById("desktop-blocker").style.display = "none";
+            
+            // SDK'ya hazır olduğumuzu bildir
+            sdk.actions.ready();
+
+            // Varsa intro'yu başlat
+            if(window.startIntro) window.startIntro();
+        } else {
+            // Context yoksa (Normal tarayıcı)
+            console.warn("❌ Not in Farcaster");
+            // Engelleyici ekran kalmaya devam eder
+        }
     } catch (e) {
-        console.error("AppKit Init Hatası:", e);
+        console.error("SDK Init Error:", e);
+        // Hata olursa da engelleyici ekran kalır
     }
+};
+
+    document.addEventListener('DOMContentLoaded', triggerReady);
 </script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
@@ -1572,7 +1576,8 @@ document.addEventListener('DOMContentLoaded', initWalletSystem);
 // Yedek olarak pencere tam yüklendiğinde de tetikle (PC'deki tepkisizliği önlemek için)
 window.addEventListener('load', initWalletSystem);
 
-// --- OPTİMİZE EDİLMİŞ ÖDEME FONKSİYONU ---
+
+// --- ÖDEME FONKSİYONU ---
 async function sendETHPayment(amountETH) {
     console.log("🚀 Ödeme süreci başlatılıyor...");
     const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
@@ -1581,13 +1586,17 @@ async function sendETHPayment(amountETH) {
         let signer;
         let provider;
 
-        // 1. SENARYO: Farcaster Mobile (En Hızlısı)
+        // SENARYO 1: MOBİL MİNİAPP (Farcaster SDK)
         if (window.farcasterSDK && window.farcasterSDK.wallet && window.farcasterSDK.wallet.ethProvider) {
-            // Farcaster içindeysek AppKit ile uğraşma, direkt SDK kullan
+            console.log("📱 Mobil Ortam: Farcaster Provider");
             const ethProvider = window.farcasterSDK.wallet.ethProvider;
             provider = new ethers.BrowserProvider(ethProvider);
-            // ... (Ağ kontrolü mantığı aynı kalabilir) ...
-             const network = await provider.getNetwork();
+            
+            // Hesaplara erişim
+            await provider.send("eth_requestAccounts", []);
+            
+            // Ağ Kontrolü (Base: 8453)
+            const network = await provider.getNetwork();
             if (Number(network.chainId) !== 8453) {
                  try {
                     await ethProvider.request({
@@ -1602,38 +1611,50 @@ async function sendETHPayment(amountETH) {
             signer = await provider.getSigner();
         } 
         
-        // 2. SENARYO: PC / Tarayıcı (AppKit)
+        // SENARYO 2: PC / TARAYICI (QR Kod)
         else {
-            if (!window.appKitModal) {
-                alert("Cüzdan sistemi yükleniyor, lütfen 2 saniye sonra tekrar deneyin.");
+            console.log("💻 PC Ortamı: AppKit");
+            
+            // Kütüphane yüklenmemişse uyar
+            if (!window.AppKitLib) {
+                alert("Sistem hazırlanıyor, lütfen 3 saniye sonra tekrar deneyin.");
+                initWalletSystem(); // Zorla başlatmayı dene
                 return false;
             }
 
-            // Bağlı değilse Modal'ı aç ve bekle (Loop yok, Promise var)
-            if (!window.appKitModal.getIsConnected()) {
-                await window.appKitModal.open();
-                // Modal kapandıktan sonra tekrar kontrol et
-                if (!window.appKitModal.getIsConnected()) {
-                    // Kullanıcı modalı kapattı ama bağlanmadı
-                    console.log("Kullanıcı bağlantıyı iptal etti.");
+            if (!appKitModal) {
+                await initWalletSystem();
+                if(!appKitModal) {
+                    alert("Bağlantı modülü yüklenemedi. Sayfayı yenileyip tekrar deneyin.");
                     return false;
                 }
             }
 
-            // Sağlayıcıyı al
-            const walletProvider = window.appKitModal.getProvider();
+            if (!appKitModal.getIsConnected()) {
+                await appKitModal.open();
+                // Kullanıcı bağlandığında işlemi yakalamak için loop
+                return new Promise((resolve) => {
+                    const checkInterval = setInterval(async () => {
+                        if (appKitModal.getIsConnected()) {
+                            clearInterval(checkInterval);
+                            setTimeout(async () => {
+                                resolve(await proceedWithPayment(amountETH));
+                            }, 1000); // Bağlantı otursun diye 1sn bekle
+                        }
+                    }, 1000);
+                });
+            }
+            
+            const walletProvider = appKitModal.getProvider();
             if (!walletProvider) {
-                // Bağlı görünüyor ama provider yoksa disconnect atıp temizle
-                await window.appKitModal.disconnect();
-                alert("Bağlantı hatası oluştu. Lütfen tekrar butona basın.");
+                alert("Cüzdan sağlayıcısı bulunamadı. Lütfen tekrar bağlayın.");
                 return false;
             }
-
             provider = new ethers.BrowserProvider(walletProvider);
             signer = await provider.getSigner();
         }
 
-        // İşlemi Gönder
+        // --- ORTAK İŞLEM GÖNDERME ---
         return await executeTransaction(signer, amountETH, PAYMENT_ADDRESS);
 
     } catch (error) {
@@ -1643,28 +1664,45 @@ async function sendETHPayment(amountETH) {
     }
 }
 
+// Yardımcı Fonksiyon: Recursive çağrı için
+async function proceedWithPayment(amountETH) {
+    return await sendETHPayment(amountETH);
+}
+
+// ASIL İŞLEM FONKSİYONU (DÜZELTİLDİ)
 async function executeTransaction(signer, amountETH, toAddress) {
     try {
         const amountWei = ethers.parseEther(amountETH.toString());
-        
-        // Gas Limit fix'i koruyoruz
+        console.log("💸 İşlem gönderiliyor... Miktar:", amountETH);
+
+        // --- MOBİL HATASI İÇİN KRİTİK DÜZELTME ---
+        // gasLimit: 21000 ekleyerek 'estimateGas' hatasını bypass ediyoruz.
+        // Standart ETH transferi her zaman 21000 gas yer.
         const tx = await signer.sendTransaction({
             to: toAddress,
             value: amountWei,
-            gasLimit: 25000 // Biraz daha güvenli marj
+            gasLimit: 21000 // <--- BU SATIR "estimateGas" HATASINI ÇÖZER
         });
 
         console.log("✅ TX Hash:", tx.hash);
-        // Kullanıcıya hemen başarı dön, mining'i bekletme
-        return true; 
+        alert("İşlem Başarılı! Onay bekleniyor...");
+        return true;
 
     } catch (error) {
         console.error("TX Hatası:", error);
-        // Hata mesajlarını sadeleştir
-        if (error.code === 4001 || error.message?.includes("rejected")) {
-            // Kullanıcı reddetti, sessizce çık
+        
+        // Hatayı analiz et ve kullanıcıya düzgün mesaj ver
+        let msg = error.message || "";
+        
+        if (msg.includes("insufficient funds") || error.code === "INSUFFICIENT_FUNDS") {
+            alert("YETERSİZ BAKİYE: Cüzdanınızda işlem ücreti (Gas) ve ödeme için yeterli ETH yok.");
+        } else if (msg.includes("rejected") || error.code === 4001) {
+            alert("İşlemi reddettiniz.");
+        } else if (msg.includes("estimateGas") || msg.includes("missing revert data")) {
+            // Gas limit eklememize rağmen bu hatayı alıyorsa, kesinlikle bakiye yetersizdir.
+            alert("İŞLEM BAŞARISIZ: Lütfen Base ağında ETH bakiyenizi kontrol edin.");
         } else {
-            alert("İşlem Başarısız: " + (error.shortMessage || "Bakiye veya Ağ hatası"));
+            alert("Ödeme Hatası: " + msg.slice(0, 50) + "...");
         }
         return false;
     }
@@ -2298,7 +2336,6 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
-
 
 
 
