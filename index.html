@@ -1909,7 +1909,25 @@ async function executeTransaction(signer, amountETH, toAddress) {
     window.addEventListener("pagehide", () => saveData());
     
     setInterval(checkUpgradeProgress, 1000);
-    initJoystick();
+// --- PC/MOBİL AYARLARI ---
+    
+    // 1. Dokunmatik yoksa Joystick'i gizle (PC Modu)
+    if (!("ontouchstart" in window) && navigator.maxTouchPoints === 0) {
+        const joyContainer = document.getElementById("joystickContainer");
+        if (joyContainer) joyContainer.style.display = "none";
+    }
+
+    // 2. FPS Göstergesini Aç (HTML'de bu ID'ye sahip bir div olduğunu varsayıyoruz)
+    const fpsCounter = document.getElementById("pc-fps-counter");
+    if (fpsCounter) fpsCounter.style.display = "block";
+
+    // 3. Hız Koruması (Hile önlemi)
+    if (typeof player !== "undefined" && player.speed !== 7.5) {
+        // Player speed'i başlangıçta ne belirlediysen buraya onu yaz (7.5 veya 7.0)
+        player.speed = 7.5; 
+    }
+      
+      initJoystick();
 }
       function initJoystick() {
         const joystickContainer = document.getElementById("joystickContainer");
@@ -2361,12 +2379,43 @@ async function syncCheck() {
       }
 
       function gameLoop() {
-        let now = Date.now();
-        let dt = (now - lastUpdate) / 1000;
-        lastUpdate = now;
-        update(dt);
-        draw();
+        // 1. Döngüyü sürdür
         requestAnimationFrame(gameLoop);
+
+        // 2. FPS Kontrolü (60 FPS'e kilitler)
+        const now = performance.now();
+        const elapsed = now - lastFrameTime;
+
+        // Eğer yeterli zaman geçmediyse çizim yapma (CPU tasarrufu)
+        if (elapsed < frameDelay) return;
+
+        // Zamanlayıcıyı düzelt
+        lastFrameTime = now - (elapsed % frameDelay);
+
+        // 3. Hız Koruması (Hile önlemi - Player hızı hep 7.5 kalmalı)
+        if (typeof player !== "undefined" && player.speed !== 7.5) {
+            player.speed = 7.5; 
+        }
+        
+        // Düşman hızı koruması
+        if (typeof enemies !== "undefined") {
+            enemies.forEach(en => { 
+                if (en.currentSpeed > 6.6) en.currentSpeed = 6.6; 
+            });
+        }
+
+        // 4. PC için FPS Sayacını Güncelle
+        frameCount++;
+        if (now - lastFpsTime >= 1000) {
+            const fpsDiv = document.getElementById("pc-fps-counter");
+            if (fpsDiv) fpsDiv.innerHTML = "FPS: " + frameCount;
+            frameCount = 0;
+            lastFpsTime = now;
+        }
+
+        // 5. Oyunu Güncelle ve Çiz (Sabit hızda)
+        update(0.016); // Her karede sabit 0.016 saniye (1/60) gönderiyoruz
+        draw();
       }
 
       const setTarget = (e) => {
@@ -2462,107 +2511,7 @@ async function syncCheck() {
         }
       };
     </script>
-    <script>
-      (function () {
-        const fpsBox = document.createElement("div");
-        fpsBox.id = "pc-fps-counter";
-        fpsBox.style.cssText =
-          "position:fixed; top:60px; left:10px; color:#00ffcc; font-family:monospace; font-size:11px; font-weight:bold; z-index:2147483647; background:rgba(0,0,0,0.6); padding:4px 8px; border:1px solid #00ffcc; border-radius:4px; pointer-events:none; display:none;";
-        fpsBox.innerHTML = "FPS:...";
-        document.body.appendChild(fpsBox);
-
-        function lockPlayerSpeed() {
-          try {
-            if (typeof player !== "undefined" && player.speed !== 7.0) {
-              player.speed = 7.0;
-              Object.defineProperty(player, "speed", {
-                value: 7.0,
-                writable: false,
-                configurable: true,
-              });
-            }
-          } catch (e) {}
-        }
-
-        const originalInitHub = window.initHub;
-        window.initHub = function () {
-          if (originalInitHub) originalInitHub();
-
-          const cvs = document.getElementById("gameCanvas");
-          if (cvs) {
-            let targetWidth = window.innerWidth;
-            let targetHeight = window.innerHeight;
-
-            if (targetWidth > 1920) {
-              const ratio = window.innerHeight / window.innerWidth;
-              targetWidth = 1920;
-              targetHeight = 1920 * ratio;
-            }
-
-            cvs.width = targetWidth;
-            cvs.height = targetHeight;
-            cvs.style.width = "100vw";
-            cvs.style.height = "100vh";
-            cvs.style.transform = "translate3d(0,0,0)";
-            cvs.style.imageRendering = "pixelated";
-          }
-
-          if (!("ontouchstart" in window) && navigator.maxTouchPoints === 0) {
-            const joyContainer = document.getElementById("joystickContainer");
-            if (joyContainer) joyContainer.style.display = "none";
-            const style = document.createElement("style");
-            style.innerHTML = "#joystickContainer { display: none!important; }";
-            document.head.appendChild(style);
-          }
-
-          lockPlayerSpeed();
-          fpsBox.style.display = "block";
-          console.log("✅ TURBO MODE: Player 7.0 | Enemy Max 6.6");
-        };
-
-        let lastTime = performance.now();
-        let frameCount = 0;
-        let lastFpsTime = performance.now();
-        const targetFPS = 60;
-        const frameDelay = 1000 / targetFPS;
-        const originalRAF = window.requestAnimationFrame;
-        function secureGameLoop() {
-          originalRAF(secureGameLoop);
-
-          const now = performance.now();
-          const elapsed = now - lastTime;
-
-          if (elapsed < frameDelay) return;
-          lastTime = now - (elapsed % frameDelay);
-          if (typeof player !== "undefined") {
-            if (player.speed !== 7.0) player.speed = 7.0;
-          }
-
-          if (typeof enemies !== "undefined" && Array.isArray(enemies)) {
-            enemies.forEach((en) => {
-              if (en.currentSpeed > 6.6) {
-                en.currentSpeed = 6.6;
-              }
-            });
-          }
-
-          frameCount++;
-          if (now - lastFpsTime >= 1000) {
-            fpsBox.innerHTML = "FPS: " + frameCount;
-            frameCount = 0;
-            lastFpsTime = now;
-          }
-
-          if (typeof window.update === "function" && typeof window.draw === "function") {
-            window.update(0.016);
-            window.draw();
-          }
-        }
-
-        window.gameLoop = function () {};
-        secureGameLoop();
-      })();
-    </script>
+    
      // Bu kodu </body> kapanışından önce ekleyin
 <script>
     // Emergency splash screen remover
@@ -2588,6 +2537,7 @@ async function syncCheck() {
 </script>
   </body>
 </html>
+
 
 
 
