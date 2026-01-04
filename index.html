@@ -1289,6 +1289,33 @@ function saveCloudData(fid) {
         }
       }
 
+      if (localStorage.getItem("w_last_time")) {
+        metal = parseFloat(localStorage.getItem("w_metal")) || 0;
+        kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
+        tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
+        metalWorkers = parseInt(localStorage.getItem("w_mw")) || 0;
+        kristalWorkers = parseInt(localStorage.getItem("w_kw")) || 0;
+        metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
+        kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
+
+        let savedEnergy = localStorage.getItem("w_energy");
+        if (savedEnergy !== null) {
+          energy = parseInt(savedEnergy);
+        } else {
+          energy = 10;
+        }
+
+        lastTime = parseInt(localStorage.getItem("w_last_time")) || Date.now();
+
+        nextEnergyTime = parseInt(localStorage.getItem("w_next_energy_time")) || 0;
+        energyRegenerationStartTime = parseInt(localStorage.getItem("w_energy_reg_start")) || 0;
+
+        metalFacUpgradeEndTime = parseInt(localStorage.getItem("w_mfue")) || 0;
+        kristalFacUpgradeEndTime = parseInt(localStorage.getItem("w_kfue")) || 0;
+
+        updateOfflineEnergyRegeneration();
+      }
+
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "flex";
@@ -1830,8 +1857,20 @@ async function executeTransaction(signer, amountETH, toAddress) {
         }
         if (cloudData.last_save_time) {
             lastTime = parseInt(cloudData.last_save_time);
-        }  
-    } 
+        }
+        
+    } else {
+        // Bulutta yoksa LocalStorage'a bak (Eski oyuncular için yedek)
+        if (localStorage.getItem("w_last_time")) {
+             metal = parseFloat(localStorage.getItem("w_metal")) || 0;
+             kristal = parseFloat(localStorage.getItem("w_kristal")) || 0;
+             tranium = parseInt(localStorage.getItem("w_tranium")) || 0;
+             metalFacLvl = parseInt(localStorage.getItem("w_mfl")) || 1;
+             kristalFacLvl = parseInt(localStorage.getItem("w_kfl")) || 1;
+             let savedEnergy = localStorage.getItem("w_energy");
+             energy = savedEnergy !== null ? parseInt(savedEnergy) : 10;
+        }
+    }
     
     // --- OYUNU BAŞLAT ---
     const now = Date.now();
@@ -2119,52 +2158,19 @@ function startCloudSync() {
         });
       }
 
-      // --- GÜNCELLENMİŞ attemptStart ---
-function attemptStart() {
-        // 1. Veri Yüklendi mi Kontrolü (Cloud-Only olduğu için bu şart)
-        // Eğer metal, energy vs. henüz 'undefined' ise veya yüklenmediyse başlatma.
-        if (typeof energy === 'undefined') {
-            console.warn("Veriler henüz yüklenmedi.");
-            return;
-        }
-
+      function attemptStart() {
         if (energy > 0) {
-          // 2. Enerji ve Can İşlemleri
           energy--;
           health = 3;
 
-          // Eğer enerji 10'dan 9'a düşüyorsa, sayacı başlat (Yoksa zaten çalışıyordur)
-          if (energyRegenerationStartTime === 0) {
-              energyRegenerationStartTime = Date.now();
-              nextEnergyTime = energyRegenerationStartTime + 3600000;
-          }
-          
-          // 3. Buluta Kaydet (Local Storage yok artık)
-          updateEnergyTimers(); // Bu zaten saveCloudData çağırır ama garanti olsun
-          saveCloudData(window.currentUserFID);
+          updateEnergyTimers();
+
+          saveData();
           updateUI();
-
-          // 4. Arayüz Değişimi (İşte Hatayı Çözen Kısım)
-          document.getElementById("overlay").style.display = "none"; // Menüyü kapat
-          
-          // ESKİ KODDA BURASI 'opacity' İDİ, 'display' OLMALI:
-          const uiElement = document.getElementById("ui");
-          uiElement.style.display = "flex"; 
-          uiElement.style.opacity = "1";
-
-          // 5. Joystick Kontrolü (PC'de açılmasın)
-          if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
-              document.getElementById("joystickContainer").style.display = "block";
-          } else {
-              document.getElementById("joystickContainer").style.display = "none";
-          }
-          
-          // 6. Oyunu Başlat
+          document.getElementById("overlay").style.display = "none";
+          document.getElementById("ui").style.opacity = "1";
+          document.getElementById("joystickContainer").style.display = "block";
           isStarted = true;
-          
-          // Player speed güvenliği (Reset sonrası için)
-          if(player) player.speed = 7.5;
-
         } else {
           alert("Not enough energy! Wait for energy to regenerate.");
         }
@@ -2364,24 +2370,29 @@ function attemptStart() {
         isTouching = false;
         if (!joystickActive) player.isMoving = false;
       });
-     // --- GÜNCELLENMİŞ endGame ---
-function endGame() {
-    // 1. Menüyü geri getir
-    document.getElementById("overlay").style.display = "flex";
-    
-    // 2. Oyun arayüzünü gizle
-    document.getElementById("ui").style.display = "none"; 
-    document.getElementById("joystickContainer").style.display = "none";
+      function endGame() {
+        document.getElementById("overlay").style.display = "flex";
+        document.getElementById("ui").style.opacity = "0";
+        document.getElementById("joystickContainer").style.display = "none";
+        if (energyTimer) {
+          clearInterval(energyTimer);
+          energyTimer = null;
+        }
 
-    // 3. Zamanlayıcıyı temizle ve yeniden başlat
-    if (energyTimer) {
-        clearInterval(energyTimer);
-        energyTimer = null;
-    }
-    startEnergyCountdown();
-    
-    console.log("Game Over! Score: " + Math.floor(tranium));
-}
+        startEnergyCountdown();
+        
+        console.log("Game Over! Score: " + Math.floor(tranium));
+      }
+
+      // Initial call to setup the intro screen
+      window.onload = function() {
+        console.log("🚀 App Loaded. Triggering Farcaster SDK...");
+        
+        // DÜZELTME: Intro'yu zorla başlat
+        // Bu sayede Farcaster context'i gelmese bile buton 0.8sn sonra görünür.
+        if (window.startIntro) {
+            window.startIntro();
+        }
       };
     </script>
     <script>
@@ -2510,10 +2521,6 @@ function endGame() {
 </script>
   </body>
 </html>
-
-
-
-
 
 
 
