@@ -2124,13 +2124,17 @@ async function executeTransaction(signer, amountETH, toAddress) {
         setText("traniumCount", tranium);
         setText("metalCount", Math.floor(metal));
         setText("kristalCount", Math.floor(kristal));
+        
+        const metalMultiplier = Math.pow(2, metalFacLvl - 1);
+        const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
+
         setText(
           "metalWorkers",
-          `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalFacLvl).toFixed(3)}/s)`,
+          `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalMultiplier).toFixed(3)}/s)`
         );
         setText(
           "kristalWorkers",
-          `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl).toFixed(3)}/s)`,
+          `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier).toFixed(3)}/s)`
         );
         setText("metalFacLevel", `Lvl ${metalFacLvl}`);
         setText("kristalFacLevel", `Lvl ${kristalFacLvl}`);
@@ -2253,9 +2257,12 @@ async function saveData() {
       alert("Not enough energy! Wait for energy to regenerate.");
     }
 }
-      function processMining(dtSec) {
-        const metalGain = dtSec * (metalWorkers * BASE_WORKER_SPEED * metalFacLvl);
-        const kristalGain = dtSec * (kristalWorkers * BASE_WORKER_SPEED * kristalFacLvl);
+      function processMining(dtSec) {      
+        const metalMultiplier = Math.pow(2, metalFacLvl - 1);
+        const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
+
+        const metalGain = dtSec * (metalWorkers * BASE_WORKER_SPEED * metalMultiplier);
+        const kristalGain = dtSec * (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier);
 
         metal += metalGain;
         kristal += kristalGain;
@@ -2593,6 +2600,7 @@ async function saveData() {
 </script>
   </body>
 </html>
+
 
 
 
