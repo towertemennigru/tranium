@@ -3,11 +3,7 @@
   <head>
     <meta name="base:app_id" content="6957083ec63ad876c9081cd6" />
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="base:app_id" content="6957083ec63ad876c9081cd6" />
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />   
     <meta property="og:title" content="TRANIUM VERSE - Strategy Hub" />
     <meta property="og:description" content="Collect resources and refine Tranium to dominate the Verse. A strategic mining game on Farcaster." />
     <meta property="og:type" content="website" />
@@ -2479,13 +2475,14 @@ function showFloatingText(text, color) {
       }
 
       window.update = function(dt) {
-        updateParticles(); // Parçacıkların hareketini hesapla
+        // 1. Parçacıkları ve Madenciliği Güncelle
+        updateParticles(); 
         processMining(dt);
         checkUpgradeProgress();
         
         if (!isStarted) return;
         
-        // --- JOYSTICK ve HAREKET KODLARI ---
+        // 2. Oyuncu Hareketi (Joystick veya Tıklama)
         if (joystickActive) {
           const moveSpeed = player.speed;
           player.x += joystickDirection.x * moveSpeed;
@@ -2508,30 +2505,34 @@ function showFloatingText(text, color) {
           }
         }
 
+        // 3. Harita Sınırları ve Kamera
         player.x = Math.max(50, Math.min(WORLD_SIZE - 50, player.x));
         player.y = Math.max(50, Math.min(WORLD_SIZE - 50, player.y));
         camera.x = Math.max(0, Math.min(WORLD_SIZE - canvas.width, player.x - canvas.width / 2));
         camera.y = Math.max(0, Math.min(WORLD_SIZE - canvas.height, player.y - canvas.height / 2));
         
-        // --- MADENCİ TOPLAMA VE EFEKT KISMI (DÜZELTİLDİ) ---
-        workers.forEach((w, i) => {
-          if (Math.hypot(player.x - w.x, player.y - w.y) < 70) {
-            
-            // 1. EFEKTİ PATLAT
-            let pColor = (w.type === "metal") ? "#ffcc00" : "#00ffff";
-            createExplosion(w.x, w.y, pColor);
+        // 4. MADENCİ TOPLAMA VE EFEKT (DÜZELTİLMİŞ KISIM)
+        // Ters döngü (i--) kullanmak splice işlemlerinde daha güvenlidir ama forEach ile de şu an çalışır.
+        // Önemli olan tek bir blok olması.
+        for (let i = workers.length - 1; i >= 0; i--) {
+            let w = workers[i];
+            if (Math.hypot(player.x - w.x, player.y - w.y) < 70) {
+                
+                // A) Efekti Oluştur
+                let pColor = (w.type === "metal") ? "#ffcc00" : "#00ffff";
+                createExplosion(w.x, w.y, pColor);
 
-            // 2. KAYNAK EKLE
-            if (w.type === "metal") metalWorkers++;
-            else kristalWorkers++;
-            
-            // 3. SİL VE GÜNCELLE (Sadece bir kez)
-            workers.splice(i, 1);
-            updateUI();
-          }
-        });
+                // B) Kaynağı Ekle
+                if (w.type === "metal") metalWorkers++;
+                else kristalWorkers++;
+                
+                // C) Listeden Sil ve UI Güncelle
+                workers.splice(i, 1);
+                updateUI();
+            }
+        }
 
-        // --- DÜŞMAN MANTIĞI ---
+        // 5. Düşman Mantığı
         const now = Date.now();
         enemies.forEach((en, i) => {
           if (en.isChasing && now - en.chaseStartTime > 5000) {
@@ -3036,6 +3037,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
