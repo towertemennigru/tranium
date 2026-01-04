@@ -1987,6 +1987,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
           saveData();
           updateUI();
           document.getElementById("overlay").style.display = "none";
+          document.getElementById("ui").style.display = "flex";
           document.getElementById("ui").style.opacity = "1";
           document.getElementById("joystickContainer").style.display = "block";
           isStarted = true;
@@ -2191,7 +2192,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
       });
       function endGame() {
         document.getElementById("overlay").style.display = "flex";
-        document.getElementById("ui").style.opacity = "0";
+        document.getElementById("ui").style.display = "none";
         document.getElementById("joystickContainer").style.display = "none";
         if (energyTimer) {
           clearInterval(energyTimer);
@@ -2336,6 +2337,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 </script>
   </body>
 </html>
+
 
 
 
