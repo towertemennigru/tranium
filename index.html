@@ -1593,7 +1593,7 @@ async function identifyUser() {
                         if (offlineMetalGain > 0 || offlineKristalGain > 0) {
                             savedMetal += offlineMetalGain;
                             savedKristal += offlineKristalGain;
-                            alert(`WELCOME!\n\nThe miners worked while you were away:\n⚙️ +${Math.floor(offlineMetalGain)} Metal\n💎 +${Math.floor(offlineKristalGain)} Kristal`);
+                            alert(`WELCOME!\n\nOFFLINE EARNINGS:\n⚙️ +${Math.floor(offlineMetalGain)} Metal\n💎 +${Math.floor(offlineKristalGain)} Kristal`);
                         }
                     }
                 }
@@ -3131,6 +3131,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
