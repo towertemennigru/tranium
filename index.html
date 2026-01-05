@@ -531,29 +531,86 @@
         text-transform: uppercase;
         margin: 10px 0;
       }
-      .tranium-circle {
-        margin: 15px auto 10px auto;
-        width: 85px;
-        height: 85px;
-        border: 3px solid var(--gold);
-        border-radius: 50%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 204, 0, 0.1);
-        box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
-        flex-shrink: 0;
-      }
-      .tranium-val {
-        font-size: 28px;
-        font-weight: 900;
-        color: var(--gold);
-      }
-      .tranium-lbl {
-        font-size: 9px;
-        font-weight: bold;
-      }
+     /* --- YENİ TRANIUM REAKTÖR GÖRÜNÜMÜ --- */
+
+.tranium-circle {
+  position: relative; /* Animasyon halkaları için gerekli */
+  margin: 20px auto 15px auto;
+  width: 100px;  /* Biraz büyüttük */
+  height: 100px;
+  border-radius: 50%;
+  
+  /* Derinlik katan gradyan arka plan */
+  background: radial-gradient(circle at 30% 30%, rgba(255, 204, 0, 0.2), #000);
+  
+  /* Ana Parlama Efekti */
+  border: 2px solid rgba(255, 204, 0, 0.8);
+  box-shadow: 
+    0 0 15px rgba(255, 204, 0, 0.4), 
+    inset 0 0 20px rgba(255, 204, 0, 0.2);
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  
+  /* Nefes alma animasyonu */
+  animation: reactorPulse 3s infinite ease-in-out;
+}
+
+/* Etrafında dönen kesik çizgili halka */
+.tranium-circle::before {
+  content: "";
+  position: absolute;
+  top: -8px; left: -8px; right: -8px; bottom: -8px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 204, 0, 0.3);
+  animation: spinSlow 12s linear infinite;
+}
+
+/* Tranium Sayı Değeri */
+.tranium-val {
+  font-size: 32px;
+  font-weight: 900;
+  color: #fff; /* İçi beyaz olsun ki okunsun */
+  text-shadow: 
+    0 0 10px var(--gold),
+    0 0 20px var(--gold); /* Etrafına altın hare */
+  z-index: 2;
+  margin-top: 5px;
+}
+
+/* Tranium Etiketi (Alttaki küçük kutu) */
+.tranium-lbl {
+  font-size: 10px;
+  font-weight: 900;
+  background: var(--gold);
+  color: #000;
+  padding: 2px 10px;
+  border-radius: 10px;
+  margin-top: -5px; /* Sayıya biraz yaklaşsın */
+  box-shadow: 0 0 10px rgba(255, 204, 0, 0.6);
+  z-index: 2;
+  letter-spacing: 1px;
+}
+
+/* --- ANİMASYONLAR --- */
+@keyframes reactorPulse {
+  0%, 100% { 
+    box-shadow: 0 0 15px rgba(255, 204, 0, 0.4), inset 0 0 10px rgba(255, 204, 0, 0.2);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 30px rgba(255, 204, 0, 0.7), inset 0 0 30px rgba(255, 204, 0, 0.4);
+    transform: scale(1.02); /* Çok hafif büyüyüp küçülme */
+  }
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
       .resource-section {
         width: 100%;
         max-width: 380px;
@@ -1073,12 +1130,6 @@ color: black" onclick="executeSwap()">REFINE</button>
       </div>
     </div>
 
-    <div id="howToPlayScreen">
-      <button class="close-btn" onclick="closeHowToPlay()">&times;</button>
-
-      <div class="header">
-        <h1 class="game-title">HOW TO PLAY</h1>
-      </div>
    
         </div>
       </div>
@@ -2882,6 +2933,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
