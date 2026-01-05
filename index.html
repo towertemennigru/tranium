@@ -1628,8 +1628,8 @@ async function identifyUser() {
                         }
                     }
                 }
-                metal = savedMetal;
-                kristal = savedKristal;
+                metal.value = savedMetal;
+                kristal.value = savedKristal;
 
                 // --- REF SİSTEMİ DÜZELTİLMİŞ MANTIK ---
                 const refActionTaken = data.refActionTaken || false;
@@ -2587,17 +2587,18 @@ function showFloatingText(text, color) {
         }
       }
       function processMining(dtSec) {      
-        const metalMultiplier = Math.pow(2, metalFacLvl.value - 1);
-        const kristalMultiplier = Math.pow(2, kristalFacLvl.value - 1);
+    const metalMultiplier = Math.pow(2, metalFacLvl.value - 1);
+    const kristalMultiplier = Math.pow(2, kristalFacLvl.value - 1);
 
-        const metalGain = dtSec * (metalWorkers.value * BASE_WORKER_SPEED * metalMultiplier);
-        const kristalGain = dtSec * (kristalWorkers.value * BASE_WORKER_SPEED * kristalMultiplier);
+    const metalGain = dtSec * (metalWorkers.value * BASE_WORKER_SPEED * metalMultiplier);
+    const kristalGain = dtSec * (kristalWorkers.value * BASE_WORKER_SPEED * kristalMultiplier);
 
-        metal += metalGain;
-        kristal += kristalGain;
+    // DİKKAT: .value += kullanıyoruz
+    metal.value += metalGain;
+    kristal.value += kristalGain;
 
-        if (!isStarted) updateUI();
-      }
+    if (!isStarted) updateUI();
+}
 
       window.update = function(dt) {
         // 1. Parçacıkları ve Madenciliği Güncelle
@@ -2648,8 +2649,11 @@ function showFloatingText(text, color) {
                 createExplosion(w.x, w.y, pColor);
 
                 // B) Kaynağı Ekle
-                if (w.type === "metal") metalWorkers++;
-                else kristalWorkers++;
+                if (w.type === "metal") {
+                metalWorkers.value++;
+                } else {
+                kristalWorkers.value++;
+                }
                 
                 // C) Listeden Sil ve UI Güncelle
                 workers.splice(i, 1);
@@ -3162,6 +3166,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
