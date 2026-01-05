@@ -1673,31 +1673,48 @@ async function identifyUser() {
         }, 800);
       }
 
-// --- EKSİK OLAN BİLDİRİM FONKSİYONU ---
 async function enableNotifications() {
-    // SDK yoksa dur
-    if (!window.farcasterSDK) return;
+    // 1. SDK KONTROLÜ
+    if (!window.farcasterSDK) {
+        // PC'deysen veya SDK yüklenmediyse bu uyarı çıkar
+        console.warn("Farcaster SDK bulunamadı (PC'de olabilirsin).");
+        return;
+    }
 
     try {
-        // Farcaster'dan izin iste
+        // 2. İZİN İSTEME
+        // Bu işlem mobilde ekrana bir onay penceresi çıkarır
         const result = await window.farcasterSDK.actions.addFrame();
         
-        // İzin verildiyse veritabanına kaydet
+        // 3. SONUÇ KONTROLÜ
         if (result.notificationDetails) {
-            console.log("✅ Bildirim İzni Alındı!");
+            // BAŞARILI! Token geldi.
             
             const db = window.firebaseDB;
             const { doc, updateDoc } = window.firebaseFunctions;
             
+            // Veritabanına yazmayı dene
             await updateDoc(doc(db, "players", currentUserID), {
                 notificationToken: result.notificationDetails.token,
                 notificationUrl: result.notificationDetails.url,
                 notif4hSent: false, 
                 notif6hSent: false
             });
+            
+            // Kullanıcıya bilgi ver (Bunu görünce rahatlayabilirsin)
+            // alert("✅ BİLDİRİM İZNİ ALINDI VE KAYDEDİLDİ!"); 
+            console.log("Token:", result.notificationDetails.token);
+
+        } else {
+            // KULLANICI REDDETTİ VEYA TOKEN GELMEDİ
+            console.warn("Kullanıcı izin vermedi veya Token boş döndü.");
+            // Test için hatayı görmek istersen:
+            // alert("⚠️ Token alınamadı. Lütfen tekrar dene.");
         }
     } catch (error) {
-        console.log("Bildirim izni verilmedi veya hata:", error);
+        console.error("Bildirim Hatası:", error);
+        // Hatayı ekranda görmek için:
+        // alert("HATA: " + error.message);
     }
 }
       
@@ -3162,5 +3179,6 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
