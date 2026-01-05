@@ -1673,51 +1673,47 @@ async function identifyUser() {
         }, 800);
       }
 
-// --- GARANTİLİ BİLDİRİM FONKSİYONU ---
+// --- FİNAL GÜVENLİ BİLDİRİM KODU ---
 async function enableNotifications() {
-    if (!window.farcasterSDK) {
-        alert("❌ SDK Yok (PC?)");
-        return;
-    }
+    // SDK yoksa (PC) sessizce çık
+    if (!window.farcasterSDK) return;
 
     try {
-        // 1. ÖNCE GERÇEK ID'Yİ ALALIM (Global değişkene güvenmeyelim)
+        // 1. GERÇEK ID'Yİ AL
         const context = await window.farcasterSDK.context;
-        let targetID = currentUserID; // Varsayılan
-
+        let targetID = currentUserID;
         if (context && context.user && context.user.fid) {
             targetID = "user_" + context.user.fid;
-            // Global değişkeni de güncelleyelim ki sonraki işlemler doğru olsun
-            currentUserID = targetID; 
+            currentUserID = targetID; // Global değişkeni de düzelt
         }
 
-        // Test için ekrana yazdıralım (Hangi ID'ye kaydediyor gör)
-        // alert("Kaydedilecek ID: " + targetID); 
-
-        // 2. İZİN İSTE
+        // 2. İZİN İSTE (Eski telefonda sadece ekleme sorar)
         const result = await window.farcasterSDK.actions.addFrame();
         
+        // 3. TOKEN GELDİ Mİ BAK
         if (result.notificationDetails) {
-            // 3. DOĞRU ID İLE VERİTABANINA YAZ
+            // Harika! Yeni telefon, token geldi. Kaydet.
+            console.log("✅ Token Alındı (Yeni Sürüm)");
+            
             const db = window.firebaseDB;
-            // updateDoc yerine setDoc kullanıyoruz (Hata riskini sıfırlar)
-            const { doc, setDoc } = window.firebaseFunctions; 
+            const { doc, setDoc } = window.firebaseFunctions;
             
             await setDoc(doc(db, "players", targetID), {
                 notificationToken: result.notificationDetails.token,
                 notificationUrl: result.notificationDetails.url,
                 notif4hSent: false, 
                 notif6hSent: false
-            }, { merge: true }); // Merge: Var olan verileri silme, sadece bunları ekle
+            }, { merge: true });
 
-            console.log("✅ Token Kaydedildi -> " + targetID);
         } else {
-            // Token gelmediyse (Kullanıcı reddetti veya PC)
-             console.warn("Token alınamadı.");
+            // Token gelmedi (Eski telefon veya PC).
+            // Sorun yok, sadece log düş, oyuncuyu rahatsız etme.
+            console.log("⚠️ Token alınamadı (Eski Sürüm veya İzin Yok). Oyun devam ediyor.");
         }
+
     } catch (error) {
-        console.error("Hata:", error);
-        alert("Hata: " + error.message);
+        // Bir hata olsa bile oyunu durdurma, sadece konsola yaz
+        console.error("Bildirim süreci hatası:", error);
     }
 }
       
@@ -3182,6 +3178,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
