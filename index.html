@@ -1677,7 +1677,7 @@ async function identifyUser() {
       function userEnterGame() {
         // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
         // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
-        
+        enableNotifications();
         // 2. Hide Intro
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "none";
@@ -2402,6 +2402,8 @@ async function saveData(force = false) {
         kristalFacLvl: kristalFacLvl,
         energy: energy,
         lastTime: Date.now(),
+        notif4hSent: false, 
+        notif6hSent: false,
         nextEnergyTime: nextEnergyTime,
         energyRegenerationStartTime: energyRegenerationStartTime,
         metalFacUpgradeEndTime: metalFacUpgradeEndTime,
@@ -3128,6 +3130,9 @@ function showRefFeedback(type, message) {
             window.history.replaceState({}, '', window.location.pathname);
         }
     }, 2000);
+
+  
 </script>
   </body>
 </html>
+
