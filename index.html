@@ -1673,48 +1673,51 @@ async function identifyUser() {
         }, 800);
       }
 
+// --- GARANTİLİ BİLDİRİM FONKSİYONU ---
 async function enableNotifications() {
-    // 1. SDK KONTROLÜ
     if (!window.farcasterSDK) {
-        // PC'deysen veya SDK yüklenmediyse bu uyarı çıkar
-        console.warn("Farcaster SDK bulunamadı (PC'de olabilirsin).");
+        alert("❌ SDK Yok (PC?)");
         return;
     }
 
     try {
-        // 2. İZİN İSTEME
-        // Bu işlem mobilde ekrana bir onay penceresi çıkarır
+        // 1. ÖNCE GERÇEK ID'Yİ ALALIM (Global değişkene güvenmeyelim)
+        const context = await window.farcasterSDK.context;
+        let targetID = currentUserID; // Varsayılan
+
+        if (context && context.user && context.user.fid) {
+            targetID = "user_" + context.user.fid;
+            // Global değişkeni de güncelleyelim ki sonraki işlemler doğru olsun
+            currentUserID = targetID; 
+        }
+
+        // Test için ekrana yazdıralım (Hangi ID'ye kaydediyor gör)
+        // alert("Kaydedilecek ID: " + targetID); 
+
+        // 2. İZİN İSTE
         const result = await window.farcasterSDK.actions.addFrame();
         
-        // 3. SONUÇ KONTROLÜ
         if (result.notificationDetails) {
-            // BAŞARILI! Token geldi.
-            
+            // 3. DOĞRU ID İLE VERİTABANINA YAZ
             const db = window.firebaseDB;
-            const { doc, updateDoc } = window.firebaseFunctions;
+            // updateDoc yerine setDoc kullanıyoruz (Hata riskini sıfırlar)
+            const { doc, setDoc } = window.firebaseFunctions; 
             
-            // Veritabanına yazmayı dene
-            await updateDoc(doc(db, "players", currentUserID), {
+            await setDoc(doc(db, "players", targetID), {
                 notificationToken: result.notificationDetails.token,
                 notificationUrl: result.notificationDetails.url,
                 notif4hSent: false, 
                 notif6hSent: false
-            });
-            
-            // Kullanıcıya bilgi ver (Bunu görünce rahatlayabilirsin)
-            // alert("✅ BİLDİRİM İZNİ ALINDI VE KAYDEDİLDİ!"); 
-            console.log("Token:", result.notificationDetails.token);
+            }, { merge: true }); // Merge: Var olan verileri silme, sadece bunları ekle
 
+            console.log("✅ Token Kaydedildi -> " + targetID);
         } else {
-            // KULLANICI REDDETTİ VEYA TOKEN GELMEDİ
-            console.warn("Kullanıcı izin vermedi veya Token boş döndü.");
-            // Test için hatayı görmek istersen:
-            // alert("⚠️ Token alınamadı. Lütfen tekrar dene.");
+            // Token gelmediyse (Kullanıcı reddetti veya PC)
+             console.warn("Token alınamadı.");
         }
     } catch (error) {
-        console.error("Bildirim Hatası:", error);
-        // Hatayı ekranda görmek için:
-        // alert("HATA: " + error.message);
+        console.error("Hata:", error);
+        alert("Hata: " + error.message);
     }
 }
       
@@ -3179,6 +3182,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
