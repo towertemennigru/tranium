@@ -634,29 +634,98 @@
         text-transform: uppercase;
         margin: 10px 0;
       }
-      .tranium-circle {
-        margin: 15px auto 10px auto;
-        width: 85px;
-        height: 85px;
-        border: 3px solid var(--gold);
-        border-radius: 50%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 204, 0, 0.1);
-        box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
-        flex-shrink: 0;
-      }
-      .tranium-val {
-        font-size: 28px;
-        font-weight: 900;
-        color: var(--gold);
-      }
-      .tranium-lbl {
-        font-size: 9px;
-        font-weight: bold;
-      }
+/* --- TRANIUM REAKTÖR (GÜVENLİ & MOBİL UYUMLU VERSİYON) --- */
+
+/* 1. GENEL AYARLAR (Tüm Cihazlar İçin Efektler) */
+.tranium-circle {
+  position: relative !important;
+  border-radius: 50% !important;
+  border: 2px solid rgba(255, 204, 0, 0.8) !important;
+  
+  /* Derinlik ve Parlama Efekti */
+  background: radial-gradient(circle at 30% 30%, rgba(255, 204, 0, 0.2), #000) !important;
+  box-shadow: 0 0 20px rgba(255, 204, 0, 0.5), inset 0 0 20px rgba(255, 204, 0, 0.2) !important;
+  
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  
+  /* Animasyon */
+  animation: reactorPulse 3s infinite ease-in-out !important;
+}
+
+/* 2. Dönen Halka (Efekt) */
+.tranium-circle::before {
+  content: "";
+  position: absolute;
+  top: -6px; left: -6px; right: -6px; bottom: -6px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 204, 0, 0.4);
+  border-top-color: transparent;
+  animation: spinSlow 10s linear infinite !important;
+  pointer-events: none;
+}
+
+/* 3. PC VE BÜYÜK EKRANLAR İÇİN BOYUTLAR */
+.tranium-circle {
+  width: 100px !important;
+  height: 100px !important;
+  margin: 15px auto !important;
+}
+.tranium-val {
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  color: #fff !important;
+  text-shadow: 0 0 10px var(--gold) !important;
+  margin: 0 !important;
+  z-index: 2;
+}
+.tranium-lbl {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  background: var(--gold) !important;
+  color: #000 !important;
+  padding: 2px 10px !important;
+  border-radius: 8px !important;
+  margin-top: -2px !important;
+  box-shadow: 0 0 8px rgba(255, 204, 0, 0.8) !important;
+  z-index: 2;
+  letter-spacing: 1px;
+}
+
+/* 4. MOBİL CİHAZLAR İÇİN ÖZEL AYAR (Max Genişlik 600px ise) */
+@media (max-width: 600px) {
+  .tranium-circle {
+    width: 75px !important; /* Mobilde 100px yerine 75px olsun */
+    height: 75px !important;
+    margin: 5px auto !important;
+  }
+  
+  .tranium-circle::before {
+    top: -4px; left: -4px; right: -4px; bottom: -4px; /* Halkayı daralt */
+  }
+
+  .tranium-val {
+    font-size: 20px !important; /* Yazıyı küçült */
+  }
+
+  .tranium-lbl {
+    font-size: 8px !important; /* Etiketi küçült */
+    padding: 1px 6px !important;
+    margin-top: 0 !important;
+  }
+}
+
+/* --- ANİMASYONLAR --- */
+@keyframes reactorPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(255, 204, 0, 0.4), inset 0 0 10px rgba(255, 204, 0, 0.2); transform: scale(1); }
+  50% { box-shadow: 0 0 25px rgba(255, 204, 0, 0.8), inset 0 0 20px rgba(255, 204, 0, 0.4); transform: scale(1.03); }
+}
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
       .resource-section {
         width: 100%;
         max-width: 380px;
@@ -2226,34 +2295,39 @@ async function executeTransaction(signer, amountETH, toAddress) {
       }
 
       function updateUI() {
-        const setText = (id, text) => {
-          const el = document.getElementById(id);
-          if (el) el.innerText = text;
-        };
-        const setDisabled = (id, value) => {
-          const el = document.getElementById(id);
-          if (el) el.disabled = value;
-        };
-        const setHTML = (id, html) => {
-          const el = document.getElementById(id);
-          if (el) el.innerHTML = html;
-        };
+        // Yardımcılar
+        const setText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
+        // YENİ: HTML yazabilmek için bu yardımcıyı ekledik
+        const setHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+        const setDisabled = (id, value) => { const el = document.getElementById(id); if (el) el.disabled = value; };
 
+        // Temel Değerler
         setText("traniumCount", tranium);
         setText("metalCount", Math.floor(metal));
         setText("kristalCount", Math.floor(kristal));
         
+        // --- BURASI GÜNCELLENDİ: Daha şık görünüm ---
         const metalMultiplier = Math.pow(2, metalFacLvl - 1);
         const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
+        
+        const metalRate = (metalWorkers * BASE_WORKER_SPEED * metalMultiplier).toFixed(4);
+        const kristalRate = (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier).toFixed(4);
 
-        setText(
+        // Metal İşçi Bilgisi (Sol taraf: Sayı, Sağ taraf: Hız)
+        setHTML(
           "metalWorkers",
-          `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalMultiplier).toFixed(4)}/s)`
+          `<span style="color:white">👷 ${metalWorkers}</span> 
+           <span style="color:var(--gold); font-size:11px">⚡${metalRate}/s</span>`
         );
-        setText(
+
+        // Kristal İşçi Bilgisi
+        setHTML(
           "kristalWorkers",
-          `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier).toFixed(4)}/s)`
+          `<span style="color:white">👷 ${kristalWorkers}</span> 
+           <span style="color:var(--neon); font-size:11px">⚡${kristalRate}/s</span>`
         );
+        // -------------------------------------------
+
         setText("metalFacLevel", `Lvl ${metalFacLvl}`);
         setText("kristalFacLevel", `Lvl ${kristalFacLvl}`);
         
@@ -2271,6 +2345,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 
         updateEnergyCountdown();
 
+        // Buton Durumları (Upgrade Süreleri)
         const upMetalFacBtn = document.getElementById("upMetalFac");
         const now = Date.now();
         if (metalFacUpgradeEndTime > now) {
@@ -3056,4 +3131,5 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
