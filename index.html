@@ -531,86 +531,29 @@
         text-transform: uppercase;
         margin: 10px 0;
       }
-     /* --- YENİ TRANIUM REAKTÖR GÖRÜNÜMÜ --- */
-
-.tranium-circle {
-  position: relative; /* Animasyon halkaları için gerekli */
-  margin: 20px auto 15px auto;
-  width: 100px;  /* Biraz büyüttük */
-  height: 100px;
-  border-radius: 50%;
-  
-  /* Derinlik katan gradyan arka plan */
-  background: radial-gradient(circle at 30% 30%, rgba(255, 204, 0, 0.2), #000);
-  
-  /* Ana Parlama Efekti */
-  border: 2px solid rgba(255, 204, 0, 0.8);
-  box-shadow: 
-    0 0 15px rgba(255, 204, 0, 0.4), 
-    inset 0 0 20px rgba(255, 204, 0, 0.2);
-  
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  
-  /* Nefes alma animasyonu */
-  animation: reactorPulse 3s infinite ease-in-out;
-}
-
-/* Etrafında dönen kesik çizgili halka */
-.tranium-circle::before {
-  content: "";
-  position: absolute;
-  top: -8px; left: -8px; right: -8px; bottom: -8px;
-  border-radius: 50%;
-  border: 1px dashed rgba(255, 204, 0, 0.3);
-  animation: spinSlow 12s linear infinite;
-}
-
-/* Tranium Sayı Değeri */
-.tranium-val {
-  font-size: 32px;
-  font-weight: 900;
-  color: #fff; /* İçi beyaz olsun ki okunsun */
-  text-shadow: 
-    0 0 10px var(--gold),
-    0 0 20px var(--gold); /* Etrafına altın hare */
-  z-index: 2;
-  margin-top: 5px;
-}
-
-/* Tranium Etiketi (Alttaki küçük kutu) */
-.tranium-lbl {
-  font-size: 10px;
-  font-weight: 900;
-  background: var(--gold);
-  color: #000;
-  padding: 2px 10px;
-  border-radius: 10px;
-  margin-top: -5px; /* Sayıya biraz yaklaşsın */
-  box-shadow: 0 0 10px rgba(255, 204, 0, 0.6);
-  z-index: 2;
-  letter-spacing: 1px;
-}
-
-/* --- ANİMASYONLAR --- */
-@keyframes reactorPulse {
-  0%, 100% { 
-    box-shadow: 0 0 15px rgba(255, 204, 0, 0.4), inset 0 0 10px rgba(255, 204, 0, 0.2);
-    transform: scale(1);
-  }
-  50% { 
-    box-shadow: 0 0 30px rgba(255, 204, 0, 0.7), inset 0 0 30px rgba(255, 204, 0, 0.4);
-    transform: scale(1.02); /* Çok hafif büyüyüp küçülme */
-  }
-}
-
-@keyframes spinSlow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+      .tranium-circle {
+        margin: 15px auto 10px auto;
+        width: 85px;
+        height: 85px;
+        border: 3px solid var(--gold);
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 204, 0, 0.1);
+        box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+        flex-shrink: 0;
+      }
+      .tranium-val {
+        font-size: 28px;
+        font-weight: 900;
+        color: var(--gold);
+      }
+      .tranium-lbl {
+        font-size: 9px;
+        font-weight: bold;
+      }
       .resource-section {
         width: 100%;
         max-width: 380px;
@@ -954,98 +897,6 @@
     10% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
     100% { opacity: 0; transform: translate(-50%, -150%) scale(1); }
 }
-   /* --- TRANIUM REAKTÖR (GÜVENLİ & MOBİL UYUMLU VERSİYON) --- */
-
-/* 1. GENEL AYARLAR (Tüm Cihazlar İçin Efektler) */
-.tranium-circle {
-  position: relative !important;
-  border-radius: 50% !important;
-  border: 2px solid rgba(255, 204, 0, 0.8) !important;
-  
-  /* Derinlik ve Parlama Efekti */
-  background: radial-gradient(circle at 30% 30%, rgba(255, 204, 0, 0.2), #000) !important;
-  box-shadow: 0 0 20px rgba(255, 204, 0, 0.5), inset 0 0 20px rgba(255, 204, 0, 0.2) !important;
-  
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  
-  /* Animasyon */
-  animation: reactorPulse 3s infinite ease-in-out !important;
-}
-
-/* 2. Dönen Halka (Efekt) */
-.tranium-circle::before {
-  content: "";
-  position: absolute;
-  top: -6px; left: -6px; right: -6px; bottom: -6px;
-  border-radius: 50%;
-  border: 1px dashed rgba(255, 204, 0, 0.4);
-  border-top-color: transparent;
-  animation: spinSlow 10s linear infinite !important;
-  pointer-events: none;
-}
-
-/* 3. PC VE BÜYÜK EKRANLAR İÇİN BOYUTLAR */
-.tranium-circle {
-  width: 100px !important;
-  height: 100px !important;
-  margin: 15px auto !important;
-}
-.tranium-val {
-  font-size: 28px !important;
-  font-weight: 900 !important;
-  color: #fff !important;
-  text-shadow: 0 0 10px var(--gold) !important;
-  margin: 0 !important;
-  z-index: 2;
-}
-.tranium-lbl {
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  background: var(--gold) !important;
-  color: #000 !important;
-  padding: 2px 10px !important;
-  border-radius: 8px !important;
-  margin-top: -2px !important;
-  box-shadow: 0 0 8px rgba(255, 204, 0, 0.8) !important;
-  z-index: 2;
-  letter-spacing: 1px;
-}
-
-/* 4. MOBİL CİHAZLAR İÇİN ÖZEL AYAR (Max Genişlik 600px ise) */
-@media (max-width: 600px) {
-  .tranium-circle {
-    width: 75px !important; /* Mobilde 100px yerine 75px olsun */
-    height: 75px !important;
-    margin: 5px auto !important;
-  }
-  
-  .tranium-circle::before {
-    top: -4px; left: -4px; right: -4px; bottom: -4px; /* Halkayı daralt */
-  }
-
-  .tranium-val {
-    font-size: 20px !important; /* Yazıyı küçült */
-  }
-
-  .tranium-lbl {
-    font-size: 8px !important; /* Etiketi küçült */
-    padding: 1px 6px !important;
-    margin-top: 0 !important;
-  }
-}
-
-/* --- ANİMASYONLAR --- */
-@keyframes reactorPulse {
-  0%, 100% { box-shadow: 0 0 15px rgba(255, 204, 0, 0.4), inset 0 0 10px rgba(255, 204, 0, 0.2); transform: scale(1); }
-  50% { box-shadow: 0 0 25px rgba(255, 204, 0, 0.8), inset 0 0 20px rgba(255, 204, 0, 0.4); transform: scale(1.03); }
-}
-@keyframes spinSlow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
     </style>
     <script type="module">
   // Firebase kütüphanelerini import ediyoruz
@@ -1222,6 +1073,12 @@ color: black" onclick="executeSwap()">REFINE</button>
       </div>
     </div>
 
+    <div id="howToPlayScreen">
+      <button class="close-btn" onclick="closeHowToPlay()">&times;</button>
+
+      <div class="header">
+        <h1 class="game-title">HOW TO PLAY</h1>
+      </div>
    
         </div>
       </div>
@@ -1233,6 +1090,9 @@ color: black" onclick="executeSwap()">REFINE</button>
         <div class="tranium-circle">
           <span id="traniumCount" class="tranium-val">0</span>
           <span class="tranium-lbl">TRANIUM</span>
+        </div>
+        <button class="btn-help-open" onclick="openHowToPlay()">HOW TO PLAY</button>
+      </div>
 
       <div class="resource-section">
         <div class="res-card">
@@ -1359,6 +1219,12 @@ async function identifyUser() {
     document.getElementById("transactionOverlay").style.display = "none";
 }
       
+      function openHowToPlay() {
+        document.getElementById("howToPlayScreen").style.display = "flex";
+      }
+      function closeHowToPlay() {
+        document.getElementById("howToPlayScreen").style.display = "none";
+      }
 
       function openUpgradeModal() {
         document.getElementById("upgradeModal").style.display = "block";
