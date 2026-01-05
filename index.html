@@ -1380,14 +1380,45 @@ Energy regenerates over time (1 per hour) even when you are offline.
       const ctx = canvas.getContext("2d");
       const WORLD_SIZE = 2500;
 
-      let metal = 0,
-        kristal = 0,
-        tranium = 0,
-        metalWorkers = 0,
-        kristalWorkers = 0;
-      let metalFacLvl = 1,
-        kristalFacLvl = 1,
-        energy = 10,
+      // --- GÜVENLİK SINIFI (EN TEPEYE EKLE) ---
+class GuvenliSayi {
+  constructor(baslangicDegeri = 0) {
+    this._guncelle(baslangicDegeri);
+  }
+
+  // Değeri şifreleyip saklar
+  _guncelle(deger) {
+    this._anahtar = Math.floor(Math.random() * 99999999) + 1; // Rastgele anahtar
+    this._sifreliVeri = deger ^ this._anahtar; // XOR Şifreleme
+  }
+
+  // Değeri okumak istendiğinde şifreyi çözer
+  get value() {
+    return this._sifreliVeri ^ this._anahtar;
+  }
+
+  // Değer değiştirildiğinde yeni anahtarla tekrar şifreler
+  set value(yeniDeger) {
+    this._guncelle(yeniDeger);
+  }
+  
+  // Matematik işlemlerinde kolaylık olsun diye
+  toString() {
+    return this.value.toString();
+  }
+  valueOf() {
+    return this.value;
+  }
+}
+
+      let metal = new GuvenliSayi(0);
+      let kristal = new GuvenliSayi(0);
+      let tranium = new GuvenliSayi(0);
+      let metalWorkers = new GuvenliSayi(0);
+      let kristalWorkers = new GuvenliSayi(0);
+      let metalFacLvl = new GuvenliSayi(0);
+      let kristalFacLvl = new GuvenliSayi(0);
+      let energy = new GuvenliSayi(0);
         lastTime = Date.now();
       const BASE_WORKER_SPEED = 0.0001;
       let health = 3,
@@ -3131,6 +3162,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
