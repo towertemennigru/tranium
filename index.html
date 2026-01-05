@@ -440,109 +440,6 @@
         box-shadow: 0 0 15px #ffcc00; 
       }
 
-      /* --- MODAL ve DİĞER PENCERELER --- */
-      #howToPlayScreen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.98);
-        z-index: 300;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        padding: max(env(safe-area-inset-top), 20px) 20px max(env(safe-area-inset-bottom), 30px) 20px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        touch-action: pan-y;
-        overscroll-behavior: contain;
-      }
-      .close-btn {
-        position: absolute;
-        top: max(env(safe-area-inset-top), 15px);
-        right: 20px;
-        font-size: 40px;
-        color: var(--red);
-        background: none;
-        border: none;
-        cursor: pointer;
-        z-index: 301;
-        font-weight: bold;
-        line-height: 1;
-      }
-      .btn-help-open {
-        background: transparent;
-        border: 1px solid var(--gold);
-        color: var(--gold);
-        padding: 8px 20px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: bold;
-        cursor: pointer;
-        margin-bottom: 10px;
-        text-transform: uppercase;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        flex-shrink: 0;
-        pointer-events: auto;
-      }
-      .btn-help-open:before {
-        content: "?";
-        display: inline-block;
-        width: 16px;
-        height: 16px;
-        background: var(--gold);
-        color: black;
-        border-radius: 50%;
-        text-align: center;
-        line-height: 16px;
-        font-size: 10px;
-      }
-      .help-container {
-        width: 100%;
-        max-width: 500px;
-        margin-top: 40px;
-      }
-      .help-card {
-        background: var(--panel);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 20px;
-        width: 100%;
-        text-align: left;
-        margin-bottom: 20px;
-      }
-      .help-title {
-        color: var(--gold);
-        font-size: 18px;
-        font-weight: 900;
-        margin-bottom: 10px;
-        display: block;
-        border-bottom: 1px solid rgba(255, 204, 0, 0.3);
-        padding-bottom: 8px;
-      }
-      .help-text {
-        color: #ccc;
-        font-size: 14px;
-        line-height: 1.6;
-        margin-bottom: 15px;
-      }
-      .help-icon {
-        margin-right: 5px;
-      }
-      .warning-text {
-        color: var(--disease-red);
-        font-weight: bold;
-        font-size: 16px;
-        text-align: center;
-        padding: 10px;
-        border: 1px solid var(--disease-red);
-        background: rgba(255, 34, 34, 0.1);
-        border-radius: 8px;
-        margin-top: 20px;
-      }
       .custom-modal {
         display: none;
         position: fixed;
@@ -689,11 +586,26 @@
         display: block;
         margin: 5px 0;
       }
-      .res-info {
-        font-size: 10px;
-        color: var(--neon);
-        opacity: 0.9;
-      }
+/* --- YENİ KAYNAK BİLGİ KARTI STİLİ --- */
+.res-info {
+  background: rgba(0, 0, 0, 0.4); /* Koyu yarı saydam arka plan */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* İnce çerçeve */
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-top: 8px;
+  width: 100%;
+  
+  /* Yazı ayarları */
+  font-size: 13px; /* 10px'den 13px'e çıkardık */
+  color: #ddd;     /* Hafif gri beyaz */
+  font-weight: 600;
+  
+  /* İçerik hizalama */
+  display: flex;
+  flex-direction: row; /* Yan yana duralım */
+  justify-content: space-between; /* Sağa ve sola yasla */
+  align-items: center;
+}
       .btn-refine {
         width: 100%;
         max-width: 380px;
@@ -868,12 +780,7 @@
         .tranium-lbl {
           font-size: 8px;
         }
-        .btn-help-open {
-          padding: 4px 12px;
-          font-size: 10px;
-          margin-bottom: 2px;
-          min-height: 25px;
-        }
+  
         .reset-link {
           padding: 5px;
           min-height: 30px;
@@ -896,9 +803,6 @@
           font-size: 16px;
           margin: 2px 0;
         }
-        .res-info {
-          font-size: 9px;
-        }
         .btn-refine {
           padding: 10px;
           min-height: 45px;
@@ -918,55 +822,7 @@
           min-height: 50px;
           font-size: 16px;
         }
-        #howToPlayScreen {
-          justify-content: center;
-          padding: 10px;
-          overflow: hidden;
-        }
-        #howToPlayScreen.header {
-          margin-top: 0;
-          margin-bottom: 5px;
-        }
-        #howToPlayScreen.game-title {
-          font-size: 16px;
-          margin: 0;
-        }
-        #howToPlayScreen.close-btn {
-          font-size: 30px;
-          top: 10px;
-          right: 15px;
-          z-index: 302;
-        }
-        .help-container {
-          margin-top: 5px;
-          width: 100%;
-        }
-        .help-card {
-          padding: 10px;
-          display: flex;
-          flex-direction: column;
-          gap: 5px;
-        }
-        .warning-text {
-          font-size: 11px;
-          padding: 5px;
-          margin-top: 0;
-          margin-bottom: 5px;
-        }
-        .help-title {
-          font-size: 11px;
-          margin-bottom: 2px;
-          padding-bottom: 2px;
-          border-bottom-width: 1px;
-        }
-        .help-text {
-          font-size: 10px;
-          line-height: 1.2;
-          margin-bottom: 4px;
-        }
-        .help-text:last-child {
-          margin-bottom: 0;
-        }
+
         #joystickContainer {
           width: 90px;
           height: 90px;
@@ -1223,43 +1079,7 @@ color: black" onclick="executeSwap()">REFINE</button>
       <div class="header">
         <h1 class="game-title">HOW TO PLAY</h1>
       </div>
-
-      <div class="help-container">
-        <div class="help-card">
-          <div class="warning-text">⚠️ DON'T FORGET:<br />TRANIUM = SCORE</div>
-
-          <span class="help-title">🎯 MISSION OBJECTIVE</span>
-          <p class="help-text">
-            Collect resources and refine Tranium to dominate the Verse. Survive against the infected swarm.
-          </p>
-
-          <span class="help-title">⛏️ RESOURCES</span>
-          <p class="help-text">
-            <span class="help-icon">⚙️</span> <b>Metal & Crystal:</b> Produced automatically by miners. Find miners in
-            the world to increase production.<br />
-            <span class="help-icon">🟡</span> <b>Tranium:</b> The ultimate currency.
-Use the "REFINE" button to convert
-            Metal and Crystal into Tranium.
-</p>
-
-          <span class="help-title">🏭 FACTORIES</span>
-          <p class="help-text">
-            Upgrade your Metal and Crystal factories to boost miner efficiency.
-Higher levels mean faster production
-            speeds per miner.
-</p>
-
-          <span class="help-title">⚠️ ENEMIES</span>
-          <p class="help-text">
-            Avoid the infected (Red Circles).
-They will chase you. If they touch you 3 times, the mission fails.
-</p>
-
-          <span class="help-title">⚡ ENERGY SYSTEM</span>
-          <p class="help-text">
-            Every mission costs 1 Energy.
-Energy regenerates over time (1 per hour) even when you are offline.
-</p>
+   
         </div>
       </div>
     </div>
@@ -2226,34 +2046,39 @@ async function executeTransaction(signer, amountETH, toAddress) {
       }
 
       function updateUI() {
-        const setText = (id, text) => {
-          const el = document.getElementById(id);
-          if (el) el.innerText = text;
-        };
-        const setDisabled = (id, value) => {
-          const el = document.getElementById(id);
-          if (el) el.disabled = value;
-        };
-        const setHTML = (id, html) => {
-          const el = document.getElementById(id);
-          if (el) el.innerHTML = html;
-        };
+        // Yardımcılar
+        const setText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
+        // YENİ: HTML yazabilmek için bu yardımcıyı ekledik
+        const setHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+        const setDisabled = (id, value) => { const el = document.getElementById(id); if (el) el.disabled = value; };
 
+        // Temel Değerler
         setText("traniumCount", tranium);
         setText("metalCount", Math.floor(metal));
         setText("kristalCount", Math.floor(kristal));
         
+        // --- BURASI GÜNCELLENDİ: Daha şık görünüm ---
         const metalMultiplier = Math.pow(2, metalFacLvl - 1);
         const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
+        
+        const metalRate = (metalWorkers * BASE_WORKER_SPEED * metalMultiplier).toFixed(4);
+        const kristalRate = (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier).toFixed(4);
 
-        setText(
+        // Metal İşçi Bilgisi (Sol taraf: Sayı, Sağ taraf: Hız)
+        setHTML(
           "metalWorkers",
-          `${metalWorkers} Miners (${(metalWorkers * BASE_WORKER_SPEED * metalMultiplier).toFixed(4)}/s)`
+          `<span style="color:white">👷 ${metalWorkers}</span> 
+           <span style="color:var(--gold); font-size:11px">⚡${metalRate}/s</span>`
         );
-        setText(
+
+        // Kristal İşçi Bilgisi
+        setHTML(
           "kristalWorkers",
-          `${kristalWorkers} Miners (${(kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier).toFixed(4)}/s)`
+          `<span style="color:white">👷 ${kristalWorkers}</span> 
+           <span style="color:var(--neon); font-size:11px">⚡${kristalRate}/s</span>`
         );
+        // -------------------------------------------
+
         setText("metalFacLevel", `Lvl ${metalFacLvl}`);
         setText("kristalFacLevel", `Lvl ${kristalFacLvl}`);
         
@@ -2271,6 +2096,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
 
         updateEnergyCountdown();
 
+        // Buton Durumları (Upgrade Süreleri)
         const upMetalFacBtn = document.getElementById("upMetalFac");
         const now = Date.now();
         if (metalFacUpgradeEndTime > now) {
