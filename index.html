@@ -2389,7 +2389,7 @@ async function saveData(force = false) {
     const gameData = {
         metal: metal,
         kristal: kristal,
-        tranium: tranium,
+        tranium: Math.floor(tranium),
         
         // Varsa kodu kaydet, yoksa dokunma
         ...(currentRefCodeToSave && { myRefCode: currentRefCodeToSave }),
@@ -2968,7 +2968,7 @@ function showRefFeedback(type, message) {
         // 3. Ödülleri Dağıt
         const referrerRef = doc(db, "players", referrerId);
         await updateDoc(referrerRef, {
-            tranium: referrerCurrentTranium + 20
+    tranium: Math.floor(referrerCurrentTranium + 20)
         });
 
         // Benim verilerimi güncelle
@@ -3131,6 +3131,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
