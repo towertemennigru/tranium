@@ -1599,11 +1599,11 @@ async function identifyUser() {
                 let savedMetal = parseFloat(data.metal) || 0;
                 let savedKristal = parseFloat(data.kristal) || 0;
                 let savedLastTime = parseInt(data.lastTime) || Date.now();
-                tranium = parseInt(data.tranium) || 0;
-                metalWorkers = parseInt(data.metalWorkers) || 0;
-                kristalWorkers = parseInt(data.kristalWorkers) || 0;
-                metalFacLvl = parseInt(data.metalFacLvl) || 1;
-                kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
+                tranium.value = parseInt(data.tranium) || 0;
+                metalWorkers.value = parseInt(data.metalWorkers) || 0;
+                kristalWorkers.value = parseInt(data.kristalWorkers) || 0;
+                metalFacLvl.value = parseInt(data.metalFacLvl) || 1;
+                kristalFacLvl.value = parseInt(data.kristalFacLvl) || 1;
                 
                 const serverEnergy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
                 if (Math.abs(serverEnergy - energy) > 0) energy = serverEnergy;
@@ -1617,10 +1617,10 @@ async function identifyUser() {
                     const now = Date.now();
                     const secondsPassed = (now - savedLastTime) / 1000;
                     if (secondsPassed > 10) {
-                        const metalMultiplier = Math.pow(2, metalFacLvl - 1);
-                        const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
-                        const offlineMetalGain = secondsPassed * (metalWorkers * BASE_WORKER_SPEED * metalMultiplier);
-                        const offlineKristalGain = secondsPassed * (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier);
+                        const metalMultiplier = Math.pow(2, metalFacLvl.value - 1);
+                        const kristalMultiplier = Math.pow(2, kristalFacLvl.value - 1);
+                        const offlineMetalGain = secondsPassed * (metalWorkers.value * BASE_WORKER_SPEED * metalMultiplier);
+                        const offlineKristalGain = secondsPassed * (kristalWorkers.value * BASE_WORKER_SPEED * kristalMultiplier);
                         if (offlineMetalGain > 0 || offlineKristalGain > 0) {
                             savedMetal += offlineMetalGain;
                             savedKristal += offlineKristalGain;
@@ -2418,20 +2418,20 @@ async function saveData(force = false) {
     }
 
     const gameData = {
-        metal: metal,
-        kristal: kristal,
-        tranium: Math.floor(tranium),
+        metal: metal.value,
+        kristal: kristal.value,
+        tranium: Math.floor(tranium.value),
         
         // Varsa kodu kaydet, yoksa dokunma
         ...(currentRefCodeToSave && { myRefCode: currentRefCodeToSave }),
         // SKIP tuşuna basıldıysa bunu kaydet
         ...(window.tempRefActionTaken && { refActionTaken: true }),
         
-        metalWorkers: metalWorkers,
-        kristalWorkers: kristalWorkers,
-        metalFacLvl: metalFacLvl,
-        kristalFacLvl: kristalFacLvl,
-        energy: energy,
+        metalWorkers: metalWorkers.value,
+        kristalWorkers: kristalWorkers.value,
+        metalFacLvl: metalFacLvl.value,
+        kristalFacLvl: kristalFacLvl.value,
+        energy: energy.value,
         lastTime: Date.now(),
         nextEnergyTime: nextEnergyTime,
         energyRegenerationStartTime: energyRegenerationStartTime,
@@ -3162,6 +3162,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
