@@ -1673,7 +1673,34 @@ async function identifyUser() {
         }, 800);
       }
 
-      // NEW: User Interaction to start the flow
+// --- EKSİK OLAN BİLDİRİM FONKSİYONU ---
+async function enableNotifications() {
+    // SDK yoksa dur
+    if (!window.farcasterSDK) return;
+
+    try {
+        // Farcaster'dan izin iste
+        const result = await window.farcasterSDK.actions.addFrame();
+        
+        // İzin verildiyse veritabanına kaydet
+        if (result.notificationDetails) {
+            console.log("✅ Bildirim İzni Alındı!");
+            
+            const db = window.firebaseDB;
+            const { doc, updateDoc } = window.firebaseFunctions;
+            
+            await updateDoc(doc(db, "players", currentUserID), {
+                notificationToken: result.notificationDetails.token,
+                notificationUrl: result.notificationDetails.url,
+                notif4hSent: false, 
+                notif6hSent: false
+            });
+        }
+    } catch (error) {
+        console.log("Bildirim izni verilmedi veya hata:", error);
+    }
+}
+      
       function userEnterGame() {
         // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
         // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
@@ -3135,4 +3162,5 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
