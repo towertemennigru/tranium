@@ -954,6 +954,98 @@
     10% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
     100% { opacity: 0; transform: translate(-50%, -150%) scale(1); }
 }
+   /* --- TRANIUM REAKTÖR (GÜVENLİ & MOBİL UYUMLU VERSİYON) --- */
+
+/* 1. GENEL AYARLAR (Tüm Cihazlar İçin Efektler) */
+.tranium-circle {
+  position: relative !important;
+  border-radius: 50% !important;
+  border: 2px solid rgba(255, 204, 0, 0.8) !important;
+  
+  /* Derinlik ve Parlama Efekti */
+  background: radial-gradient(circle at 30% 30%, rgba(255, 204, 0, 0.2), #000) !important;
+  box-shadow: 0 0 20px rgba(255, 204, 0, 0.5), inset 0 0 20px rgba(255, 204, 0, 0.2) !important;
+  
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  
+  /* Animasyon */
+  animation: reactorPulse 3s infinite ease-in-out !important;
+}
+
+/* 2. Dönen Halka (Efekt) */
+.tranium-circle::before {
+  content: "";
+  position: absolute;
+  top: -6px; left: -6px; right: -6px; bottom: -6px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 204, 0, 0.4);
+  border-top-color: transparent;
+  animation: spinSlow 10s linear infinite !important;
+  pointer-events: none;
+}
+
+/* 3. PC VE BÜYÜK EKRANLAR İÇİN BOYUTLAR */
+.tranium-circle {
+  width: 100px !important;
+  height: 100px !important;
+  margin: 15px auto !important;
+}
+.tranium-val {
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  color: #fff !important;
+  text-shadow: 0 0 10px var(--gold) !important;
+  margin: 0 !important;
+  z-index: 2;
+}
+.tranium-lbl {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  background: var(--gold) !important;
+  color: #000 !important;
+  padding: 2px 10px !important;
+  border-radius: 8px !important;
+  margin-top: -2px !important;
+  box-shadow: 0 0 8px rgba(255, 204, 0, 0.8) !important;
+  z-index: 2;
+  letter-spacing: 1px;
+}
+
+/* 4. MOBİL CİHAZLAR İÇİN ÖZEL AYAR (Max Genişlik 600px ise) */
+@media (max-width: 600px) {
+  .tranium-circle {
+    width: 75px !important; /* Mobilde 100px yerine 75px olsun */
+    height: 75px !important;
+    margin: 5px auto !important;
+  }
+  
+  .tranium-circle::before {
+    top: -4px; left: -4px; right: -4px; bottom: -4px; /* Halkayı daralt */
+  }
+
+  .tranium-val {
+    font-size: 20px !important; /* Yazıyı küçült */
+  }
+
+  .tranium-lbl {
+    font-size: 8px !important; /* Etiketi küçült */
+    padding: 1px 6px !important;
+    margin-top: 0 !important;
+  }
+}
+
+/* --- ANİMASYONLAR --- */
+@keyframes reactorPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(255, 204, 0, 0.4), inset 0 0 10px rgba(255, 204, 0, 0.2); transform: scale(1); }
+  50% { box-shadow: 0 0 25px rgba(255, 204, 0, 0.8), inset 0 0 20px rgba(255, 204, 0, 0.4); transform: scale(1.03); }
+}
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
     </style>
     <script type="module">
   // Firebase kütüphanelerini import ediyoruz
@@ -1141,9 +1233,6 @@ color: black" onclick="executeSwap()">REFINE</button>
         <div class="tranium-circle">
           <span id="traniumCount" class="tranium-val">0</span>
           <span class="tranium-lbl">TRANIUM</span>
-        </div>
-        <button class="btn-help-open" onclick="openHowToPlay()">HOW TO PLAY</button>
-      </div>
 
       <div class="resource-section">
         <div class="res-card">
@@ -1270,12 +1359,6 @@ async function identifyUser() {
     document.getElementById("transactionOverlay").style.display = "none";
 }
       
-      function openHowToPlay() {
-        document.getElementById("howToPlayScreen").style.display = "flex";
-      }
-      function closeHowToPlay() {
-        document.getElementById("howToPlayScreen").style.display = "none";
-      }
 
       function openUpgradeModal() {
         document.getElementById("upgradeModal").style.display = "block";
@@ -2933,6 +3016,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
