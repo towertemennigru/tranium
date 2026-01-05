@@ -1380,45 +1380,14 @@ Energy regenerates over time (1 per hour) even when you are offline.
       const ctx = canvas.getContext("2d");
       const WORLD_SIZE = 2500;
 
-      // --- GÜVENLİK SINIFI (EN TEPEYE EKLE) ---
-class GuvenliSayi {
-  constructor(baslangicDegeri = 0) {
-    this._guncelle(baslangicDegeri);
-  }
-
-  // Değeri şifreleyip saklar
-  _guncelle(deger) {
-    this._anahtar = Math.floor(Math.random() * 99999999) + 1; // Rastgele anahtar
-    this._sifreliVeri = deger ^ this._anahtar; // XOR Şifreleme
-  }
-
-  // Değeri okumak istendiğinde şifreyi çözer
-  get value() {
-    return this._sifreliVeri ^ this._anahtar;
-  }
-
-  // Değer değiştirildiğinde yeni anahtarla tekrar şifreler
-  set value(yeniDeger) {
-    this._guncelle(yeniDeger);
-  }
-  
-  // Matematik işlemlerinde kolaylık olsun diye
-  toString() {
-    return this.value.toString();
-  }
-  valueOf() {
-    return this.value;
-  }
-}
-
-      let metal = new GuvenliSayi(0);
-      let kristal = new GuvenliSayi(0);
-      let tranium = new GuvenliSayi(0);
-      let metalWorkers = new GuvenliSayi(0);
-      let kristalWorkers = new GuvenliSayi(0);
-      let metalFacLvl = new GuvenliSayi(0);
-      let kristalFacLvl = new GuvenliSayi(0);
-      let energy = new GuvenliSayi(0);
+      let metal = 0,
+        kristal = 0,
+        tranium = 0,
+        metalWorkers = 0,
+        kristalWorkers = 0;
+      let metalFacLvl = 1,
+        kristalFacLvl = 1,
+        energy = 10,
         lastTime = Date.now();
       const BASE_WORKER_SPEED = 0.0001;
       let health = 3,
@@ -1546,46 +1515,32 @@ async function identifyUser() {
       }
       async function executeSwap() {
     let inputVal = document.getElementById("swapAmountInput").value;
-    let amount = parseInt(inputVal);
+    if (!inputVal || inputVal.trim() === "") {
+         alert("Lütfen geçerli bir miktar girin.");
+         return;
+    }
     
-    // Değerleri .value ile al (Güvenli Sayı kullandığın için)
-    let currentMetal = metal.value; 
-    let currentKristal = kristal.value;
-    let maxRefine = Math.min(Math.floor(currentMetal), Math.floor(currentKristal));
+    let amount = parseInt(inputVal);
+    let maxRefine = Math.min(Math.floor(metal), Math.floor(kristal));
 
     if (!isNaN(amount) && amount > 0 && amount <= maxRefine) {
-        
-        // 1. ÖNCE MODALI KAPAT VE LOADING'İ AÇ
-        closeSwapModal(); 
-        showBlockingLoader(); 
+      // 1. ÖNCE PERDEYİ İNDİR
+      closeSwapModal(); // Küçük pencereyi kapat
+      showBlockingLoader(); // Büyük yükleniyor ekranını aç
 
-        // 2. KRİTİK NOKTA: İşlemi setTimeout içine alıyoruz
-        // Bu sayede tarayıcı önce loading ekranını çizer, sonra işlemi yapar.
-        setTimeout(async () => {
-            try {
-                // İşlemler (Güvenli Sayı .value kullanarak)
-                tranium.value += amount;
-                metal.value -= amount;
-                kristal.value -= amount;
+      // 2. VERİLERİ GÜNCELLE
+      tranium += amount;
+      metal -= amount;
+      kristal -= amount;
 
-                // Veritabanı kaydını bekle
-                await saveData(true); 
-                
-                // UI Güncelle
-                updateUI();
-                showFloatingText(`+${amount} TRANIUM`, "#ffcc00");
-
-            } catch (error) {
-                console.error("Swap Error:", error);
-                alert("İşlem sırasında hata oluştu.");
-            } finally {
-                // 3. İŞLEM BİTİNCE KAPAT
-                hideBlockingLoader();
-            }
-        }, 100); // 100ms gecikme (Gözle görülmez ama tarayıcıya çizim şansı verir)
-
+      // 3. VERİTABANINA KESİN KAYIT YAPILMASINI BEKLE
+      await saveData(true); 
+      // 4. EKRANI GÜNCELLE VE PERDEYİ KALDIR
+      updateUI();
+      hideBlockingLoader();
+      showFloatingText(`+${amount} TRANIUM`, "#ffcc00");
     } else {
-        alert("Geçersiz miktar veya yetersiz kaynak!");
+      alert("Geçersiz miktar veya yetersiz kaynak!");
     }
 }
 
@@ -1613,11 +1568,11 @@ async function identifyUser() {
                 let savedMetal = parseFloat(data.metal) || 0;
                 let savedKristal = parseFloat(data.kristal) || 0;
                 let savedLastTime = parseInt(data.lastTime) || Date.now();
-                tranium.value = parseInt(data.tranium) || 0;
-                metalWorkers.value = parseInt(data.metalWorkers) || 0;
-                kristalWorkers.value = parseInt(data.kristalWorkers) || 0;
-                metalFacLvl.value = parseInt(data.metalFacLvl) || 1;
-                kristalFacLvl.value = parseInt(data.kristalFacLvl) || 1;
+                tranium = parseInt(data.tranium) || 0;
+                metalWorkers = parseInt(data.metalWorkers) || 0;
+                kristalWorkers = parseInt(data.kristalWorkers) || 0;
+                metalFacLvl = parseInt(data.metalFacLvl) || 1;
+                kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
                 
                 const serverEnergy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
                 if (Math.abs(serverEnergy - energy) > 0) energy = serverEnergy;
@@ -1631,10 +1586,10 @@ async function identifyUser() {
                     const now = Date.now();
                     const secondsPassed = (now - savedLastTime) / 1000;
                     if (secondsPassed > 10) {
-                        const metalMultiplier = Math.pow(2, metalFacLvl.value - 1);
-                        const kristalMultiplier = Math.pow(2, kristalFacLvl.value - 1);
-                        const offlineMetalGain = secondsPassed * (metalWorkers.value * BASE_WORKER_SPEED * metalMultiplier);
-                        const offlineKristalGain = secondsPassed * (kristalWorkers.value * BASE_WORKER_SPEED * kristalMultiplier);
+                        const metalMultiplier = Math.pow(2, metalFacLvl - 1);
+                        const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
+                        const offlineMetalGain = secondsPassed * (metalWorkers * BASE_WORKER_SPEED * metalMultiplier);
+                        const offlineKristalGain = secondsPassed * (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier);
                         if (offlineMetalGain > 0 || offlineKristalGain > 0) {
                             savedMetal += offlineMetalGain;
                             savedKristal += offlineKristalGain;
@@ -1642,8 +1597,8 @@ async function identifyUser() {
                         }
                     }
                 }
-                metal.value = savedMetal;
-                kristal.value = savedKristal;
+                metal = savedMetal;
+                kristal = savedKristal;
 
                 // --- REF SİSTEMİ DÜZELTİLMİŞ MANTIK ---
                 const refActionTaken = data.refActionTaken || false;
@@ -2432,20 +2387,20 @@ async function saveData(force = false) {
     }
 
     const gameData = {
-        metal: metal.value,
-        kristal: kristal.value,
-        tranium: Math.floor(tranium.value),
+        metal: metal,
+        kristal: kristal,
+        tranium: tranium,
         
         // Varsa kodu kaydet, yoksa dokunma
         ...(currentRefCodeToSave && { myRefCode: currentRefCodeToSave }),
         // SKIP tuşuna basıldıysa bunu kaydet
         ...(window.tempRefActionTaken && { refActionTaken: true }),
         
-        metalWorkers: metalWorkers.value,
-        kristalWorkers: kristalWorkers.value,
-        metalFacLvl: metalFacLvl.value,
-        kristalFacLvl: kristalFacLvl.value,
-        energy: energy.value,
+        metalWorkers: metalWorkers,
+        kristalWorkers: kristalWorkers,
+        metalFacLvl: metalFacLvl,
+        kristalFacLvl: kristalFacLvl,
+        energy: energy,
         lastTime: Date.now(),
         nextEnergyTime: nextEnergyTime,
         energyRegenerationStartTime: energyRegenerationStartTime,
@@ -2601,18 +2556,17 @@ function showFloatingText(text, color) {
         }
       }
       function processMining(dtSec) {      
-    const metalMultiplier = Math.pow(2, metalFacLvl.value - 1);
-    const kristalMultiplier = Math.pow(2, kristalFacLvl.value - 1);
+        const metalMultiplier = Math.pow(2, metalFacLvl - 1);
+        const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
 
-    const metalGain = dtSec * (metalWorkers.value * BASE_WORKER_SPEED * metalMultiplier);
-    const kristalGain = dtSec * (kristalWorkers.value * BASE_WORKER_SPEED * kristalMultiplier);
+        const metalGain = dtSec * (metalWorkers * BASE_WORKER_SPEED * metalMultiplier);
+        const kristalGain = dtSec * (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier);
 
-    // DİKKAT: .value += kullanıyoruz
-    metal.value += metalGain;
-    kristal.value += kristalGain;
+        metal += metalGain;
+        kristal += kristalGain;
 
-    if (!isStarted) updateUI();
-}
+        if (!isStarted) updateUI();
+      }
 
       window.update = function(dt) {
         // 1. Parçacıkları ve Madenciliği Güncelle
@@ -2663,11 +2617,8 @@ function showFloatingText(text, color) {
                 createExplosion(w.x, w.y, pColor);
 
                 // B) Kaynağı Ekle
-                if (w.type === "metal") {
-                metalWorkers.value++;
-                } else {
-                kristalWorkers.value++;
-                }
+                if (w.type === "metal") metalWorkers++;
+                else kristalWorkers++;
                 
                 // C) Listeden Sil ve UI Güncelle
                 workers.splice(i, 1);
@@ -3017,7 +2968,7 @@ function showRefFeedback(type, message) {
         // 3. Ödülleri Dağıt
         const referrerRef = doc(db, "players", referrerId);
         await updateDoc(referrerRef, {
-    tranium: Math.floor(referrerCurrentTranium + 20)
+            tranium: referrerCurrentTranium + 20
         });
 
         // Benim verilerimi güncelle
@@ -3054,7 +3005,107 @@ function showRefFeedback(type, message) {
     }
 }
     </script>
-    
+    <script>
+      (function () {
+        const fpsBox = document.createElement("div");
+        fpsBox.id = "pc-fps-counter";
+        fpsBox.style.cssText =
+          "position:fixed; top:60px; left:10px; color:#00ffcc; font-family:monospace; font-size:11px; font-weight:bold; z-index:2147483647; background:rgba(0,0,0,0.6); padding:4px 8px; border:1px solid #00ffcc; border-radius:4px; pointer-events:none; display:none;";
+        fpsBox.innerHTML = "FPS:...";
+        document.body.appendChild(fpsBox);
+
+        function lockPlayerSpeed() {
+          try {
+            if (typeof player !== "undefined" && player.speed !== 7.0) {
+              player.speed = 7.0;
+              Object.defineProperty(player, "speed", {
+                value: 7.0,
+                writable: false,
+                configurable: true,
+              });
+            }
+          } catch (e) {}
+        }
+
+        const originalInitHub = window.initHub;
+        window.initHub = function () {
+          if (originalInitHub) originalInitHub();
+
+          const cvs = document.getElementById("gameCanvas");
+          if (cvs) {
+            let targetWidth = window.innerWidth;
+            let targetHeight = window.innerHeight;
+
+            if (targetWidth > 1920) {
+              const ratio = window.innerHeight / window.innerWidth;
+              targetWidth = 1920;
+              targetHeight = 1920 * ratio;
+            }
+
+            cvs.width = targetWidth;
+            cvs.height = targetHeight;
+            cvs.style.width = "100vw";
+            cvs.style.height = "100vh";
+            cvs.style.transform = "translate3d(0,0,0)";
+            cvs.style.imageRendering = "pixelated";
+          }
+
+          if (!("ontouchstart" in window) && navigator.maxTouchPoints === 0) {
+            const joyContainer = document.getElementById("joystickContainer");
+            if (joyContainer) joyContainer.style.display = "none";
+            const style = document.createElement("style");
+            style.innerHTML = "#joystickContainer { display: none!important; }";
+            document.head.appendChild(style);
+          }
+
+          lockPlayerSpeed();
+          fpsBox.style.display = "block";
+          console.log("✅ TURBO MODE: Player 7.0 | Enemy Max 6.6");
+        };
+
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let lastFpsTime = performance.now();
+        const targetFPS = 60;
+        const frameDelay = 1000 / targetFPS;
+        const originalRAF = window.requestAnimationFrame;
+        function secureGameLoop() {
+          originalRAF(secureGameLoop);
+
+          const now = performance.now();
+          const elapsed = now - lastTime;
+
+          if (elapsed < frameDelay) return;
+          lastTime = now - (elapsed % frameDelay);
+          if (typeof player !== "undefined") {
+            if (player.speed !== 7.0) player.speed = 7.0;
+          }
+
+          if (typeof enemies !== "undefined" && Array.isArray(enemies)) {
+            enemies.forEach((en) => {
+              if (en.currentSpeed > 6.6) {
+                en.currentSpeed = 6.6;
+              }
+            });
+          }
+
+          frameCount++;
+          if (now - lastFpsTime >= 1000) {
+            fpsBox.innerHTML = "FPS: " + frameCount;
+            frameCount = 0;
+            lastFpsTime = now;
+          }
+
+          if (typeof window.update === "function" && typeof window.draw === "function") {
+            window.update(0.016);
+            window.draw();
+          }
+        }
+
+        window.gameLoop = function () {};
+        secureGameLoop();
+      })();
+    </script>
      // Bu kodu </body> kapanışından önce ekleyin
 <script>
     // Emergency splash screen remover
@@ -3080,19 +3131,3 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
