@@ -1617,10 +1617,10 @@ async function identifyUser() {
                     const now = Date.now();
                     const secondsPassed = (now - savedLastTime) / 1000;
                     if (secondsPassed > 10) {
-                        const metalMultiplier = Math.pow(2, metalFacLvl - 1);
-                        const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
-                        const offlineMetalGain = secondsPassed * (metalWorkers * BASE_WORKER_SPEED * metalMultiplier);
-                        const offlineKristalGain = secondsPassed * (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier);
+                        const metalMultiplier = Math.pow(2, metalFacLvl.value - 1);
+                        const kristalMultiplier = Math.pow(2, kristalFacLvl.value - 1);
+                        const offlineMetalGain = secondsPassed * (metalWorkers.value * BASE_WORKER_SPEED * metalMultiplier);
+                        const offlineKristalGain = secondsPassed * (kristalWorkers.value * BASE_WORKER_SPEED * kristalMultiplier);
                         if (offlineMetalGain > 0 || offlineKristalGain > 0) {
                             savedMetal += offlineMetalGain;
                             savedKristal += offlineKristalGain;
@@ -2587,11 +2587,11 @@ function showFloatingText(text, color) {
         }
       }
       function processMining(dtSec) {      
-        const metalMultiplier = Math.pow(2, metalFacLvl - 1);
-        const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
+        const metalMultiplier = Math.pow(2, metalFacLvl.value - 1);
+        const kristalMultiplier = Math.pow(2, kristalFacLvl.value - 1);
 
-        const metalGain = dtSec * (metalWorkers * BASE_WORKER_SPEED * metalMultiplier);
-        const kristalGain = dtSec * (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier);
+        const metalGain = dtSec * (metalWorkers.value * BASE_WORKER_SPEED * metalMultiplier);
+        const kristalGain = dtSec * (kristalWorkers.value * BASE_WORKER_SPEED * kristalMultiplier);
 
         metal += metalGain;
         kristal += kristalGain;
@@ -3162,6 +3162,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
