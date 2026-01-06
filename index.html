@@ -48,37 +48,44 @@
     // En güncel Frame SDK'sını çekiyoruz
     import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
 
-    // SDK'yı global değişkene atıyoruz ki her yerden erişelim
+    // SDK'yı global değişkene atıyoruz
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 
     const triggerReady = async () => {
-    try {
-        // SDK'nın context (bağlam) bilgisini bekle
-        const context = await sdk.context;
+        try {
+            // SDK'nın context bilgisini bekle
+            const context = await sdk.context;
 
-        // Eğer context gelirse (yani Farcaster içindeysek)
-        if (context) {
-            console.log("✅ Farcaster Environment Detected");
-            
-            // Engelleyici ekranı kaldır
-            document.getElementById("desktop-blocker").style.display = "none";
-            
-            // SDK'ya hazır olduğumuzu bildir
-            sdk.actions.ready();
+            // Eğer context gelirse (yani Farcaster içindeysek)
+            if (context) {
+                console.log("✅ Farcaster Environment Detected");
+                
+                // Engelleyici ekranı kaldır
+                const blocker = document.getElementById("desktop-blocker");
+                if(blocker) blocker.style.display = "none";
+                
+                // SDK'ya hazır olduğumuzu bildir
+                sdk.actions.ready();
 
-            // Varsa intro'yu başlat
-            if(window.startIntro) window.startIntro();
-        } else {
-            // Context yoksa (Normal tarayıcı)
-            console.warn("❌ Not in Farcaster");
-            // Engelleyici ekran kalmaya devam eder
+                // ---> DEĞİŞİKLİK BURADA: OTOMATİK BİLDİRİM İZNİ <---
+                // Oyun açılır açılmaz (icon click) bildirim izni iste
+                setTimeout(() => {
+                    if(window.enableNotifications) {
+                        console.log("🔔 Uygulama açıldı, bildirim izni otomatik isteniyor...");
+                        window.enableNotifications(); 
+                    }
+                }, 500); // 0.5 saniye bekle ki diğer scriptler yüklensin
+
+                // Varsa intro'yu başlat
+                if(window.startIntro) window.startIntro();
+            } else {
+                console.warn("❌ Not in Farcaster");
+            }
+        } catch (e) {
+            console.error("SDK Init Error:", e);
         }
-    } catch (e) {
-        console.error("SDK Init Error:", e);
-        // Hata olursa da engelleyici ekran kalır
-    }
-};
+    };
 
     document.addEventListener('DOMContentLoaded', triggerReady);
 </script>
@@ -1721,16 +1728,10 @@ async function enableNotifications() {
       
       async function userEnterGame() {
     console.log("🎮 Oyuna giriş yapılıyor...");
-    
-    // 1. Önce bildirimleri etkinleştirmeyi dene (Kullanıcıya sorar)
-    // await koyduğumuz için kullanıcı 'Ekle' veya 'İptal' diyene kadar bekler.
-    await enableNotifications(); 
-    
-    // 2. Intro'yu gizle
+
     const introOverlay = document.getElementById("introOverlay");
     introOverlay.style.display = "none";
-    
-    // 3. Yüklemeyi başlat
+
     startLoading();
 }
 
@@ -3199,6 +3200,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
