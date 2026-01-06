@@ -1669,18 +1669,76 @@ async function identifyUser() {
         }, 800);
       }
 
-      // NEW: User Interaction to start the flow
-      function userEnterGame() {
-        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
-        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
+   
+      // --- BİLDİRİM İZNİ VE KAYIT FONKSİYONU ---
+async function enableNotifications() {
+    console.log("🔔 Bildirim sistemi başlatılıyor...");
+    
+    // 1. SDK kontrolü (PC'de yoksa çık)
+    if (!window.farcasterSDK) {
+        console.log("⚠️ SDK yok (PC ortamı), bildirim atlanıyor");
+        return;
+    }
+
+    try {
+        // 2. Context'i bekle (Kullanıcı ID'sini kesinleştirmek için)
+        const context = await window.farcasterSDK.context;
         
-        // 2. Hide Intro
-        const introOverlay = document.getElementById("introOverlay");
-        introOverlay.style.display = "none";
+        if (!context || !context.user || !context.user.fid) {
+            console.warn("❌ Context alınamadı, bildirim kaydedilemedi");
+            return;
+        }
+
+        // Kullanıcı ID'sini güncelle (Garanti olsun)
+        const targetID = "user_" + context.user.fid;
+        currentUserID = targetID; 
+
+        // 3. Farcaster'dan İzin İste (Frame Ekleme Ekranı)
+        // Bu işlem kullanıcıya "Add Frame" popup'ını açar.
+        const result = await window.farcasterSDK.actions.addFrame();
         
-        // 3. Start Loading
-        startLoading();
-      }
+        // 4. Sonucu Analiz Et ve Token'ı Al
+        if (result && result.notificationDetails) {
+            const token = result.notificationDetails.token;
+            const url = result.notificationDetails.url;
+            
+            console.log("✅ Token Alındı:", token);
+
+            // 5. Firebase'e Token'ı Kaydet
+            const db = window.firebaseDB;
+            const { doc, setDoc } = window.firebaseFunctions;
+            
+            await setDoc(doc(db, "players", targetID), {
+                notificationToken: token,
+                notificationUrl: url,
+                notificationsEnabled: true,
+                lastNotificationUpdate: Date.now()
+            }, { merge: true });
+
+            console.log("💾 Token Firebase'e başarıyla kaydedildi!");
+        } else {
+            console.log("⚠️ Kullanıcı bildirim izni vermedi veya token dönmedi.");
+        }
+
+    } catch (error) {
+        console.error("❌ Bildirim hatası:", error);
+    }
+}
+      
+      async function userEnterGame() {
+    console.log("🎮 Oyuna giriş yapılıyor...");
+    
+    // 1. Önce bildirimleri etkinleştirmeyi dene (Kullanıcıya sorar)
+    // await koyduğumuz için kullanıcı 'Ekle' veya 'İptal' diyene kadar bekler.
+    await enableNotifications(); 
+    
+    // 2. Intro'yu gizle
+    const introOverlay = document.getElementById("introOverlay");
+    introOverlay.style.display = "none";
+    
+    // 3. Yüklemeyi başlat
+    startLoading();
+}
 
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
@@ -3131,5 +3189,6 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
