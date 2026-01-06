@@ -2231,41 +2231,57 @@ async function executeTransaction(signer, amountETH, toAddress) {
       }
 
      window.initHub = function() {
+    console.log("✅ initHub Başlatıldı");
+    
+    // 1. Canvas Ayarları
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     canvas.style.imageRendering = "pixelated";
 
+    // 2. Zaman ve Kaynak Hesaplamaları
     const now = Date.now();
     const secondsPassed = Math.floor((now - lastTime) / 1000);
     processMining(secondsPassed);
+    
+    // 3. UI Güncellemeleri
     checkUpgradeProgress();
     updateUI();
     startEnergyCountdown();
-    
-    // Spawn işlemleri
-    for (let i = 0; i < 50; i++) spawnWorker();
-    for (let i = 0; i < 15; i++) spawnEnemy();
-    
-    // Döngüleri başlat
+
+    // 4. Nesneleri Oluştur (Eğer boşsa)
+    if (workers.length === 0) {
+        for (let i = 0; i < 50; i++) spawnWorker();
+    }
+    if (enemies.length === 0) {
+        for (let i = 0; i < 15; i++) spawnEnemy();
+    }
+
+    // 5. Döngüleri Başlat
     requestAnimationFrame(gameLoop);
-    setInterval(saveData, 3000);
-    setInterval(checkUpgradeProgress, 1000);
     
+    // Daha önce interval atanmışsa temizle (tekrar girişlerde hızlanmayı önler)
+    if (window.saveInterval) clearInterval(window.saveInterval);
+    if (window.upgradeInterval) clearInterval(window.upgradeInterval);
+
+    window.saveInterval = setInterval(saveData, 3000);
+    window.upgradeInterval = setInterval(checkUpgradeProgress, 1000);
+
+    // 6. Kontrolleri Başlat
     initJoystick();
 
-    // --- EKSİK OLAN AKTİFLİK TAKİBİ BURADA OLMALI ---
-    // Global değişkene atıyoruz ki forceSave erişebilsin
+    // 7. Aktiflik Takibi (Force Save için gerekli)
     window.lastInteractionTime = Date.now(); 
     
+    // Eski event listener'ları temizlemeye gerek yok, overwrite ediyoruz
     window.updateInteraction = function() { 
         window.lastInteractionTime = Date.now(); 
     };
 
-    // Etkileşim dinleyicileri
     ['click', 'touchstart', 'mousemove', 'keydown'].forEach(evt => 
         window.addEventListener(evt, window.updateInteraction, {passive: true})
     );
-}
+};
+    
 
       function initJoystick() {
         const joystickContainer = document.getElementById("joystickContainer");
@@ -3254,6 +3270,7 @@ function copyRefCode() {
 </script>
   </body>
 </html>
+
 
 
 
