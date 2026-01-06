@@ -48,29 +48,38 @@
     // En güncel Frame SDK'sını çekiyoruz
     import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
 
-    // SDK'yı global değişkene atıyoruz
+    // SDK'yı global değişkene atıyoruz ki her yerden erişelim
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 
     const triggerReady = async () => {
     try {
+        // SDK'nın context (bağlam) bilgisini bekle
         const context = await sdk.context;
+
+        // Eğer context gelirse (yani Farcaster içindeysek)
         if (context) {
             console.log("✅ Farcaster Environment Detected");
             
-            const blocker = document.getElementById("desktop-blocker");
-            if(blocker) blocker.style.display = "none";
+            // Engelleyici ekranı kaldır
+            document.getElementById("desktop-blocker").style.display = "none";
             
+            // SDK'ya hazır olduğumuzu bildir
             sdk.actions.ready();
 
+            // Varsa intro'yu başlat
             if(window.startIntro) window.startIntro();
         } else {
+            // Context yoksa (Normal tarayıcı)
             console.warn("❌ Not in Farcaster");
+            // Engelleyici ekran kalmaya devam eder
         }
     } catch (e) {
         console.error("SDK Init Error:", e);
+        // Hata olursa da engelleyici ekran kalır
     }
 };
+
     document.addEventListener('DOMContentLoaded', triggerReady);
 </script>
     
@@ -1628,7 +1637,13 @@ async function identifyUser() {
                 console.log("🆕 Yeni kullanıcı.");
                 energy = 10;
                 
-                
+                // Yeni kullanıcıya hemen kod oluşturmuyoruz, önce sorsun.
+                if (!window.refModalShown) {
+                    setTimeout(() => {
+                        document.getElementById("refInputModal").style.display = "block";
+                    }, 2500);
+                    window.refModalShown = true;
+                }
 
                 if (!window.hasInitialLoadCompleted) {
                     initHub();
@@ -1654,138 +1669,18 @@ async function identifyUser() {
         }, 800);
       }
 
-   
-async function enableNotifications() {
-    console.log("🔔 Bildirim sistemi zorlanıyor...");
-    
-    // SDK yoksa (PC tarayıcısı vs) direkt geçiş izni ver
-    if (!window.farcasterSDK) {
-        console.log("⚠️ SDK yok, PC modu varsayılıyor. Geçiş izni verildi.");
-        return true; 
-    }
-
-    try {
-        // 1. Context'i al
-        const context = await window.farcasterSDK.context;
-        let isMobile = false;
-
-        // Kullanıcı ID'sini ve Cihaz Tipini belirle
-        if (context) {
-            if (context.user && context.user.fid) {
-                currentUserID = "user_" + context.user.fid;
-            }
-            // Client tipi mobil mi kontrol et (warpcast mobil uygulaması)
-            if (context.client && (context.client.clientFid || context.client.displayName)) {
-                 // Basit mobil kontrolü: Genelde client bilgisi mobilde doludur
-                 // Ancak garanti olması için token kontrolüne güveneceğiz.
-            }
-        }
-
-        // 2. İZİN İSTE (Kritik Nokta)
-        console.log("📱 addFrame() çağrılıyor...");
-        let result = null;
+      // NEW: User Interaction to start the flow
+      function userEnterGame() {
+        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
+        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
         
-        try {
-            result = await window.farcasterSDK.actions.addFrame();
-        } catch (err) {
-            console.warn("İzin penceresi hatası:", err);
-            // Hata aldıysa (User rejected), direkt FALSE döndür
-            return false;
-        }
-
-        // 3. SONUCU DEĞERLENDİR (HARD GATE)
+        // 2. Hide Intro
+        const introOverlay = document.getElementById("introOverlay");
+        introOverlay.style.display = "none";
         
-        // SENARYO A: Token Geldi (Mükemmel - Mobil Başarılı)
-        if (result && result.notificationDetails && result.notificationDetails.token) {
-            console.log("✅ MOBİL: Token Alındı! Oyuna giriliyor.");
-            
-            // DB'ye kaydet
-            const db = window.firebaseDB;
-            const { doc, setDoc } = window.firebaseFunctions;
-            await setDoc(doc(db, "players", currentUserID), {
-                notificationToken: result.notificationDetails.token,
-                notificationUrl: result.notificationDetails.url,
-                notificationsEnabled: true,
-                platform: "mobile",
-                lastLogin: Date.now()
-            }, { merge: true });
-
-            return true; // BAŞARILI
-        }
-        
-        // SENARYO B: Token Yok (PC Olabilir veya Mobil Reddedilmiş olabilir)
-        else {
-            // Basit bir User Agent kontrolü ile PC mi Mobil mi ayırt edelim
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            const isSmartphone = /android|ipad|iphone|ipod/i.test(userAgent.toLowerCase());
-
-            if (isSmartphone) {
-                // Eğer telefonsa ve Token yoksa -> BAŞARISIZ (Oyun Yok)
-                console.warn("❌ MOBİL: Token alınamadı. Oyun engelleniyor.");
-                return false; 
-            } else {
-                // PC ise -> BAŞARILI (Geçiş izni)
-                console.log("💻 PC: Token yok ama PC olduğu için izin veriliyor.");
-                return true;
-            }
-        }
-
-    } catch (error) {
-        console.error("❌ Kritik Hata:", error);
-        return false; // Hata durumunda oyuna sokma
-    }
-}
-// Window'a bağla
-window.enableNotifications = enableNotifications;
-
-// Global erişim için window'a ata
-window.enableNotifications = enableNotifications;
-      window.enableNotifications = enableNotifications;
-      
-     // Bu fonksiyonu kodunda bul ve içeriğini bu şekilde güncelle:
-async function userEnterGame() {
-    console.log("🎮 Giriş deneniyor...");
-    
-    // 1. BUTONU KİLİTLE (Çift tıklamayı önle)
-    const btn = document.getElementById("enterBtn");
-    if(btn) {
-        btn.disabled = true;
-        btn.innerText = "CHECKING PERMISSIONS...";
-        btn.style.opacity = "0.5";
-    }
-
-    // 2. İZİNLERİ KONTROL ET (HARD GATE)
-    const isAllowed = await window.enableNotifications();
-
-    if (!isAllowed) {
-        // --- İZİN YOKSA OYUN YOK ---
-        console.log("⛔ ERİŞİM ENGELLENDİ");
-        
-        // Kullanıcıya sert bir uyarı göster
-        alert("⚠️ ACCESS DENIED ⚠️\n\nYou MUST add the frame and enable notifications to play on mobile.\n\n(Bildirim izni vermeden oyuna giremezsiniz.)");
-        
-        // Butonu eski haline getir ki tekrar denesin
-        if(btn) {
-            btn.disabled = false;
-            btn.innerText = "START SIMULATION";
-            btn.style.opacity = "1";
-        }
-        return; // FONKSİYONU BURADA DURDUR (Loading başlamaz)
-    }
-
-    // 3. İZİN VARSA DEVAM ET
-    console.log("✅ Erişim onaylandı. Oyun başlıyor.");
-    
-    const introOverlay = document.getElementById("introOverlay");
-    if(introOverlay) introOverlay.style.display = "none";
-    
-    startLoading();
-}
-// Window'a bağla
-window.userEnterGame = userEnterGame;
-
-// !!! İŞTE BUTONUN ÇALIŞMASINI SAĞLAYAN SATIR BU !!!
-window.userEnterGame = userEnterGame;
+        // 3. Start Loading
+        startLoading();
+      }
 
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
@@ -2930,52 +2825,36 @@ function copyRefCode() {
 async function skipRefCode() {
     showBlockingLoader();
     
-    // 1. Önce mevcut bir kod var mı kontrol et
-    let finalRefCode = window.currentUserRefCode;
+    // 1. Kendi kodunu oluştur
+    const newRefCode = generateRefCode();
     
-    // Eğer global değişkende yoksa, ekrandan da kontrol edelim (Yedek)
-    if (!finalRefCode) {
-        const uiCode = document.getElementById("myRefCodeText").innerText;
-        if (uiCode && uiCode !== "LOADING..." && uiCode !== "WAITING...") {
-            finalRefCode = uiCode;
-        }
-    }
-
-    // 2. Hala kod yoksa (Yeni Kullanıcı), o zaman yeni oluştur
-    if (!finalRefCode) {
-        finalRefCode = generateRefCode();
-    }
-    
-    // 3. Veritabanını güncelle
+    // 2. Veritabanına "seçim yapıldı" (refActionTaken) bilgisini işle
     const db = window.firebaseDB;
     const { doc, updateDoc } = window.firebaseFunctions;
     const myRef = doc(db, "players", currentUserID);
 
     try {
         await updateDoc(myRef, {
-            refActionTaken: true,      // Bir daha sorma
-            myRefCode: finalRefCode,   // Mevcut kodu koru veya yenisini kaydet
-            // usedRefCode'u false yapmıyoruz, çünkü belki adam zaten kod girmiştir ama 
-            // sadece bu popup'ı skip ediyordur. Mevcut veriyi bozmuyoruz.
+            refActionTaken: true, // Bir daha sorma
+            myRefCode: newRefCode, // Kodunu ver
+            usedRefCode: false
         });
 
-        // 4. UI Güncelle
+        // 3. UI Güncelle
         document.getElementById("refInputModal").style.display = "none";
         const refTextEl = document.getElementById("myRefCodeText");
-        if (refTextEl) refTextEl.innerText = finalRefCode;
-        window.currentUserRefCode = finalRefCode;
+        if (refTextEl) refTextEl.innerText = newRefCode;
+        window.currentUserRefCode = newRefCode;
 
         hideBlockingLoader();
     } catch (e) {
         console.error("Skip Error:", e);
-        
-        // Hata durumunda (Örn: updateDoc başarısız olursa) yedek plan
+        // Hata olursa (örn: yeni kullanıcı updateDoc yapamazsa)
         hideBlockingLoader();
         document.getElementById("refInputModal").style.display = "none";
-        
-        window.currentUserRefCode = finalRefCode;
+        window.currentUserRefCode = newRefCode;
         window.tempRefActionTaken = true; 
-        saveData(true); // saveData içinde merge:true olduğu için güvenli
+        saveData(true); // saveData ile yedekten kaydet
     }
 }
 
@@ -3252,13 +3131,4 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
-
-
-
-
-
-
-
-
-
 
