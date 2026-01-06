@@ -53,34 +53,24 @@
     window.isMiniApp = true;
 
     const triggerReady = async () => {
-        try {
-            // SDK'nın context bilgisini bekle
-            const context = await sdk.context;
+    try {
+        const context = await sdk.context;
+        if (context) {
+            console.log("✅ Farcaster Environment Detected");
+            
+            const blocker = document.getElementById("desktop-blocker");
+            if(blocker) blocker.style.display = "none";
+            
+            sdk.actions.ready();
 
-            // Eğer context gelirse (yani Farcaster içindeysek)
-            if (context) {
-                console.log("✅ Farcaster Environment Detected");
-                
-                // Engelleyici ekranı kaldır
-                const blocker = document.getElementById("desktop-blocker");
-                if(blocker) blocker.style.display = "none";
-                
-                // SDK'ya hazır olduğumuzu bildir
-                sdk.actions.ready();
-
-                // ---> DEĞİŞİKLİK BURADA: OTOMATİK BİLDİRİM İZNİ <---
-                // Oyun açılır açılmaz (icon click) bildirim izni iste
-
-                // Varsa intro'yu başlat
-                if(window.startIntro) window.startIntro();
-            } else {
-                console.warn("❌ Not in Farcaster");
-            }
-        } catch (e) {
-            console.error("SDK Init Error:", e);
+            if(window.startIntro) window.startIntro();
+        } else {
+            console.warn("❌ Not in Farcaster");
         }
-    };
-
+    } catch (e) {
+        console.error("SDK Init Error:", e);
+    }
+};
     document.addEventListener('DOMContentLoaded', triggerReady);
 </script>
     
@@ -1713,21 +1703,25 @@ async function enableNotifications() {
         console.error("❌ Bildirim Hatası:", error);
     }
 }
+      window.enableNotifications = enableNotifications;
       
-      // MEVCUT userEnterGame FONKSİYONUNU SİL VE BUNU YAPIŞTIR
+     // Bu fonksiyonu kodunda bul ve içeriğini bu şekilde güncelle:
 async function userEnterGame() {
     console.log("🎮 Oyuna giriş yapılıyor...");
     
-    // 1. Butona tıklandığı an bildirim iznini sor (En garantisi budur)
-    await enableNotifications(); 
+    // Bildirim iznini ŞİMDİ soruyoruz (Butona basıldığı için çalışır)
+    if(window.enableNotifications) {
+        await window.enableNotifications(); 
+    }
     
-    // 2. Intro'yu gizle
     const introOverlay = document.getElementById("introOverlay");
     introOverlay.style.display = "none";
     
-    // 3. Yüklemeyi başlat
     startLoading();
 }
+
+// !!! İŞTE BUTONUN ÇALIŞMASINI SAĞLAYAN SATIR BU !!!
+window.userEnterGame = userEnterGame;
 
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
@@ -3194,6 +3188,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
