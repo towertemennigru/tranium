@@ -1688,63 +1688,66 @@ async function identifyUser() {
  * Triggers the native Farcaster 'Add App' modal to request notification permissions.
  */
 async function enableNotifications() {
-    // 1. Safety Check: Ensure SDK is loaded
-    if (!window.farcasterSDK ||!window.farcasterSDK.actions) {
-        console.warn("SDK not ready");
-        return;
-    }
-
-    // 2. UX: Show loading state (utilizing existing game UI)
-    // Assuming a button with ID 'btnEnableNotifs' exists
     const btn = document.getElementById("btnEnableNotifs");
     if(btn) {
-        btn.innerText = "REQUESTING...";
+        btn.innerText = "⏳...";
         btn.disabled = true;
     }
 
+    // 1. SDK KONTROLÜ
+    if (!window.farcasterSDK || !window.farcasterSDK.actions) {
+        alert("❌ HATA: Farcaster SDK bulunamadı! (PC'de misin?)");
+        return;
+    }
+
     try {
-        // 3. Invoke the Atomic Action
+        // 2. İZİN İSTEME
+        // alert("DEBUG: İzin isteniyor..."); // Gerekirse bunu aç
         const result = await window.farcasterSDK.actions.addFrame();
 
-        // 4. Handle 'Success with Notifications'
-        if (result.added && result.notificationDetails) {
-            // Extract the critical data
-            const { token, url } = result.notificationDetails;
-            
-            // Get current user FID from the global scope or SDK context
-            const context = await window.farcasterSDK.context;
-            if (context && context.user) {
-                await saveNotificationToken(context.user.fid, result.notificationDetails);
-            }
+        // 3. SONUÇ ANALİZİ
+        if (result.added) {
+            if (result.notificationDetails) {
+                // BAŞARILI DURUM
+                const { token, url } = result.notificationDetails;
+                
+                // Context kontrolü
+                const context = await window.farcasterSDK.context;
+                if (context && context.user) {
+                    await saveNotificationToken(context.user.fid, result.notificationDetails);
+                    alert("✅ BAŞARILI! Token alındı ve kaydedildi.");
+                } else {
+                    alert("⚠️ Token alındı ama Kullanıcı ID (Context) bulunamadı!");
+                }
 
-            // UI Feedback: Use the game's existing floating text system
-            if (typeof showFloatingText === "function") {
-                showFloatingText("SYSTEM LINKED!", "#00ffcc");
+                if (typeof showFloatingText === "function") {
+                    showFloatingText("SYSTEM LINKED!", "#00ffcc");
+                }
+                
+                if(btn) btn.style.display = "none";
+
+            } else {
+                // EKLENDİ AMA TOKEN YOK (Senin sorunun muhtemelen burası)
+                alert("⚠️ Frame eklendi AMA Token gelmedi.\n\nSebep: iPhone 7 / iOS Sürümü veya Bildirim İzni kapalı.");
+                
+                if(btn) {
+                    btn.innerText = "ENABLE ALERTS";
+                    btn.disabled = false;
+                }
             }
-            alert("✅ Notifications Enabled! You will be alerted when energy is full.");
-            
-            // Update UI State
-            if(btn) btn.style.display = "none"; // Hide button after success
-        } 
-        // 5. Handle 'Success BUT Notifications Disabled'
-        else if (result.added &&!result.notificationDetails) {
-            alert("⚠️ App added, but notifications are disabled. Please enable them in the Farcaster settings menu.");
+        } else {
+            // KULLANICI REDDETTİ
+            alert("❌ İşlem kullanıcı tarafından iptal edildi.");
             if(btn) {
                 btn.innerText = "ENABLE ALERTS";
                 btn.disabled = false;
             }
         }
-        // 6. Handle 'Rejection'
-        else {
-            console.log("User rejected addFrame");
-            if(btn) {
-                btn.innerText = "ENABLE ALERTS";
-                btn.disabled = false;
-            }
-        }
+
     } catch (error) {
         console.error("AddFrame Error:", error);
-        // Fallback for errors
+        alert("🔥 KRİTİK HATA: " + error.message);
+        
         if(btn) {
             btn.innerText = "RETRY";
             btn.disabled = false;
@@ -3277,6 +3280,7 @@ function copyRefCode() {
 </script>
   </body>
 </html>
+
 
 
 
