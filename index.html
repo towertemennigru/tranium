@@ -1112,11 +1112,15 @@
 }
     </style>
     <script type="module">
+  // Firebase kütüphanelerini import ediyoruz
+  // Not: Versiyon numaraları (11.x.x) firebase konsolunda ne verildiyse onu kullan
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
   // Eğer Analytics kullanacaksan:
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 
+  // Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyD5ozuYZ7YWoHz6qC4zXO-hDwVEnHCa-6g",
   authDomain: "tranium-6f126.firebaseapp.com",
@@ -1422,28 +1426,22 @@ Energy regenerates over time (1 per hour) even when you are offline.
       let metalFacUpgradeEndTime = 0;
       let kristalFacUpgradeEndTime = 0;
 
-// Global değişkenler
-let currentUserID = "test_user_001"; 
-let isUserIdentified = false; // Kimlik tespiti yapıldı mı kontrolü
+      // Global değişkenler kısmına ekle
+let currentUserID = "test_user_001"; // Varsayılan test kullanıcısı
 
-// Bu fonksiyonu SADECE bir kere, en başta çalıştıracağız.
 async function identifyUser() {
-    if (isUserIdentified) return currentUserID; // Zaten bulduysak tekrar bakma
-
     try {
+        // Eğer Farcaster içindeysek gerçek ID'yi al
         if (window.farcasterSDK) {
             const context = await window.farcasterSDK.context;
             if (context && context.user && context.user.fid) {
                 currentUserID = "user_" + context.user.fid;
-                console.log("👤 Farcaster Kullanıcısı Tanımlandı:", currentUserID);
+                console.log("👤 Kullanıcı Tanımlandı:", currentUserID);
             }
         }
     } catch (e) {
-        console.warn("Kimlik alınamadı, test modunda devam.");
+        console.warn("Kullanıcı kimliği alınamadı, test modunda devam ediliyor.");
     }
-    
-    isUserIdentified = true;
-    return currentUserID;
 }
 
       const imgBG = new Image();
@@ -1549,18 +1547,16 @@ async function identifyUser() {
     
       async function setupRealtimeListener() {
     console.log("📡 Realtime Bağlantı Kuruluyor...");
-    
-    // BURASI KRİTİK: Önce kimliğin kesinleşmesini bekle
-    await identifyUser(); 
+    await identifyUser();
 
     if (!window.firebaseDB || !window.firebaseFunctions) {
         initHub();
         return;
     }
 
-    const { doc, onSnapshot, setDoc } = window.firebaseFunctions; // setDoc'u da ekledim
+    const { doc, onSnapshot } = window.firebaseFunctions;
     const db = window.firebaseDB;
-        
+
     try {
         const docRef = doc(db, "players", currentUserID);
 
@@ -1677,78 +1673,61 @@ async function identifyUser() {
         }, 800);
       }
 
-// ÖNCEKİ HALI YERİNE BU KODU KULLAN
-
+// --- FİNAL GÜVENLİ BİLDİRİM KODU ---
 async function enableNotifications() {
-    console.log("🔔 Bildirim sistemi başlatılıyor...");
-
-    // 1. SDK Yoksa Çık (PC vs.)
-    if (!window.farcasterSDK || !window.farcasterSDK.actions) return;
+    // SDK yoksa (PC) sessizce çık
+    if (!window.farcasterSDK) return;
 
     try {
-        // 2. CONTEXT AL (Kimlik Tespiti)
+        // 1. GERÇEK ID'Yİ AL
         const context = await window.farcasterSDK.context;
-        
-        // Eğer kimlik geldiyse Global ID'yi güncelle
+        let targetID = currentUserID;
         if (context && context.user && context.user.fid) {
-            currentUserID = "user_" + context.user.fid;
-            console.log("👤 Kimlik Tespit Edildi:", currentUserID);
+            targetID = "user_" + context.user.fid;
+            currentUserID = targetID; // Global değişkeni de düzelt
         }
 
-        // 3. İZİN İSTE (Pencere Açılır)
+        // 2. İZİN İSTE (Eski telefonda sadece ekleme sorar)
         const result = await window.farcasterSDK.actions.addFrame();
-
-        // 4. TOKEN GELDİ Mİ?
-        if (result && result.notificationDetails) {
-            const token = result.notificationDetails.token;
-            const url = result.notificationDetails.url;
-
-            console.log("✅ Token Alındı:", token);
-
-            // Veritabanı bağlantılarını hazırla
+        
+        // 3. TOKEN GELDİ Mİ BAK
+        if (result.notificationDetails) {
+            // Harika! Yeni telefon, token geldi. Kaydet.
+            console.log("✅ Token Alındı (Yeni Sürüm)");
+            
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
-
-            // 5. DATABASE'E YAZ (KRİTİK KISIM)
-            // merge: true -> Var olan veriyi (Referans kodu, Metal, Kristal) KORUR.
-            // Sadece notificationToken alanını ekler/günceller.
-            await setDoc(doc(db, "players", currentUserID), {
-                notificationToken: token,
-                notificationUrl: url,
-                lastTokenUpdate: Date.now()
+            
+            await setDoc(doc(db, "players", targetID), {
+                notificationToken: result.notificationDetails.token,
+                notificationUrl: result.notificationDetails.url,
+                notif4hSent: false, 
+                notif6hSent: false
             }, { merge: true });
 
-            console.log("💾 Token DB'ye işlendi.");
-        } 
+        } else {
+            // Token gelmedi (Eski telefon veya PC).
+            // Sorun yok, sadece log düş, oyuncuyu rahatsız etme.
+            console.log("⚠️ Token alınamadı (Eski Sürüm veya İzin Yok). Oyun devam ediyor.");
+        }
 
     } catch (error) {
-        console.error("❌ Bildirim Hatası:", error);
+        // Bir hata olsa bile oyunu durdurma, sadece konsola yaz
+        console.error("Bildirim süreci hatası:", error);
     }
 }
-
-
-
-window.testNotifications = async function() {
-    console.log("🧪 Manuel bildirim testi başlatılıyor...");
-    await enableNotifications();
-    console.log("✅ Test tamamlandı, Console'u kontrol et");
-};
       
       function userEnterGame() {
-    console.log("🎮 Oyuna giriş tetiklendi.");
-
-   
-    const introOverlay = document.getElementById("introOverlay");
-    if(introOverlay) introOverlay.style.display = "none";
-    
-   
-    startLoading();
-
-    // 3. Bildirimleri ARKAPLANDA etkinleştir (Oyunu bekletmez)
-    enableNotifications().then(() => {
-        console.log("🔔 Bildirim süreci tamam.");
-    });
-}
+        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
+        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
+        enableNotifications();
+        // 2. Hide Intro
+        const introOverlay = document.getElementById("introOverlay");
+        introOverlay.style.display = "none";
+        
+        // 3. Start Loading
+        startLoading();
+      }
 
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
@@ -1808,7 +1787,7 @@ window.testNotifications = async function() {
 
     progressBar.style.width = "100%";
     percentageText.textContent = "100%";
-    loadingText.textContent = "Connecting Database..."; 
+    loadingText.textContent = "Connecting Database..."; // Yazıyı değiştirdik
 
     setTimeout(() => {
         document.getElementById("loadingOverlay").style.display = "none";
@@ -1964,19 +1943,26 @@ window.testNotifications = async function() {
         return `${hours}h ${minutes}m`;
       }
 
+      // --- BU KISMI SCRIPT'İN EN BAŞINA, DEĞİŞKEN TANIMLARININ ALTINA EKLEYİN ---
+
+// WalletConnect Project ID (Burası ücretsizdir, kendi ID'nizi cloud.reown.com'dan almanız önerilir)
+// Test için bu ID'yi kullanabilirsin ama prodüksiyon için kendi ID'ni al.
 const PROJECT_ID = '2c7a5c244856e6edb4c52e0d4e61fadb'; 
 
 let appKitModal = null;
 let appKitAdapter = null;
 
 
+// Sistemi Başlatan Fonksiyon
 async function initWalletSystem() {
+    // 1. Kütüphane kontrolü (Eğer yüklenmediyse 1 saniye sonra tekrar dener)
     if (!window.AppKitLib) {
         console.log("⚠️ AppKit kütüphanesi henüz hazır değil, bekleniyor...");
         setTimeout(initWalletSystem, 1000);
         return;
     }
 
+    // 2. Eğer zaten yüklendiyse tekrar yükleme
     if (appKitModal) return;
 
     try {
@@ -2004,10 +1990,13 @@ async function initWalletSystem() {
     }
 }
 
+// Sayfa yüklenince başlat
 document.addEventListener('DOMContentLoaded', initWalletSystem);
+// Yedek olarak pencere tam yüklendiğinde de tetikle (PC'deki tepkisizliği önlemek için)
 window.addEventListener('load', initWalletSystem);
 
 
+// --- ÖDEME FONKSİYONU ---
 async function sendETHPayment(amountETH) {
     console.log("🚀 Ödeme süreci başlatılıyor...");
     const PAYMENT_ADDRESS = "0x3cCAF6612D0e134c14aa148f7F668a717DA645Fe";
@@ -2016,13 +2005,16 @@ async function sendETHPayment(amountETH) {
         let signer;
         let provider;
 
+        // SENARYO 1: MOBİL MİNİAPP (Farcaster SDK)
         if (window.farcasterSDK && window.farcasterSDK.wallet && window.farcasterSDK.wallet.ethProvider) {
             console.log("📱 Mobil Ortam: Farcaster Provider");
             const ethProvider = window.farcasterSDK.wallet.ethProvider;
             provider = new ethers.BrowserProvider(ethProvider);
             
+            // Hesaplara erişim
             await provider.send("eth_requestAccounts", []);
             
+            // Ağ Kontrolü (Base: 8453)
             const network = await provider.getNetwork();
             if (Number(network.chainId) !== 8453) {
                  try {
@@ -2038,12 +2030,14 @@ async function sendETHPayment(amountETH) {
             signer = await provider.getSigner();
         } 
         
+        // SENARYO 2: PC / TARAYICI (QR Kod)
         else {
             console.log("💻 PC Ortamı: AppKit");
             
+            // Kütüphane yüklenmemişse uyar
             if (!window.AppKitLib) {
                 alert("Sistem hazırlanıyor, lütfen 3 saniye sonra tekrar deneyin.");
-                initWalletSystem(); 
+                initWalletSystem(); // Zorla başlatmayı dene
                 return false;
             }
 
@@ -2057,13 +2051,14 @@ async function sendETHPayment(amountETH) {
 
             if (!appKitModal.getIsConnected()) {
                 await appKitModal.open();
+                // Kullanıcı bağlandığında işlemi yakalamak için loop
                 return new Promise((resolve) => {
                     const checkInterval = setInterval(async () => {
                         if (appKitModal.getIsConnected()) {
                             clearInterval(checkInterval);
                             setTimeout(async () => {
                                 resolve(await proceedWithPayment(amountETH));
-                            }, 1000);
+                            }, 1000); // Bağlantı otursun diye 1sn bekle
                         }
                     }, 1000);
                 });
@@ -2078,6 +2073,7 @@ async function sendETHPayment(amountETH) {
             signer = await provider.getSigner();
         }
 
+        // --- ORTAK İŞLEM GÖNDERME ---
         return await executeTransaction(signer, amountETH, PAYMENT_ADDRESS);
 
     } catch (error) {
@@ -2087,19 +2083,24 @@ async function sendETHPayment(amountETH) {
     }
 }
 
+// Yardımcı Fonksiyon: Recursive çağrı için
 async function proceedWithPayment(amountETH) {
     return await sendETHPayment(amountETH);
 }
 
+// ASIL İŞLEM FONKSİYONU (DÜZELTİLDİ)
 async function executeTransaction(signer, amountETH, toAddress) {
     try {
         const amountWei = ethers.parseEther(amountETH.toString());
         console.log("💸 İşlem gönderiliyor... Miktar:", amountETH);
 
+        // --- MOBİL HATASI İÇİN KRİTİK DÜZELTME ---
+        // gasLimit: 21000 ekleyerek 'estimateGas' hatasını bypass ediyoruz.
+        // Standart ETH transferi her zaman 21000 gas yer.
         const tx = await signer.sendTransaction({
             to: toAddress,
             value: amountWei,
-            gasLimit: 21000 //
+            gasLimit: 21000 // <--- BU SATIR "estimateGas" HATASINI ÇÖZER
         });
 
         console.log("✅ TX Hash:", tx.hash);
@@ -2109,6 +2110,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
     } catch (error) {
         console.error("TX Hatası:", error);
         
+        // Hatayı analiz et ve kullanıcıya düzgün mesaj ver
         let msg = error.message || "";
         
         if (msg.includes("insufficient funds") || error.code === "INSUFFICIENT_FUNDS") {
@@ -2162,16 +2164,20 @@ async function executeTransaction(signer, amountETH, toAddress) {
           return;
         }
 
+        // 1. Show Blocking Loader
         showBlockingLoader();
 
+        // 2. Set Timers
         if (type === "metal") {
           metalFacUpgradeEndTime = Date.now() + upgradeTime;
         } else if (type === "kristal") {
           kristalFacUpgradeEndTime = Date.now() + upgradeTime;
         }
 
+        // 3. FORCE SAVE and WAIT
         await saveData(true); 
 
+        // 4. Update UI & Hide
         updateUI();
         hideBlockingLoader();
         alert("✅ İşlem Gönderildi! İnşaat başlıyor.");
@@ -2202,13 +2208,20 @@ async function executeTransaction(signer, amountETH, toAddress) {
         setInterval(checkUpgradeProgress, 1000);
         initJoystick();
         window.initHub = function() {
+        // ... (diğer kodlar) ...
+        
         setInterval(checkUpgradeProgress, 1000);
         initJoystick();
 
-          const updateInteraction = () => { lastInteractionTime = Date.now(); };
-       }
+        // ---> KODU BURAYA YAPIŞTIR <---
+        
+        // --- AKTİFLİK TAKİBİ (Bunu zaten eklemiştik) ---
+        const updateInteraction = () => { lastInteractionTime = Date.now(); };
+        // ...
       }
-   function initJoystick() {
+      }
+
+      function initJoystick() {
         const joystickContainer = document.getElementById("joystickContainer");
         const rect = joystickContainer.getBoundingClientRect();
         joystickCenterX = rect.left + rect.width / 2;
@@ -2224,8 +2237,10 @@ async function executeTransaction(signer, amountETH, toAddress) {
         document.addEventListener("mousemove", handleJoystickMove);
         document.addEventListener("mouseup", handleJoystickEnd);
       }
-      
+      // --- ACİL KAYIT SİSTEMİ (SAVE ON EXIT) ---
         const forceSave = () => {
+            // Eğer pasif moddaysa bile, çıkış yapıldığı için son bir kez kaydetmeyi deneyebiliriz.
+            // Ancak veri tutarlılığı için sadece son etkileşim yakınsa kaydedelim.
             if (Date.now() - lastInteractionTime < 60000) {
                 saveData(); 
                 // Not: save işlemi asenkron olduğu için kapanırken %100 garanti edilemez 
@@ -2233,6 +2248,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
             }
         };
 
+        // Mobil (Warpcast) ve Web için "Sekme/Uygulama Gizlendi" olayını yakala
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
                 console.log("🙈 Uygulama gizlendi - Acil kayıt alınıyor...");
@@ -2240,6 +2256,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
             }
         });
 
+        // PC/Web için "Sekme Kapatılıyor" olayını yakala
         window.addEventListener('beforeunload', () => {
             console.log("❌ Sekme kapanıyor - Acil kayıt...");
             forceSave();
@@ -2352,6 +2369,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
           `<span style="color:white">👷 ${kristalWorkers}</span> 
            <span style="color:var(--neon); font-size:11px">⚡${kristalRate}/s</span>`
         );
+        // -------------------------------------------
 
         setText("metalFacLevel", `Lvl ${metalFacLvl}`);
         setText("kristalFacLevel", `Lvl ${kristalFacLvl}`);
@@ -2631,7 +2649,10 @@ function showFloatingText(text, color) {
         player.y = Math.max(50, Math.min(WORLD_SIZE - 50, player.y));
         camera.x = Math.max(0, Math.min(WORLD_SIZE - canvas.width, player.x - canvas.width / 2));
         camera.y = Math.max(0, Math.min(WORLD_SIZE - canvas.height, player.y - canvas.height / 2));
-
+        
+        // 4. MADENCİ TOPLAMA VE EFEKT (DÜZELTİLMİŞ KISIM)
+        // Ters döngü (i--) kullanmak splice işlemlerinde daha güvenlidir ama forEach ile de şu an çalışır.
+        // Önemli olan tek bir blok olması.
         for (let i = workers.length - 1; i >= 0; i--) {
             let w = workers[i];
             if (Math.hypot(player.x - w.x, player.y - w.y) < 70) {
