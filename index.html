@@ -1682,7 +1682,7 @@ async function enableNotifications() {
     }
 
     try {
-        // 2. Context'i bekle (Kullanıcı ID'sini kesinleştirmek için)
+        // 2. Context'i bekle
         const context = await window.farcasterSDK.context;
         
         if (!context || !context.user || !context.user.fid) {
@@ -1690,12 +1690,11 @@ async function enableNotifications() {
             return;
         }
 
-        // Kullanıcı ID'sini güncelle (Garanti olsun)
+        // Kullanıcı ID'sini güncelle
         const targetID = "user_" + context.user.fid;
         currentUserID = targetID; 
 
-        // 3. Farcaster'dan İzin İste (Frame Ekleme Ekranı)
-        // Bu işlem kullanıcıya "Add Frame" popup'ını açar.
+        // 3. Farcaster'dan İzin İste
         const result = await window.farcasterSDK.actions.addFrame();
         
         // 4. Sonucu Analiz Et ve Token'ı Al
@@ -1705,7 +1704,7 @@ async function enableNotifications() {
             
             console.log("✅ Token Alındı:", token);
 
-            // 5. Firebase'e Token'ı Kaydet
+            // 5. Firebase'e Token'ı VE ZAMANLAYICILARI Kaydet
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
             
@@ -1713,10 +1712,16 @@ async function enableNotifications() {
                 notificationToken: token,
                 notificationUrl: url,
                 notificationsEnabled: true,
-                lastNotificationUpdate: Date.now()
+                
+                // --- İŞTE GERİ GETİRDİĞİMİZ KISIM ---
+                notif4hSent: false,  // 4 saatlik bildirim henüz atılmadı
+                notif6hSent: false,  // 6 saatlik bildirim henüz atılmadı
+                lastNotificationUpdate: Date.now() // Sayaç şimdi başlıyor
+                // ------------------------------------
+                
             }, { merge: true });
 
-            console.log("💾 Token Firebase'e başarıyla kaydedildi!");
+            console.log("💾 Token ve Bildirim Ayarları Firebase'e kaydedildi!");
         } else {
             console.log("⚠️ Kullanıcı bildirim izni vermedi veya token dönmedi.");
         }
@@ -3200,6 +3205,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
