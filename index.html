@@ -1686,77 +1686,55 @@ async function identifyUser() {
 async function enableNotifications() {
     console.log("🔔 Bildirim sistemi başlatılıyor...");
     
-    // 1. SDK kontrolü (PC'de yoksa çık)
-    if (!window.farcasterSDK) {
-        console.log("⚠️ SDK yok (PC ortamı), bildirim atlanıyor");
-        return;
-    }
+    // 1. SDK kontrolü
+    if (!window.farcasterSDK) return;
 
     try {
-        // 2. Context'i bekle (Bu çok önemli!)
-        console.log("⏳ Context bekleniyor...");
+        // 2. Context'i al
         const context = await window.farcasterSDK.context;
-        
-        if (!context || !context.user || !context.user.fid) {
-            console.warn("❌ Context alınamadı, bildirim kaydedilemedi");
-            return;
-        }
+        if (!context || !context.user || !context.user.fid) return;
 
-        // 3. Gerçek kullanıcı ID'sini al
+        // 3. Yeni ID'yi belirle
         const targetID = "user_" + context.user.fid;
-        currentUserID = targetID; // Global değişkeni güncelle
-        console.log("👤 Kullanıcı ID:", targetID);
+        
+        // --- REFERRAL KORUMA BÖLÜMÜ ---
+        // Eğer ID değişiyorsa (örn: test_user -> user_123), oyuna "Hala yüklenmedim" de.
+        // Böylece oyun, eksik verilerle (sadece token var diye) kullanıcıyı sıfırlamaz.
+        if (currentUserID !== targetID) {
+            console.log(`👤 ID Değişimi: ${currentUserID} -> ${targetID}`);
+            currentUserID = targetID; 
+            
+            // Eğer oyun daha önce yüklendiyse (hasInitialLoadCompleted = true ise),
+            // ID değiştiği için bu bayrağı indiriyoruz ki yeni ID'nin verilerini baştan çeksin.
+            window.hasInitialLoadCompleted = false;
+        }
+        // -----------------------------
 
         // 4. İzin iste
-        console.log("📱 addFrame() çağrılıyor...");
         const result = await window.farcasterSDK.actions.addFrame();
-        console.log("📦 addFrame sonucu:", result);
 
-        // 5. Token kontrolü (Debug için detaylı log)
+        // 5. Token kontrolü ve Kayıt
         if (result && result.notificationDetails) {
             const token = result.notificationDetails.token;
             const url = result.notificationDetails.url;
-            
-            console.log("✅ Token alındı:", token);
-            console.log("📍 Notification URL:", url);
 
-            // 6. Firebase'e kaydet
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
             
-            console.log("💾 Token Firebase'e kaydediliyor...");
-            
+            // Veritabanına yazarken merge:true kullanıyoruz.
+            // Bu sayede varsa referral durumunu SİLMEYİZ.
             await setDoc(doc(db, "players", targetID), {
                 notificationToken: token,
                 notificationUrl: url,
-                notif4hSent: false, 
-                notif6hSent: false,
-                lastNotificationUpdate: Date.now() // Debug için timestamp
+                lastNotificationUpdate: Date.now()
             }, { merge: true });
 
             console.log("✅ Token başarıyla kaydedildi!");
-            
-        } else {
-            console.warn("⚠️ notificationDetails boş geldi");
-            console.warn("Result içeriği:", JSON.stringify(result));
-            
-            // Eski sürümler için yedek kayıt
-            const db = window.firebaseDB;
-            const { doc, setDoc } = window.firebaseFunctions;
-            
-            await setDoc(doc(db, "players", targetID), {
-                notificationToken: "legacy_device", // Eski cihaz işareti
-                notif4hSent: false,
-                notif6hSent: false
-            }, { merge: true });
-        }
+        } 
+        // Token gelmese bile ID'yi doğru ayarladığımız için oyun doğru profilden devam eder.
 
     } catch (error) {
-        // Hata detaylarını tam olarak göster
         console.error("❌ Bildirim hatası:", error);
-        console.error("Hata tipi:", error.name);
-        console.error("Hata mesajı:", error.message);
-        console.error("Stack:", error.stack);
     }
 }
 
@@ -3250,6 +3228,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
