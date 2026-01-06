@@ -1671,58 +1671,52 @@ async function identifyUser() {
       }
 
    
-      // --- BİLDİRİM İZNİ VE KAYIT FONKSİYONU ---
 async function enableNotifications() {
-    console.log("🔔 Bildirim sistemi başlatılıyor...");
+    console.log("🔔 Bildirim sistemi tetiklendi...");
     
-    // 1. SDK kontrolü (PC'de yoksa çık)
     if (!window.farcasterSDK) {
-        console.log("⚠️ SDK yok (PC ortamı), bildirim atlanıyor");
+        console.log("⚠️ PC ortamı, bildirim geçiliyor.");
         return;
     }
 
     try {
-        // 2. Context'i bekle (Kullanıcı ID'sini kesinleştirmek için)
+        // Context'i al
         const context = await window.farcasterSDK.context;
         
-        if (!context || !context.user || !context.user.fid) {
-            console.warn("❌ Context alınamadı, bildirim kaydedilemedi");
-            return;
+        // Kullanıcı ID'sini netleştir
+        if (context && context.user && context.user.fid) {
+            currentUserID = "user_" + context.user.fid;
         }
 
-        // Kullanıcı ID'sini güncelle (Garanti olsun)
-        const targetID = "user_" + context.user.fid;
-        currentUserID = targetID; 
-
-        // 3. Farcaster'dan İzin İste (Frame Ekleme Ekranı)
-        // Bu işlem kullanıcıya "Add Frame" popup'ını açar.
+        // Farcaster'a Frame Ekleme İsteği Gönder (Bildirim izni burada sorulur)
+        console.log("📱 addFrame() isteği gönderiliyor...");
         const result = await window.farcasterSDK.actions.addFrame();
         
-        // 4. Sonucu Analiz Et ve Token'ı Al
+        // Sonucu Analiz Et
         if (result && result.notificationDetails) {
             const token = result.notificationDetails.token;
             const url = result.notificationDetails.url;
             
-            console.log("✅ Token Alındı:", token);
+            console.log("✅ İZİN VERİLDİ! Token:", token);
 
-            // 5. Firebase'e Token'ı Kaydet
+            // Firebase'e kaydet
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
             
-            await setDoc(doc(db, "players", targetID), {
+            await setDoc(doc(db, "players", currentUserID), {
                 notificationToken: token,
                 notificationUrl: url,
                 notificationsEnabled: true,
                 lastNotificationUpdate: Date.now()
             }, { merge: true });
 
-            console.log("💾 Token Firebase'e başarıyla kaydedildi!");
+            console.log("💾 Token DB'ye yazıldı.");
         } else {
-            console.log("⚠️ Kullanıcı bildirim izni vermedi veya token dönmedi.");
+            console.log("⚠️ Kullanıcı reddetti veya zaten ekli.");
         }
 
     } catch (error) {
-        console.error("❌ Bildirim hatası:", error);
+        console.error("❌ Bildirim Hatası:", error);
     }
 }
       
@@ -3204,6 +3198,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
