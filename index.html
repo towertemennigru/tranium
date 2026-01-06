@@ -17,33 +17,58 @@
     
     <title>TRANIUM VERSE - Strategy Hub</title>
     
-   <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-      // BURAYA 'onSnapshot' EKLENDİ DİKKAT ET:
-      import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+    <script type="module">
+  // 🔥 TEK VE TAM FIREBASE IMPORTU
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+  import { 
+    getFirestore, 
+    doc, 
+    setDoc, 
+    getDoc, 
+    updateDoc, 
+    onSnapshot, 
+    collection, 
+    query, 
+    where, 
+    getDocs 
+  } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 
-      // SENİN YENİ PROJE AYARLARIN (tranium-6f126)
-      const firebaseConfig = {
-        apiKey: "AIzaSyD5ozuYZ7YWoHz6qC4zXO-hDwVEnHCa-6g",
-        authDomain: "tranium-6f126.firebaseapp.com",
-        projectId: "tranium-6f126",
-        storageBucket: "tranium-6f126.firebasestorage.app",
-        messagingSenderId: "570304399178",
-        appId: "1:570304399178:web:d83ce14dc3fc91b958e3b3",
-        measurementId: "G-6Q23R774CL"
-      };
+  const firebaseConfig = {
+    apiKey: "AIzaSyD5ozuYZ7YWoHz6qC4zXO-hDwVEnHCa-6g",
+    authDomain: "tranium-6f126.firebaseapp.com",
+    databaseURL: "https://tranium-6f126-default-rtdb.firebaseio.com",
+    projectId: "tranium-6f126",
+    storageBucket: "tranium-6f126.firebasestorage.app",
+    messagingSenderId: "570304399178",
+    appId: "1:570304399178:web:d83ce14dc3fc91b958e3b3",
+    measurementId: "G-6Q23R774CL"
+  };
 
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
-      const analytics = getAnalytics(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const analytics = getAnalytics(app);
 
-      window.firebaseDB = db;
-      // onSnapshot'ı buraya da ekledik ki aşağıdan erişebilelim
-      window.firebaseFunctions = { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs };
-      
-      console.log("🔥 Firebase (Firestore) Realtime Listener ile hazır!");
-    </script>
+  // Global erişim için window'a atıyoruz
+  window.firebaseDB = db;
+  
+  // BURASI ÇOK ÖNEMLİ: Hepsi tek objede!
+  window.firebaseFunctions = { 
+    doc, 
+    setDoc, 
+    getDoc, 
+    updateDoc, 
+    onSnapshot, 
+    collection, 
+    query, 
+    where, 
+    getDocs 
+  };
+  
+  console.log("🔥 Firebase (Firestore) Tüm Fonksiyonlarla Hazır!");
+</script>
+    
+   
     <script type="module">
     // En güncel Frame SDK'sını çekiyoruz
     import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
@@ -1111,42 +1136,7 @@
     100% { opacity: 0; transform: translate(-50%, -150%) scale(1); }
 }
     </style>
-    <script type="module">
-  // Firebase kütüphanelerini import ediyoruz
-  // Not: Versiyon numaraları (11.x.x) firebase konsolunda ne verildiyse onu kullan
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-  // Eğer Analytics kullanacaksan:
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
-
-  // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyD5ozuYZ7YWoHz6qC4zXO-hDwVEnHCa-6g",
-  authDomain: "tranium-6f126.firebaseapp.com",
-  databaseURL: "https://tranium-6f126-default-rtdb.firebaseio.com",
-  projectId: "tranium-6f126",
-  storageBucket: "tranium-6f126.firebasestorage.app",
-  messagingSenderId: "570304399178",
-  appId: "1:570304399178:web:d83ce14dc3fc91b958e3b3",
-  measurementId: "G-6Q23R774CL"
-};
-
-  // Firebase'i başlat
-  const app = initializeApp(firebaseConfig);
-  
-  // Veritabanını (Firestore) başlat
-  const db = getFirestore(app);
-  
-  // Analytics (varsa)
-  const analytics = getAnalytics(app);
-
-  // KRİTİK NOKTA: Diğer scriptlerden erişebilmek için window'a ata
-  window.firebaseDB = db;
-  window.firebaseFunctions = { doc, setDoc, getDoc, updateDoc };
-  
-  console.log("🔥 Firebase başarıyla yüklendi ve başlatıldı!");
-</script>
+    
   </head>
    <body>
      <div id="transactionOverlay">
@@ -1244,24 +1234,50 @@ You can start again with energy.
     <button class="modal-btn" style="background: #333; color: white" onclick="closeUpgradeModal()">CLOSE</button>
   </div>
 </div>
-<div id="refInputModal" class="custom-modal" style="z-index: 9999;">
-  <h2 style="color: var(--neon); margin: 0 0 10px 0;">INVITE CODE</h2>
-  <p style="font-size: 11px; color: #ccc; margin-bottom: 15px;">
-    Enter a friend's code to get <span style="color:var(--gold); font-weight:bold;">+20 TRANIUM</span> instantly!
-  </p>
+<div id="refSystemModal" class="custom-modal" style="z-index: 10000;">
+  <h2 style="color: var(--neon); margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 10px;">REFERRAL SYSTEM</h2>
+
+  <div id="refEnterSection">
+    <p style="font-size: 11px; color: #ccc; margin-bottom: 5px; text-align: left;">👇 ENTER FRIEND'S CODE (+20 TRANIUM)</p>
+    <div style="display: flex; gap: 5px;">
+      <input type="text" id="newRefInput" class="modal-input" placeholder="CODE..." maxlength="9" style="margin: 0; text-transform: uppercase; flex: 2; font-weight:bold;">
+      <button id="btnSubmitRef" class="modal-btn" style="background: var(--neon); color: black; flex: 1; min-height: 40px; font-size: 12px;" onclick="submitRefCode()">SUBMIT</button>
+    </div>
+  </div>
   
-  <input type="text" id="refCodeInput" class="modal-input" placeholder="Ex: A1B2C3D" maxlength="9" style="text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">
-  
-  <div class="modal-btn-row">
-    <button class="modal-btn" style="background: #333; color: #aaa; font-size:12px;" onclick="skipRefCode()">SKIP</button>
-    <button class="modal-btn" style="background: var(--neon); color: black;" onclick="submitRefCode()">ENTER</button>
+  <div id="refAlreadyUsedMsg" style="display: none; background: rgba(0,255,0,0.1); padding: 10px; border-radius: 8px; border: 1px solid #00ff00; margin-bottom: 15px;">
+    <span style="color: #00ff00; font-weight: bold; font-size: 12px;">✅ REWARD CLAIMED</span>
   </div>
 
-  <div id="refStatusOverlay">
-      <div id="statusIcon" class="status-icon"></div>
-      <div id="statusText" class="status-msg"></div>
+  <div style="width: 100%; height: 1px; background: #333; margin: 20px 0;"></div>
+
+  <div id="refGenerateSection">
+    <p style="font-size: 11px; color: #ccc; margin-bottom: 5px; text-align: left;">👇 YOUR INVITE CODE</p>
+    
+    <button id="btnGenRef" class="btn-refine" style="background: var(--gold); color: black; margin: 0; padding: 10px; font-size: 14px;" onclick="generateMyRefCodeManual()">
+      🔄 GENERATE REFERRAL CODE
+    </button>
+
+    <div id="myCodeDisplayBox" style="display: none; flex-direction: column; gap: 5px;">
+      <div style="background: #222; padding: 15px; border-radius: 8px; border: 2px dashed var(--gold); font-size: 24px; font-weight: 900; color: var(--gold); letter-spacing: 3px; text-align: center;">
+        <span id="myRefCodeTextDisplay">LOADING...</span>
+      </div>
+      
+      <button class="modal-btn" style="background: #444; color: white; margin-top: 5px; font-size: 11px; padding: 10px;" onclick="copyRefCode()">
+        📋 TAP TO COPY
+      </button>
+      
+      <p style="font-size: 9px; color: #888; margin-top: 5px;">Share to earn +20 Tranium per friend!</p>
+    </div>
   </div>
+
+  <button class="modal-btn" style="background: #333; color: white; margin-top: 20px;" onclick="closeRefSystem()">CLOSE</button>
+
+  <div id="refStatusOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 20000; align-items: center; justify-content: center; flex-direction: column;">
+      <div id="statusIcon" style="font-size: 80px; margin-bottom: 20px; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
+      <div id="statusText" style="font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;"></div>
   </div>
+</div>
 </div>
     <div id="swapModal" class="custom-modal">
       <h2 style="color: var(--gold);
@@ -1361,13 +1377,8 @@ Energy regenerates over time (1 per hour) even when you are offline.
       <div style="height: 40px;"></div>
 
       <button class="btn-refine btn-upgrade-menu" onclick="openUpgradeModal()">👷 WORKER UPGRADES</button>
-      <div id="myRefDisplayArea" style="text-align: center; margin-top: 15px; padding: 10px; border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(0,0,0,0.3);">
-  <span style="font-size: 10px; color: #888; display: block; margin-bottom: 4px;">YOUR REFERRAL CODE</span>
-  <span id="myRefCodeText" style="font-size: 16px; font-weight: 900; color: var(--gold); letter-spacing: 2px; cursor: pointer;" onclick="copyRefCode()">LOADING...</span>
-  <div style="font-size: 9px; color: var(--neon); margin-top: 3px;">Share to earn +20 Tranium per friend!</div>
-</div>
-      <button class="btn-refine" style="background: #FF7F00; color: black; border: 1px solid var(--neon); margin-top: 10px; font-size: 12px; min-height: 50px;" onclick="openRefModal()">
-    🎁 ENTER INVITE CODE
+    <button class="btn-refine btn-upgrade-menu" style="background: #ff9900; color: #000; border: none; font-weight:900; box-shadow: 0 4px 0 #cc7a00;" onclick="openRefSystem()">
+  👥 REFERRAL SYSTEM
 </button>
 
       <div class="footer">
@@ -1566,6 +1577,9 @@ async function identifyUser() {
         onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
+       
+      window.currentUserRefCode = data.myRefCode || null;
+      window.hasUsedRefCode = data.usedRefCode || false; // Bu satır önemli!
                 
                 // --- STANDART VERİLERİ ÇEK ---
                 let savedMetal = parseFloat(data.metal) || 0;
@@ -1624,7 +1638,6 @@ async function identifyUser() {
                     }
                 }
 
-
                 updateUI();
                 if (!window.hasInitialLoadCompleted) {
                     updateOfflineEnergyRegeneration();
@@ -1669,19 +1682,82 @@ async function identifyUser() {
         }, 800);
       }
 
-      // NEW: User Interaction to start the flow
-      function userEnterGame() {
-        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
-        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
-        
-        // 2. Hide Intro
-        const introOverlay = document.getElementById("introOverlay");
-        introOverlay.style.display = "none";
-        
-        // 3. Start Loading
-        startLoading();
-      }
+// --- FİNAL GÜVENLİ BİLDİRİM KODU ---
+// --- GÜVENLİ GİRİŞ VE BİLDİRİM YÖNETİMİ ---
 
+async function enableNotifications() {
+    // SDK kontrolü (PC veya SDK yüklenmemişse atla)
+    if (!window.farcasterSDK) {
+        console.log("⚠️ SDK yok, bildirim adımı atlandı.");
+        return;
+    }
+
+    try {
+        console.log("🔔 Bildirim süreci başlatılıyor...");
+        
+        // 1. Önce Context'ten ID'yi kesinleştir
+        const context = await window.farcasterSDK.context;
+        let targetID = currentUserID; // Mevcut global ID varsayılan
+
+        if (context && context.user && context.user.fid) {
+            targetID = "user_" + context.user.fid;
+            // Global değişkeni de güncelle ki oyun içinde tutarsızlık olmasın
+            currentUserID = targetID; 
+            console.log("👤 Kullanıcı ID doğrulandı:", targetID);
+        }
+
+        // 2. İzin İste (addFrame tetikle)
+        // Bu işlem mobil cihazda kullanıcıya "Ekle" butonu çıkartır
+        const result = await window.farcasterSDK.actions.addFrame();
+        
+        // 3. Token Kontrolü
+        if (result && result.notificationDetails) {
+            const token = result.notificationDetails.token;
+            const url = result.notificationDetails.url;
+            
+            console.log("✅ Token ALINDI:", token);
+
+            // 4. Firebase'e Kaydet
+            const db = window.firebaseDB;
+            const { doc, setDoc } = window.firebaseFunctions;
+
+            // Merge true ile diğer verileri (coin, workers) bozmadan sadece tokeni ekle
+            await setDoc(doc(db, "players", targetID), {
+                notificationToken: token,
+                notificationUrl: url,
+                // Eğer daha önce kaydedilmediyse bu flagları ekle
+                lastNotificationUpdate: Date.now() 
+            }, { merge: true });
+
+            console.log("💾 Token başarıyla kaydedildi.");
+        } else {
+            console.log("ℹ️ Token gelmedi (Kullanıcı reddetti veya zaten ekli).");
+        }
+
+    } catch (error) {
+        console.error("❌ Bildirim hatası:", error);
+        // Hata olsa bile oyunu durdurmuyoruz, devam etsin
+    }
+}
+
+async function userEnterGame() {
+    const btn = document.getElementById("enterBtn");
+    if(btn) btn.innerHTML = "LOADING..."; // Butona basıldığını hissettir
+    
+    // 1. Bildirimleri hallet (Await ile bekle ki işlem bitsin)
+    await enableNotifications();
+    
+    // 2. Intro'yu gizle
+    const introOverlay = document.getElementById("introOverlay");
+    if(introOverlay) introOverlay.style.display = "none";
+    
+    // 3. Yüklemeyi başlat
+    if(typeof startLoading === "function") {
+        startLoading();
+    } else {
+        console.error("startLoading fonksiyonu bulunamadı!");
+    }
+}
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
         const progressBar = document.querySelector(".loading-progress-bar");
@@ -2398,6 +2474,8 @@ async function saveData(force = false) {
         kristalFacLvl: kristalFacLvl,
         energy: energy,
         lastTime: Date.now(),
+        notif4hSent: false, 
+        notif6hSent: false,
         nextEnergyTime: nextEnergyTime,
         energyRegenerationStartTime: energyRegenerationStartTime,
         metalFacUpgradeEndTime: metalFacUpgradeEndTime,
@@ -2822,177 +2900,150 @@ function copyRefCode() {
     }
 }
 
-async function skipRefCode() {
+// --- YENİ REFERRAL SİSTEMİ FONKSİYONLARI ---
+
+// 1. Modalı Aç ve Durumu Kontrol Et
+function openRefSystem() {
+    const modal = document.getElementById("refSystemModal");
+    const enterSection = document.getElementById("refEnterSection");
+    const usedMsg = document.getElementById("refAlreadyUsedMsg");
+    const genBtn = document.getElementById("btnGenRef");
+    const displayBox = document.getElementById("myCodeDisplayBox");
+    const codeText = document.getElementById("myRefCodeTextDisplay");
+
+    modal.style.display = "block";
+
+    // Durum 1: Arkadaşının kodunu girdin mi?
+    // Not: window.hasUsedRefCode değişkenini setupRealtimeListener içinde veriyi çekerken güncellemelisin.
+    // Eğer veriyi globalde tutmuyorsan, Firebase'den gelen veriye göre kontrol edeceğiz.
+    // Şimdilik window.currentUserRefCode ve window.hasUsedRefCode varsayalım.
+    
+    // (setupRealtimeListener içinde data.usedRefCode verisini window.hasUsedRefCode = data.usedRefCode olarak kaydetmelisin)
+    if (window.hasUsedRefCode) {
+        enterSection.style.display = "none";
+        usedMsg.style.display = "block";
+    } else {
+        enterSection.style.display = "block";
+        usedMsg.style.display = "none";
+    }
+
+    // Durum 2: Kendi kodun var mı?
+    if (window.currentUserRefCode) {
+        genBtn.style.display = "none";
+        displayBox.style.display = "flex";
+        codeText.innerText = window.currentUserRefCode;
+    } else {
+        genBtn.style.display = "block";
+        displayBox.style.display = "none";
+    }
+}
+
+function closeRefSystem() {
+    document.getElementById("refSystemModal").style.display = "none";
+}
+
+// 2. Kendi Kodunu Manuel Oluştur
+async function generateMyRefCodeManual() {
     showBlockingLoader();
     
-    // 1. Kendi kodunu oluştur
     const newRefCode = generateRefCode();
-    
-    // 2. Veritabanına "seçim yapıldı" (refActionTaken) bilgisini işle
     const db = window.firebaseDB;
     const { doc, updateDoc } = window.firebaseFunctions;
     const myRef = doc(db, "players", currentUserID);
 
     try {
         await updateDoc(myRef, {
-            refActionTaken: true, // Bir daha sorma
-            myRefCode: newRefCode, // Kodunu ver
-            usedRefCode: false
+            myRefCode: newRefCode
         });
 
-        // 3. UI Güncelle
-        document.getElementById("refInputModal").style.display = "none";
-        const refTextEl = document.getElementById("myRefCodeText");
-        if (refTextEl) refTextEl.innerText = newRefCode;
+        // Global değişkeni güncelle
         window.currentUserRefCode = newRefCode;
-
+        
+        // UI Güncelle
         hideBlockingLoader();
+        openRefSystem(); // UI'ı yenilemek için tekrar çağırıyoruz
+        
     } catch (e) {
-        console.error("Skip Error:", e);
-        // Hata olursa (örn: yeni kullanıcı updateDoc yapamazsa)
+        console.error("Generate Error:", e);
         hideBlockingLoader();
-        document.getElementById("refInputModal").style.display = "none";
-        window.currentUserRefCode = newRefCode;
-        window.tempRefActionTaken = true; 
-        saveData(true); // saveData ile yedekten kaydet
+        alert("Error generating code. Try again.");
     }
 }
 
-// "ENTER" Butonuna Basılınca (Ref Kodu Kullanma)
-// YARDIMCI FONKSİYON: Durum Göster (Yeşil Tik veya Kırmızı Çarpı)
-function showRefFeedback(type, message) {
-    const overlay = document.getElementById("refStatusOverlay");
-    const icon = document.getElementById("statusIcon");
-    const text = document.getElementById("statusText");
-    
-    overlay.style.display = "flex";
-    
-    if (type === 'success') {
-        icon.innerHTML = "✅";
-        icon.style.textShadow = "0 0 20px #00ff00";
-        text.style.color = "#00ff00";
-        text.innerHTML = message || "SUCCESS!";
-    } else {
-        icon.innerHTML = "❌";
-        icon.style.textShadow = "0 0 20px #ff0000";
-        text.style.color = "#ff4444";
-        text.innerHTML = message || "ERROR!";
+// 3. Mevcut Copy Fonksiyonunu Güncelle
+function copyRefCode() {
+    const code = document.getElementById("myRefCodeTextDisplay").innerText;
+    if (code && code !== "LOADING...") {
+        navigator.clipboard.writeText(code).then(() => {
+            // Alert yerine güzel efekti kullanıyoruz
+            showRefFeedback('success', 'COPIED!');
+        });
     }
-
-    // 1 Saniye sonra ne olacağını yöneten Promise
-    return new Promise(resolve => setTimeout(() => {
-        overlay.style.display = "none";
-        resolve();
-    }, 1200)); // Animasyon rahat görünsün diye 1.2 sn
 }
 
-// GÜNCELLENMİŞ SUBMIT FONKSİYONU
-
-      // YARDIMCI FONKSİYON: Durum Göster (Yeşil Tik veya Kırmızı Çarpı)
-function showRefFeedback(type, message) {
-    const overlay = document.getElementById("refStatusOverlay");
-    const icon = document.getElementById("statusIcon");
-    const text = document.getElementById("statusText");
-    
-    // Eğer HTML'de bu elemanlar yoksa hata vermesin diye kontrol
-    if(!overlay || !icon || !text) {
-        console.error("Feedback elemanları HTML'de bulunamadı!");
-        if(type === 'error') alert(message);
-        return Promise.resolve();
-    }
-    
-    overlay.style.display = "flex";
-    
-    if (type === 'success') {
-        icon.innerHTML = "✅";
-        icon.style.textShadow = "0 0 20px #00ff00";
-        text.style.color = "#00ff00";
-        text.innerHTML = message || "SUCCESS!";
-    } else {
-        icon.innerHTML = "❌";
-        icon.style.textShadow = "0 0 20px #ff0000";
-        text.style.color = "#ff4444";
-        text.innerHTML = message || "ERROR!";
-    }
-
-    // 1 Saniye sonra ne olacağını yöneten Promise
-    return new Promise(resolve => setTimeout(() => {
-        overlay.style.display = "none";
-        resolve();
-    }, 1200)); 
-}
-      async function submitRefCode() {
-    const inputCode = document.getElementById("refCodeInput").value.trim().toUpperCase();
-    const myCode = document.getElementById("myRefCodeText").innerText;
+// 4. Submit Fonksiyonunu Güncelle (Input ID'si değiştiği için)
+async function submitRefCode() {
+    // Input ID'si değişti: newRefInput
+    const inputEl = document.getElementById("newRefInput");
+    const inputCode = inputEl.value.trim().toUpperCase();
+    const myCode = window.currentUserRefCode; // Globalden al
 
     if (!inputCode) {
         await showRefFeedback('error', 'ENTER CODE');
         return;
     }
-    if (inputCode === myCode) {
+    if (myCode && inputCode === myCode) {
         await showRefFeedback('error', 'YOUR CODE!');
         return;
     }
 
-    showBlockingLoader(); // Büyük yükleme ekranını aç
+    showBlockingLoader();
 
     try {
         const db = window.firebaseDB;
         const { collection, query, where, getDocs, updateDoc, doc } = window.firebaseFunctions;
 
-        // 1. Bu kod kime ait?
+        // Kod geçerli mi?
         const usersRef = collection(db, "players");
         const q = query(usersRef, where("myRefCode", "==", inputCode));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
             hideBlockingLoader();
-            // Alert yerine bizim özel feedback fonksiyonumuz
             await showRefFeedback('error', 'INVALID CODE');
             return;
         }
 
-        // 2. Kod geçerli, sahibini bulduk
+        // Ödül dağıtımı
         let referrerId = "";
         let referrerCurrentTranium = 0;
-
         querySnapshot.forEach((doc) => {
             referrerId = doc.id;
             referrerCurrentTranium = parseFloat(doc.data().tranium) || 0;
         });
 
-        // 3. Ödülleri Dağıt
         const referrerRef = doc(db, "players", referrerId);
         await updateDoc(referrerRef, {
             tranium: referrerCurrentTranium + 20
         });
 
-        // Benim verilerimi güncelle
-        tranium += 20; 
-        
+        // Bana ödül ver ve 'usedRefCode' işaretle
+        tranium += 20;
         const myRef = doc(db, "players", currentUserID);
-        const newRefCode = generateRefCode(); // Kod girdikten sonra benim kodumu oluştur
         
         await updateDoc(myRef, {
-            refActionTaken: true,
-            usedRefCode: true,
-            myRefCode: newRefCode,
+            usedRefCode: true, // Artık bir kod kullandım
             tranium: tranium
         });
         
-        // 4. İşlem Tamam - UI Güncelle
+        window.hasUsedRefCode = true; // Global flag güncelle
+
         updateUI();
         hideBlockingLoader();
-        
-        // Kendi kodunu ekrana yaz
-        document.getElementById("myRefCodeText").innerText = newRefCode;
-        window.currentUserRefCode = newRefCode;
-
-        // BAŞARILI FEEDBACK (Yeşil Tik)
         await showRefFeedback('success', '+20 TRANIUM');
         
-        // Feedback bittikten sonra modalı tamamen kapat
-        document.getElementById("refInputModal").style.display = "none";
+        // Modalı yenile (Input kısmını gizlemek için)
+        openRefSystem();
 
     } catch (error) {
         console.error("Ref Error:", error);
@@ -3000,9 +3051,122 @@ function showRefFeedback(type, message) {
         await showRefFeedback('error', 'NET ERROR');
     }
 }
-   function openRefModal() {
-    // Modalı manuel olarak açar
-    document.getElementById("refInputModal").style.display = "block";
+
+function showRefFeedback(type, message) {
+    const overlay = document.getElementById("refStatusOverlay");
+    const icon = document.getElementById("statusIcon");
+    const text = document.getElementById("statusText");
+    
+    // Güvenlik kontrolü
+    if(!overlay || !icon || !text) {
+        console.error("Feedback elementleri bulunamadı!");
+        alert(message);
+        return Promise.resolve();
+    }
+    
+    overlay.style.display = "flex";
+    
+    if (type === 'success') {
+        icon.innerHTML = "✅";
+        icon.style.textShadow = "0 0 30px #00ff00";
+        text.style.color = "#00ff00";
+        text.style.textShadow = "0 0 10px #00ff00";
+        text.innerHTML = message || "SUCCESS!";
+    } else {
+        icon.innerHTML = "❌";
+        icon.style.textShadow = "0 0 30px #ff0000";
+        text.style.color = "#ff4444";
+        text.style.textShadow = "0 0 10px #ff0000";
+        text.innerHTML = message || "ERROR!";
+    }
+
+    // 1.2 Saniye sonra kapanır
+    return new Promise(resolve => setTimeout(() => {
+        overlay.style.display = "none";
+        resolve();
+    }, 1200)); 
+}
+
+function copyRefCode() {
+    const code = document.getElementById("myRefCodeTextDisplay").innerText;
+    if (code && code !== "LOADING...") {
+        navigator.clipboard.writeText(code).then(() => {
+            // Alert yerine güzel efekti kullanıyoruz
+            showRefFeedback('success', 'COPIED!');
+        });
+    }
+}
+      async function submitRefCode() {
+    const inputEl = document.getElementById("newRefInput");
+    const inputCode = inputEl.value.trim().toUpperCase();
+    const myCode = window.currentUserRefCode;
+
+    // Kod boş mu?
+    if (!inputCode) {
+        await showRefFeedback('error', 'ENTER CODE');
+        return;
+    }
+    // Kendi kodun mu?
+    if (myCode && inputCode === myCode) {
+        await showRefFeedback('error', 'YOUR CODE!');
+        return;
+    }
+
+    showBlockingLoader();
+
+    try {
+        const db = window.firebaseDB;
+        const { collection, query, where, getDocs, updateDoc, doc } = window.firebaseFunctions;
+
+        // Kod veritabanında var mı?
+        const usersRef = collection(db, "players");
+        const q = query(usersRef, where("myRefCode", "==", inputCode));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            hideBlockingLoader();
+            await showRefFeedback('error', 'INVALID CODE');
+            return;
+        }
+
+        // Sahibine ödül ver
+        let referrerId = "";
+        let referrerCurrentTranium = 0;
+        querySnapshot.forEach((doc) => {
+            referrerId = doc.id;
+            referrerCurrentTranium = parseFloat(doc.data().tranium) || 0;
+        });
+
+        const referrerRef = doc(db, "players", referrerId);
+        await updateDoc(referrerRef, {
+            tranium: referrerCurrentTranium + 20
+        });
+
+        // Bana ödül ver
+        tranium += 20;
+        const myRef = doc(db, "players", currentUserID);
+        
+        await updateDoc(myRef, {
+            usedRefCode: true, 
+            tranium: tranium
+        });
+        
+        window.hasUsedRefCode = true; // Global değişkeni güncelle
+
+        updateUI();
+        hideBlockingLoader();
+        
+        // Başarılı efekti patlat!
+        await showRefFeedback('success', '+20 TRANIUM');
+        
+        // Modalı yenile (Input kutusunu gizlemek için)
+        openRefSystem();
+
+    } catch (error) {
+        console.error("Ref Error:", error);
+        hideBlockingLoader();
+        await showRefFeedback('error', 'NET ERROR');
+    }
 }
     </script>
     <script>
@@ -3128,7 +3292,10 @@ function showRefFeedback(type, message) {
             window.history.replaceState({}, '', window.location.pathname);
         }
     }, 2000);
+
+  
 </script>
   </body>
 </html>
+
 
