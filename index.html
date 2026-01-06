@@ -2303,7 +2303,7 @@ async function executeTransaction(signer, amountETH, toAddress) {
         const forceSave = () => {
             // Eğer pasif moddaysa bile, çıkış yapıldığı için son bir kez kaydetmeyi deneyebiliriz.
             // Ancak veri tutarlılığı için sadece son etkileşim yakınsa kaydedelim.
-            if (Date.now() - lastInteractionTime < 60000) {
+            if (Date.now() - window.lastInteractionTime < 60000) {
                 saveData(); 
                 // Not: save işlemi asenkron olduğu için kapanırken %100 garanti edilemez 
                 // ama şansımızı çok arttırır.
@@ -2514,12 +2514,19 @@ async function saveData(force = false) {
 
     // UI'dan veya globalden güncel kodu al
     let currentRefCodeToSave = window.currentUserRefCode;
+    
+    // --- DÜZELTME BURADA YAPILDI (ID İSMİ GÜNCELLENDİ) ---
     if (!currentRefCodeToSave) {
-        const uiText = document.getElementById("myRefCodeText").innerText;
-        if (uiText && uiText !== "LOADING..." && uiText !== "WAITING...") {
-            currentRefCodeToSave = uiText;
+        // Eski kodda "myRefCodeText" aranıyordu, doğrusu "myRefCodeTextDisplay"
+        const uiTextEl = document.getElementById("myRefCodeTextDisplay");
+        if (uiTextEl) {
+            const uiText = uiTextEl.innerText;
+            if (uiText && uiText !== "LOADING..." && uiText !== "WAITING...") {
+                currentRefCodeToSave = uiText;
+            }
         }
     }
+    // -----------------------------------------------------
 
     const gameData = {
         metal: metal,
@@ -3270,6 +3277,7 @@ function copyRefCode() {
 </script>
   </body>
 </html>
+
 
 
 
