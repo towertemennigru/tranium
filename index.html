@@ -279,8 +279,14 @@
         box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
         transition: all 0.3s ease;
         animation: btnPulse 2s infinite;
-        display: none; 
+        opacity: 0;
+        transform: scale(0.8);
       }
+      #enterBtn.show { /* ✅ ADD THIS CLASS */
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
       #enterBtn:active {
         background: var(--neon);
         color: #000;
@@ -1665,15 +1671,16 @@ async function identifyUser() {
 }
 
       function startIntro() {
-        const introOverlay = document.getElementById("introOverlay");
-        introOverlay.style.display = "flex";
-        
-        // Show the Enter button after a short delay
-        setTimeout(() => {
-           const btn = document.getElementById("enterBtn");
-           if(btn) btn.style.display = "block";
-        }, 800);
-      }
+  const introOverlay = document.getElementById("introOverlay");
+  introOverlay.style.display = "flex";
+  
+  setTimeout(() => {
+    const btn = document.getElementById("enterBtn");
+    if(btn) {
+      btn.classList.add('show'); // Use class instead of style.display
+    }
+  }, 800);
+}
 
     async function requestNotificationPermission() {
     try {
@@ -3150,5 +3157,6 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
