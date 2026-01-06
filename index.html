@@ -83,11 +83,7 @@ const triggerReady = async () => {
 document.addEventListener('DOMContentLoaded', triggerReady);
 
     document.addEventListener('DOMContentLoaded', triggerReady);
-// Add this inside your window.onload or after DOM is ready:
-document.getElementById('enterBtn').addEventListener('click', function(e) {
-    e.preventDefault();
-    userEnterGame();
-});
+
     </script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
@@ -1177,7 +1173,7 @@ const firebaseConfig = {
         <div class="game-title-intro">TRANIUM VERSE</div>
         <div class="game-subtitle">TRANIUM VERSE</div>
         
-        <button id="enterBtn" onclick="userEnterGame()">START SIMULATION</button>
+       <button id="enterBtn">START SIMULATION</button>
       </div>
     </div>
 
@@ -2828,11 +2824,29 @@ function showFloatingText(text, color) {
       }
 
       // Initial call to setup the intro screen
-      window.onload = function() {
-        console.log("🚀 App Loaded. Triggering Farcaster SDK...");
-        
-   
-      };
+window.onload = function() {
+    console.log("🚀 App Loaded. Triggering Farcaster SDK...");
+    
+    // ADD THIS - Fix the button click handler
+    setTimeout(() => {
+        const enterBtn = document.getElementById('enterBtn');
+        if (enterBtn) {
+            // Remove the old onclick attribute first
+            enterBtn.removeAttribute('onclick');
+            
+            // Add new click handler
+            enterBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('✅ Button clicked!');
+                userEnterGame();
+            });
+            console.log('✅ Click handler attached');
+        } else {
+            console.error('❌ Button not found!');
+        }
+    }, 500);
+};
       // --- REFERANS SİSTEMİ FONKSİYONLARI ---
 
 // Rastgele Ref Kodu Oluşturucu (5 Karakter)
@@ -3164,6 +3178,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
