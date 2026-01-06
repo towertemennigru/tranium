@@ -1729,15 +1729,13 @@ async function enableNotifications() {
       async function userEnterGame() {
     console.log("🎮 Oyuna giriş yapılıyor...");
     
-    // 1. Önce bildirimleri etkinleştirmeyi dene (Kullanıcıya sorar)
-    // await koyduğumuz için kullanıcı 'Ekle' veya 'İptal' diyene kadar bekler.
-    await enableNotifications(); 
+    // NOT: await enableNotifications(); BURADAN SİLİNDİ!
     
-    // 2. Intro'yu gizle
+    // 1. Intro'yu gizle
     const introOverlay = document.getElementById("introOverlay");
     introOverlay.style.display = "none";
     
-    // 3. Yüklemeyi başlat
+    // 2. Yüklemeyi başlat
     startLoading();
 }
 
@@ -3206,6 +3204,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
