@@ -63,18 +63,18 @@ const triggerReady = async () => {
             const context = await window.farcasterSDK.context;
             if (context) {
                 console.log("✅ Farcaster Environment Detected");
-                document.getElementById("desktop-blocker").style.display = "none";
                 window.farcasterSDK.actions.ready();
             }
         } else {
             // If not in Farcaster, hide blocker anyway for testing
             console.warn("❌ Not in Farcaster - Running in test mode");
-            document.getElementById("desktop-blocker").style.display = "none";
         }
     } catch (e) {
         console.error("SDK Init Error:", e);
         // Still show the intro on error
         startIntro();
+    } finally {
+        // Always hide the blocker
         document.getElementById("desktop-blocker").style.display = "none";
     }
 };
@@ -3178,6 +3178,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
