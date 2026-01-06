@@ -1690,68 +1690,68 @@ async function identifyUser() {
 async function enableNotifications() {
     const btn = document.getElementById("btnEnableNotifs");
     if(btn) {
-        btn.innerText = "⏳...";
+        btn.innerText = "KONTROL EDİLİYOR...";
         btn.disabled = true;
     }
 
-    // 1. SDK KONTROLÜ
     if (!window.farcasterSDK || !window.farcasterSDK.actions) {
-        alert("❌ HATA: Farcaster SDK bulunamadı! (PC'de misin?)");
+        alert("❌ SDK Yok (PC?)");
         return;
     }
 
     try {
-        // 2. İZİN İSTEME
-        // alert("DEBUG: İzin isteniyor..."); // Gerekirse bunu aç
+        // 1. ÖNCE MEVCUT DURUMU KONTROL ET (Context'e bak)
+        const context = await window.farcasterSDK.context;
+        
+        // Eğer uygulama ZATEN EKLİYSE ve Token varsa:
+        if (context && context.client && context.client.notificationDetails) {
+            console.log("✅ Token zaten mevcut, tekrar istemeye gerek yok.");
+            
+            // Veritabanına kaydet/güncelle
+            if (context.user) {
+                await saveNotificationToken(context.user.fid, context.client.notificationDetails);
+                
+                // Başarılı olduğunu göster
+                if (typeof showFloatingText === "function") {
+                    showFloatingText("ZATEN BAĞLI!", "#00ffcc");
+                }
+                
+                // Butonu gizle, çünkü zaten işlem tamam
+                if(btn) btn.style.display = "none";
+                return; // Fonksiyondan çık
+            }
+        }
+
+        // 2. EĞER TOKEN YOKSA, EKLEME PENCERESİNİ AÇ (addFrame)
+        // alert("DEBUG: Token bulunamadı, izin isteniyor..."); 
         const result = await window.farcasterSDK.actions.addFrame();
 
-        // 3. SONUÇ ANALİZİ
-        if (result.added) {
-            if (result.notificationDetails) {
-                // BAŞARILI DURUM
-                const { token, url } = result.notificationDetails;
-                
-                // Context kontrolü
-                const context = await window.farcasterSDK.context;
-                if (context && context.user) {
-                    await saveNotificationToken(context.user.fid, result.notificationDetails);
-                    alert("✅ BAŞARILI! Token alındı ve kaydedildi.");
-                } else {
-                    alert("⚠️ Token alındı ama Kullanıcı ID (Context) bulunamadı!");
-                }
-
-                if (typeof showFloatingText === "function") {
-                    showFloatingText("SYSTEM LINKED!", "#00ffcc");
-                }
-                
-                if(btn) btn.style.display = "none";
-
-            } else {
-                // EKLENDİ AMA TOKEN YOK (Senin sorunun muhtemelen burası)
-                alert("⚠️ Frame eklendi AMA Token gelmedi.\n\nSebep: iPhone 7 / iOS Sürümü veya Bildirim İzni kapalı.");
-                
-                if(btn) {
-                    btn.innerText = "ENABLE ALERTS";
-                    btn.disabled = false;
-                }
+        if (result.added && result.notificationDetails) {
+            // YENİ EKLENDİ VE TOKEN GELDİ
+            if (context && context.user) {
+                await saveNotificationToken(context.user.fid, result.notificationDetails);
             }
+            alert("✅ YENİ İZİN ALINDI!");
+            if(btn) btn.style.display = "none";
+
+        } else if (result.added && !result.notificationDetails) {
+            // EKLENDİ AMA TOKEN YOK (iPhone 7 sorunu muhtemelen burası)
+            alert("⚠️ Uygulama eklendi ama Token gelmedi. \nSebep: Bildirimler kapalı veya iOS sürümü eski.");
+            
         } else {
-            // KULLANICI REDDETTİ
-            alert("❌ İşlem kullanıcı tarafından iptal edildi.");
+            // İPTAL EDİLDİ (result.added = false)
+            // Bu durumda ya kullanıcı reddetti ya da zaten ekliydi ama token alamadık.
+            alert("⚠️ İŞLEM SONUCU: Başarısız.\n\nSebep: Uygulama zaten ekli olabilir ama bildirim izni verilmemiş.\n\nÇÖZÜM: Warpcast ayarlarından bu uygulamayı kaldırıp tekrar dene.");
+            
             if(btn) {
-                btn.innerText = "ENABLE ALERTS";
+                btn.innerText = "MANUEL DENE";
                 btn.disabled = false;
             }
         }
 
     } catch (error) {
-        console.error("AddFrame Error:", error);
-        alert("🔥 KRİTİK HATA: " + error.message);
-        
-        if(btn) {
-            btn.innerText = "RETRY";
-            btn.disabled = false;
-        }
+        console.error("Notif Error:", error);
+        alert("Hata: " + error.message);
     }
 }
 
@@ -3280,6 +3280,7 @@ function copyRefCode() {
 </script>
   </body>
 </html>
+
 
 
 
