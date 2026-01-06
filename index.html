@@ -77,31 +77,31 @@
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 
-    const triggerReady = async () => {
+    // Updated triggerReady logic for suthi.txt
+const triggerReady = async () => {
     try {
-        // SDK'nın context (bağlam) bilgisini bekle
         const context = await sdk.context;
-
-        // Eğer context gelirse (yani Farcaster içindeysek)
         if (context) {
             console.log("✅ Farcaster Environment Detected");
             
-            // Engelleyici ekranı kaldır
-            document.getElementById("desktop-blocker").style.display = "none";
-            
-            // SDK'ya hazır olduğumuzu bildir
-            sdk.actions.ready();
+            // NEW: Check for existing notification state on load
+            if (context.client.notificationDetails) {
+                console.log("🔄 Existing notification token found. Syncing...");
+                // Background sync to ensure DB is up-to-date without user interaction
+                saveNotificationToken(context.user.fid, context.client.notificationDetails);
+                
+                // Set a global flag for UI logic
+                window.isNotificationsActive = true;
+            }
 
-            // Varsa intro'yu başlat
+            document.getElementById("desktop-blocker").style.display = "none";
+            sdk.actions.ready();
             if(window.startIntro) window.startIntro();
         } else {
-            // Context yoksa (Normal tarayıcı)
             console.warn("❌ Not in Farcaster");
-            // Engelleyici ekran kalmaya devam eder
         }
     } catch (e) {
         console.error("SDK Init Error:", e);
-        // Hata olursa da engelleyici ekran kalır
     }
 };
 
@@ -1684,58 +1684,71 @@ async function identifyUser() {
 // --- FİNAL GÜVENLİ BİLDİRİM KODU ---
 // --- GÜVENLİ GİRİŞ VE BİLDİRİM YÖNETİMİ ---
 
+/**
+ * Triggers the native Farcaster 'Add App' modal to request notification permissions.
+ */
 async function enableNotifications() {
-    // SDK kontrolü (PC veya SDK yüklenmemişse atla)
-    if (!window.farcasterSDK) {
-        console.log("⚠️ SDK yok, bildirim adımı atlandı.");
+    // 1. Safety Check: Ensure SDK is loaded
+    if (!window.farcasterSDK ||!window.farcasterSDK.actions) {
+        console.warn("SDK not ready");
         return;
     }
 
+    // 2. UX: Show loading state (utilizing existing game UI)
+    // Assuming a button with ID 'btnEnableNotifs' exists
+    const btn = document.getElementById("btnEnableNotifs");
+    if(btn) {
+        btn.innerText = "REQUESTING...";
+        btn.disabled = true;
+    }
+
     try {
-        console.log("🔔 Bildirim süreci başlatılıyor...");
-        
-        // 1. Önce Context'ten ID'yi kesinleştir
-        const context = await window.farcasterSDK.context;
-        let targetID = currentUserID; // Mevcut global ID varsayılan
-
-        if (context && context.user && context.user.fid) {
-            targetID = "user_" + context.user.fid;
-            // Global değişkeni de güncelle ki oyun içinde tutarsızlık olmasın
-            currentUserID = targetID; 
-            console.log("👤 Kullanıcı ID doğrulandı:", targetID);
-        }
-
-        // 2. İzin İste (addFrame tetikle)
-        // Bu işlem mobil cihazda kullanıcıya "Ekle" butonu çıkartır
+        // 3. Invoke the Atomic Action
         const result = await window.farcasterSDK.actions.addFrame();
-        
-        // 3. Token Kontrolü
-        if (result && result.notificationDetails) {
-            const token = result.notificationDetails.token;
-            const url = result.notificationDetails.url;
+
+        // 4. Handle 'Success with Notifications'
+        if (result.added && result.notificationDetails) {
+            // Extract the critical data
+            const { token, url } = result.notificationDetails;
             
-            console.log("✅ Token ALINDI:", token);
+            // Get current user FID from the global scope or SDK context
+            const context = await window.farcasterSDK.context;
+            if (context && context.user) {
+                await saveNotificationToken(context.user.fid, result.notificationDetails);
+            }
 
-            // 4. Firebase'e Kaydet
-            const db = window.firebaseDB;
-            const { doc, setDoc } = window.firebaseFunctions;
-
-            // Merge true ile diğer verileri (coin, workers) bozmadan sadece tokeni ekle
-            await setDoc(doc(db, "players", targetID), {
-                notificationToken: token,
-                notificationUrl: url,
-                // Eğer daha önce kaydedilmediyse bu flagları ekle
-                lastNotificationUpdate: Date.now() 
-            }, { merge: true });
-
-            console.log("💾 Token başarıyla kaydedildi.");
-        } else {
-            console.log("ℹ️ Token gelmedi (Kullanıcı reddetti veya zaten ekli).");
+            // UI Feedback: Use the game's existing floating text system
+            if (typeof showFloatingText === "function") {
+                showFloatingText("SYSTEM LINKED!", "#00ffcc");
+            }
+            alert("✅ Notifications Enabled! You will be alerted when energy is full.");
+            
+            // Update UI State
+            if(btn) btn.style.display = "none"; // Hide button after success
+        } 
+        // 5. Handle 'Success BUT Notifications Disabled'
+        else if (result.added &&!result.notificationDetails) {
+            alert("⚠️ App added, but notifications are disabled. Please enable them in the Farcaster settings menu.");
+            if(btn) {
+                btn.innerText = "ENABLE ALERTS";
+                btn.disabled = false;
+            }
         }
-
+        // 6. Handle 'Rejection'
+        else {
+            console.log("User rejected addFrame");
+            if(btn) {
+                btn.innerText = "ENABLE ALERTS";
+                btn.disabled = false;
+            }
+        }
     } catch (error) {
-        console.error("❌ Bildirim hatası:", error);
-        // Hata olsa bile oyunu durdurmuyoruz, devam etsin
+        console.error("AddFrame Error:", error);
+        // Fallback for errors
+        if(btn) {
+            btn.innerText = "RETRY";
+            btn.disabled = false;
+        }
     }
 }
 
@@ -2441,7 +2454,37 @@ async function executeTransaction(signer, amountETH, toAddress) {
         setDisabled("swapBtn", Math.min(Math.floor(metal), Math.floor(kristal)) <= 0);
       }
 
-     
+/**
+ * Saves the notification credentials to the user's Firestore document.
+ * @param {string} fid - The user's Farcaster ID.
+ * @param {object} details - The notificationDetails object from the SDK.
+ */
+async function saveNotificationToken(fid, details) {
+    if (!window.firebaseDB ||!window.firebaseFunctions) {
+        console.error("Firebase not initialized");
+        return;
+    }
+
+    const { doc, setDoc } = window.firebaseFunctions;
+    const db = window.firebaseDB;
+    // Construct the user reference based on the existing ID logic in suthi.txt
+    const userId = "user_" + fid; 
+    const userRef = doc(db, "players", userId);
+
+    try {
+        await setDoc(userRef, {
+            notificationToken: details.token,
+            notificationUrl: details.url,
+            notificationsEnabled: true,
+            lastTokenUpdate: Date.now()
+        }, { merge: true });
+        
+        console.log("✅ Notification token synced to Firebase");
+    } catch (e) {
+        console.error("❌ Failed to sync token:", e);
+    }
+}
+      
 async function saveData(force = false) {
     if (!window.firebaseDB || !window.firebaseFunctions) return;
 
@@ -3296,6 +3339,7 @@ function copyRefCode() {
 </script>
   </body>
 </html>
+
 
 
 
