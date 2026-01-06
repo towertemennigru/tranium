@@ -52,39 +52,36 @@
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 
-    // Around line 300-350, REPLACE the triggerReady function:
-const triggerReady = async () => {
+    const triggerReady = async () => {
     try {
-        // Show intro FIRST, regardless of Farcaster
-        startIntro();
-        
-        // THEN try to detect Farcaster
-        if (window.farcasterSDK) {
-            const context = await window.farcasterSDK.context;
-            if (context) {
-                console.log("✅ Farcaster Environment Detected");
-                window.farcasterSDK.actions.ready();
-            }
+        // SDK'nın context (bağlam) bilgisini bekle
+        const context = await sdk.context;
+
+        // Eğer context gelirse (yani Farcaster içindeysek)
+        if (context) {
+            console.log("✅ Farcaster Environment Detected");
+            
+            // Engelleyici ekranı kaldır
+            document.getElementById("desktop-blocker").style.display = "none";
+            
+            // SDK'ya hazır olduğumuzu bildir
+            sdk.actions.ready();
+
+            // Varsa intro'yu başlat
+            if(window.startIntro) window.startIntro();
         } else {
-            // If not in Farcaster, hide blocker anyway for testing
-            console.warn("❌ Not in Farcaster - Running in test mode");
+            // Context yoksa (Normal tarayıcı)
+            console.warn("❌ Not in Farcaster");
+            // Engelleyici ekran kalmaya devam eder
         }
     } catch (e) {
         console.error("SDK Init Error:", e);
-        // Still show the intro on error
-        startIntro();
-    } finally {
-        // Always hide the blocker
-        document.getElementById("desktop-blocker").style.display = "none";
+        // Hata olursa da engelleyici ekran kalır
     }
 };
 
-// Make sure this runs:
-document.addEventListener('DOMContentLoaded', triggerReady);
-
     document.addEventListener('DOMContentLoaded', triggerReady);
-
-    </script>
+</script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
 
@@ -282,14 +279,8 @@ document.addEventListener('DOMContentLoaded', triggerReady);
         box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
         transition: all 0.3s ease;
         animation: btnPulse 2s infinite;
-        opacity: 0;
-        transform: scale(0.8);
+        display: none; 
       }
-      #enterBtn.show { /* ✅ ADD THIS CLASS */
-  opacity: 1;
-  transform: scale(1);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
       #enterBtn:active {
         background: var(--neon);
         color: #000;
@@ -1173,7 +1164,7 @@ const firebaseConfig = {
         <div class="game-title-intro">TRANIUM VERSE</div>
         <div class="game-subtitle">TRANIUM VERSE</div>
         
-       <button id="enterBtn">START SIMULATION</button>
+        <button id="enterBtn" onclick="userEnterGame()">START SIMULATION</button>
       </div>
     </div>
 
@@ -1388,7 +1379,6 @@ Energy regenerates over time (1 per hour) even when you are offline.
     <canvas id="gameCanvas"></canvas>
 
     <script>
-      let notificationToken = null;
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
       const WORLD_SIZE = 2500;
@@ -1444,17 +1434,12 @@ let currentUserID = "test_user_001"; // Varsayılan test kullanıcısı
 
 async function identifyUser() {
     try {
+        // Eğer Farcaster içindeysek gerçek ID'yi al
         if (window.farcasterSDK) {
             const context = await window.farcasterSDK.context;
             if (context && context.user && context.user.fid) {
                 currentUserID = "user_" + context.user.fid;
                 console.log("👤 Kullanıcı Tanımlandı:", currentUserID);
-            }
-            
-            // GET NOTIFICATION TOKEN
-            if (context && context.client && context.client.notificationToken) {
-                notificationToken = context.client.notificationToken;
-                console.log("🔔 Notification Token alındı");
             }
         }
     } catch (e) {
@@ -1674,31 +1659,21 @@ async function identifyUser() {
 }
 
       function startIntro() {
-  const introOverlay = document.getElementById("introOverlay");
-  introOverlay.style.display = "flex";
-  
-  setTimeout(() => {
-    const btn = document.getElementById("enterBtn");
-    if(btn) {
-      btn.classList.add('show'); // Use class instead of style.display
-    }
-  }, 800);
-}
+        const introOverlay = document.getElementById("introOverlay");
+        introOverlay.style.display = "flex";
+        
+        // Show the Enter button after a short delay
+        setTimeout(() => {
+           const btn = document.getElementById("enterBtn");
+           if(btn) btn.style.display = "block";
+        }, 800);
+      }
 
-    async function requestNotificationPermission() {
-    try {
-        if (window.farcasterSDK && window.farcasterSDK.actions) {
-            const result = await window.farcasterSDK.actions.requestNotificationPermission();
-            console.log("🔔 Notification Permission:", result);
-        }
-    } catch (e) {
-        console.warn("Notification permission request failed:", e);
-    }
-}
-      
+      // NEW: User Interaction to start the flow
       function userEnterGame() {
-        requestNotificationPermission();
-       
+        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
+        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
+        
         // 2. Hide Intro
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "none";
@@ -2427,11 +2402,7 @@ async function saveData(force = false) {
         energyRegenerationStartTime: energyRegenerationStartTime,
         metalFacUpgradeEndTime: metalFacUpgradeEndTime,
         kristalFacUpgradeEndTime: kristalFacUpgradeEndTime
-           ...(notificationToken && { notificationToken: notificationToken }),
-        notif4h: 0,
-        notif6h: 0
     };
-
 
     try {
         await setDoc(doc(db, "players", currentUserID), gameData, { merge: true });
@@ -2824,29 +2795,11 @@ function showFloatingText(text, color) {
       }
 
       // Initial call to setup the intro screen
-window.onload = function() {
-    console.log("🚀 App Loaded. Triggering Farcaster SDK...");
-    
-    // ADD THIS - Fix the button click handler
-    setTimeout(() => {
-        const enterBtn = document.getElementById('enterBtn');
-        if (enterBtn) {
-            // Remove the old onclick attribute first
-            enterBtn.removeAttribute('onclick');
-            
-            // Add new click handler
-            enterBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('✅ Button clicked!');
-                userEnterGame();
-            });
-            console.log('✅ Click handler attached');
-        } else {
-            console.error('❌ Button not found!');
-        }
-    }, 500);
-};
+      window.onload = function() {
+        console.log("🚀 App Loaded. Triggering Farcaster SDK...");
+        
+   
+      };
       // --- REFERANS SİSTEMİ FONKSİYONLARI ---
 
 // Rastgele Ref Kodu Oluşturucu (5 Karakter)
@@ -3178,9 +3131,4 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
-
-
-
-
-
 
