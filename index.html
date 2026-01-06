@@ -1250,13 +1250,13 @@ You can start again with energy.
   <div id="refEnterSection">
     <p style="font-size: 11px; color: #ccc; margin-bottom: 5px; text-align: left;">👇 ENTER FRIEND'S CODE (+20 TRANIUM)</p>
     <div style="display: flex; gap: 5px;">
-      <input type="text" id="newRefInput" class="modal-input" placeholder="CODE..." maxlength="9" style="margin: 0; text-transform: uppercase; flex: 2;">
+      <input type="text" id="newRefInput" class="modal-input" placeholder="CODE..." maxlength="9" style="margin: 0; text-transform: uppercase; flex: 2; font-weight:bold;">
       <button id="btnSubmitRef" class="modal-btn" style="background: var(--neon); color: black; flex: 1; min-height: 40px; font-size: 12px;" onclick="submitRefCode()">SUBMIT</button>
     </div>
   </div>
   
   <div id="refAlreadyUsedMsg" style="display: none; background: rgba(0,255,0,0.1); padding: 10px; border-radius: 8px; border: 1px solid #00ff00; margin-bottom: 15px;">
-    <span style="color: #00ff00; font-weight: bold; font-size: 12px;">✅ YOU ALREADY CLAIMED A REWARD</span>
+    <span style="color: #00ff00; font-weight: bold; font-size: 12px;">✅ REWARD CLAIMED</span>
   </div>
 
   <div style="width: 100%; height: 1px; background: #333; margin: 20px 0;"></div>
@@ -1269,19 +1269,23 @@ You can start again with energy.
     </button>
 
     <div id="myCodeDisplayBox" style="display: none; flex-direction: column; gap: 5px;">
-      <div style="background: #222; padding: 10px; border-radius: 8px; border: 1px dashed var(--gold); font-size: 20px; font-weight: 900; color: var(--gold); letter-spacing: 2px;">
+      <div style="background: #222; padding: 15px; border-radius: 8px; border: 2px dashed var(--gold); font-size: 24px; font-weight: 900; color: var(--gold); letter-spacing: 3px; text-align: center;">
         <span id="myRefCodeTextDisplay">LOADING...</span>
       </div>
-      <button class="modal-btn" style="background: #444; color: white; margin-top: 5px; font-size: 10px; padding: 8px;" onclick="copyRefCode()">📋 COPY CODE</button>
+      
+      <button class="modal-btn" style="background: #444; color: white; margin-top: 5px; font-size: 11px; padding: 10px;" onclick="copyRefCode()">
+        📋 TAP TO COPY
+      </button>
+      
       <p style="font-size: 9px; color: #888; margin-top: 5px;">Share to earn +20 Tranium per friend!</p>
     </div>
   </div>
 
   <button class="modal-btn" style="background: #333; color: white; margin-top: 20px;" onclick="closeRefSystem()">CLOSE</button>
-  
-  <div id="refStatusOverlay">
-      <div id="statusIcon" class="status-icon"></div>
-      <div id="statusText" class="status-msg"></div>
+
+  <div id="refStatusOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 20000; align-items: center; justify-content: center; flex-direction: column;">
+      <div id="statusIcon" style="font-size: 80px; margin-bottom: 20px; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
+      <div id="statusText" style="font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;"></div>
   </div>
 </div>
 </div>
@@ -1383,7 +1387,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
       <div style="height: 40px;"></div>
 
       <button class="btn-refine btn-upgrade-menu" onclick="openUpgradeModal()">👷 WORKER UPGRADES</button>
-     <button class="btn-refine btn-upgrade-menu" style="background: #333; color: #fff; border: 1px solid #555;" onclick="openRefSystem()">
+    <button class="btn-refine btn-upgrade-menu" style="background: #ff9900; color: #000; border: none; font-weight:900; box-shadow: 0 4px 0 #cc7a00;" onclick="openRefSystem()">
   👥 REFERRAL SYSTEM
 </button>
 
@@ -2961,7 +2965,8 @@ function copyRefCode() {
     const code = document.getElementById("myRefCodeTextDisplay").innerText;
     if (code && code !== "LOADING...") {
         navigator.clipboard.writeText(code).then(() => {
-            alert("COPIED: " + code);
+            // Alert yerine güzel efekti kullanıyoruz
+            showRefFeedback('success', 'COPIED!');
         });
     }
 }
@@ -3037,46 +3042,15 @@ async function submitRefCode() {
     }
 }
 
-// "ENTER" Butonuna Basılınca (Ref Kodu Kullanma)
-// YARDIMCI FONKSİYON: Durum Göster (Yeşil Tik veya Kırmızı Çarpı)
 function showRefFeedback(type, message) {
     const overlay = document.getElementById("refStatusOverlay");
     const icon = document.getElementById("statusIcon");
     const text = document.getElementById("statusText");
     
-    overlay.style.display = "flex";
-    
-    if (type === 'success') {
-        icon.innerHTML = "✅";
-        icon.style.textShadow = "0 0 20px #00ff00";
-        text.style.color = "#00ff00";
-        text.innerHTML = message || "SUCCESS!";
-    } else {
-        icon.innerHTML = "❌";
-        icon.style.textShadow = "0 0 20px #ff0000";
-        text.style.color = "#ff4444";
-        text.innerHTML = message || "ERROR!";
-    }
-
-    // 1 Saniye sonra ne olacağını yöneten Promise
-    return new Promise(resolve => setTimeout(() => {
-        overlay.style.display = "none";
-        resolve();
-    }, 1200)); // Animasyon rahat görünsün diye 1.2 sn
-}
-
-// GÜNCELLENMİŞ SUBMIT FONKSİYONU
-
-      // YARDIMCI FONKSİYON: Durum Göster (Yeşil Tik veya Kırmızı Çarpı)
-function showRefFeedback(type, message) {
-    const overlay = document.getElementById("refStatusOverlay");
-    const icon = document.getElementById("statusIcon");
-    const text = document.getElementById("statusText");
-    
-    // Eğer HTML'de bu elemanlar yoksa hata vermesin diye kontrol
+    // Güvenlik kontrolü
     if(!overlay || !icon || !text) {
-        console.error("Feedback elemanları HTML'de bulunamadı!");
-        if(type === 'error') alert(message);
+        console.error("Feedback elementleri bulunamadı!");
+        alert(message);
         return Promise.resolve();
     }
     
@@ -3084,94 +3058,99 @@ function showRefFeedback(type, message) {
     
     if (type === 'success') {
         icon.innerHTML = "✅";
-        icon.style.textShadow = "0 0 20px #00ff00";
+        icon.style.textShadow = "0 0 30px #00ff00";
         text.style.color = "#00ff00";
+        text.style.textShadow = "0 0 10px #00ff00";
         text.innerHTML = message || "SUCCESS!";
     } else {
         icon.innerHTML = "❌";
-        icon.style.textShadow = "0 0 20px #ff0000";
+        icon.style.textShadow = "0 0 30px #ff0000";
         text.style.color = "#ff4444";
+        text.style.textShadow = "0 0 10px #ff0000";
         text.innerHTML = message || "ERROR!";
     }
 
-    // 1 Saniye sonra ne olacağını yöneten Promise
+    // 1.2 Saniye sonra kapanır
     return new Promise(resolve => setTimeout(() => {
         overlay.style.display = "none";
         resolve();
     }, 1200)); 
 }
-      async function submitRefCode() {
-    const inputCode = document.getElementById("refCodeInput").value.trim().toUpperCase();
-    const myCode = document.getElementById("myRefCodeText").innerText;
 
+function copyRefCode() {
+    const code = document.getElementById("myRefCodeTextDisplay").innerText;
+    if (code && code !== "LOADING...") {
+        navigator.clipboard.writeText(code).then(() => {
+            // Alert yerine güzel efekti kullanıyoruz
+            showRefFeedback('success', 'COPIED!');
+        });
+    }
+}
+      async function submitRefCode() {
+    const inputEl = document.getElementById("newRefInput");
+    const inputCode = inputEl.value.trim().toUpperCase();
+    const myCode = window.currentUserRefCode;
+
+    // Kod boş mu?
     if (!inputCode) {
         await showRefFeedback('error', 'ENTER CODE');
         return;
     }
-    if (inputCode === myCode) {
+    // Kendi kodun mu?
+    if (myCode && inputCode === myCode) {
         await showRefFeedback('error', 'YOUR CODE!');
         return;
     }
 
-    showBlockingLoader(); // Büyük yükleme ekranını aç
+    showBlockingLoader();
 
     try {
         const db = window.firebaseDB;
         const { collection, query, where, getDocs, updateDoc, doc } = window.firebaseFunctions;
 
-        // 1. Bu kod kime ait?
+        // Kod veritabanında var mı?
         const usersRef = collection(db, "players");
         const q = query(usersRef, where("myRefCode", "==", inputCode));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
             hideBlockingLoader();
-            // Alert yerine bizim özel feedback fonksiyonumuz
             await showRefFeedback('error', 'INVALID CODE');
             return;
         }
 
-        // 2. Kod geçerli, sahibini bulduk
+        // Sahibine ödül ver
         let referrerId = "";
         let referrerCurrentTranium = 0;
-
         querySnapshot.forEach((doc) => {
             referrerId = doc.id;
             referrerCurrentTranium = parseFloat(doc.data().tranium) || 0;
         });
 
-        // 3. Ödülleri Dağıt
         const referrerRef = doc(db, "players", referrerId);
         await updateDoc(referrerRef, {
             tranium: referrerCurrentTranium + 20
         });
 
-        // Benim verilerimi güncelle
-        tranium += 20; 
-        
+        // Bana ödül ver
+        tranium += 20;
         const myRef = doc(db, "players", currentUserID);
-        const newRefCode = generateRefCode(); // Kod girdikten sonra benim kodumu oluştur
         
         await updateDoc(myRef, {
-            refActionTaken: true,
-            usedRefCode: true,
-            myRefCode: newRefCode,
+            usedRefCode: true, 
             tranium: tranium
         });
         
-        // 4. İşlem Tamam - UI Güncelle
+        window.hasUsedRefCode = true; // Global değişkeni güncelle
+
         updateUI();
         hideBlockingLoader();
         
-        // Kendi kodunu ekrana yaz
-        document.getElementById("myRefCodeText").innerText = newRefCode;
-        window.currentUserRefCode = newRefCode;
-
-        // BAŞARILI FEEDBACK (Yeşil Tik)
+        // Başarılı efekti patlat!
         await showRefFeedback('success', '+20 TRANIUM');
         
-        // Feedback bittikten sonra modalı tamamen kapat
-        document.getElementById("refInputModal").style.display = "none";
+        // Modalı yenile (Input kutusunu gizlemek için)
+        openRefSystem();
 
     } catch (error) {
         console.error("Ref Error:", error);
@@ -3308,3 +3287,4 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
