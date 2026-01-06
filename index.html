@@ -1244,24 +1244,46 @@ You can start again with energy.
     <button class="modal-btn" style="background: #333; color: white" onclick="closeUpgradeModal()">CLOSE</button>
   </div>
 </div>
-<div id="refInputModal" class="custom-modal" style="z-index: 9999;">
-  <h2 style="color: var(--neon); margin: 0 0 10px 0;">INVITE CODE</h2>
-  <p style="font-size: 11px; color: #ccc; margin-bottom: 15px;">
-    Enter a friend's code to get <span style="color:var(--gold); font-weight:bold;">+20 TRANIUM</span> instantly!
-  </p>
+<div id="refSystemModal" class="custom-modal" style="z-index: 10000;">
+  <h2 style="color: var(--neon); margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 10px;">REFERRAL SYSTEM</h2>
+
+  <div id="refEnterSection">
+    <p style="font-size: 11px; color: #ccc; margin-bottom: 5px; text-align: left;">👇 ENTER FRIEND'S CODE (+20 TRANIUM)</p>
+    <div style="display: flex; gap: 5px;">
+      <input type="text" id="newRefInput" class="modal-input" placeholder="CODE..." maxlength="9" style="margin: 0; text-transform: uppercase; flex: 2;">
+      <button id="btnSubmitRef" class="modal-btn" style="background: var(--neon); color: black; flex: 1; min-height: 40px; font-size: 12px;" onclick="submitRefCode()">SUBMIT</button>
+    </div>
+  </div>
   
-  <input type="text" id="refCodeInput" class="modal-input" placeholder="Ex: A1B2C3D" maxlength="9" style="text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">
-  
-  <div class="modal-btn-row">
-    <button class="modal-btn" style="background: #333; color: #aaa; font-size:12px;" onclick="skipRefCode()">SKIP</button>
-    <button class="modal-btn" style="background: var(--neon); color: black;" onclick="submitRefCode()">ENTER</button>
+  <div id="refAlreadyUsedMsg" style="display: none; background: rgba(0,255,0,0.1); padding: 10px; border-radius: 8px; border: 1px solid #00ff00; margin-bottom: 15px;">
+    <span style="color: #00ff00; font-weight: bold; font-size: 12px;">✅ YOU ALREADY CLAIMED A REWARD</span>
   </div>
 
+  <div style="width: 100%; height: 1px; background: #333; margin: 20px 0;"></div>
+
+  <div id="refGenerateSection">
+    <p style="font-size: 11px; color: #ccc; margin-bottom: 5px; text-align: left;">👇 YOUR INVITE CODE</p>
+    
+    <button id="btnGenRef" class="btn-refine" style="background: var(--gold); color: black; margin: 0; padding: 10px; font-size: 14px;" onclick="generateMyRefCodeManual()">
+      🔄 GENERATE REFERRAL CODE
+    </button>
+
+    <div id="myCodeDisplayBox" style="display: none; flex-direction: column; gap: 5px;">
+      <div style="background: #222; padding: 10px; border-radius: 8px; border: 1px dashed var(--gold); font-size: 20px; font-weight: 900; color: var(--gold); letter-spacing: 2px;">
+        <span id="myRefCodeTextDisplay">LOADING...</span>
+      </div>
+      <button class="modal-btn" style="background: #444; color: white; margin-top: 5px; font-size: 10px; padding: 8px;" onclick="copyRefCode()">📋 COPY CODE</button>
+      <p style="font-size: 9px; color: #888; margin-top: 5px;">Share to earn +20 Tranium per friend!</p>
+    </div>
+  </div>
+
+  <button class="modal-btn" style="background: #333; color: white; margin-top: 20px;" onclick="closeRefSystem()">CLOSE</button>
+  
   <div id="refStatusOverlay">
       <div id="statusIcon" class="status-icon"></div>
       <div id="statusText" class="status-msg"></div>
   </div>
-  </div>
+</div>
 </div>
     <div id="swapModal" class="custom-modal">
       <h2 style="color: var(--gold);
@@ -1361,11 +1383,9 @@ Energy regenerates over time (1 per hour) even when you are offline.
       <div style="height: 40px;"></div>
 
       <button class="btn-refine btn-upgrade-menu" onclick="openUpgradeModal()">👷 WORKER UPGRADES</button>
-      <div id="myRefDisplayArea" style="text-align: center; margin-top: 15px; padding: 10px; border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(0,0,0,0.3);">
-  <span style="font-size: 10px; color: #888; display: block; margin-bottom: 4px;">YOUR REFERRAL CODE</span>
-  <span id="myRefCodeText" style="font-size: 16px; font-weight: 900; color: var(--gold); letter-spacing: 2px; cursor: pointer;" onclick="copyRefCode()">LOADING...</span>
-  <div style="font-size: 9px; color: var(--neon); margin-top: 3px;">Share to earn +20 Tranium per friend!</div>
-</div>
+     <button class="btn-refine btn-upgrade-menu" style="background: #333; color: #fff; border: 1px solid #555;" onclick="openRefSystem()">
+  👥 REFERRAL SYSTEM
+</button>
 
       <div class="footer">
         <span id="energyStatus" class="energy-info">⚡ ENERGY: 10/10</span>
@@ -1563,6 +1583,9 @@ async function identifyUser() {
         onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
+       
+      window.currentUserRefCode = data.myRefCode || null;
+      window.hasUsedRefCode = data.usedRefCode || false; // Bu satır önemli!
                 
                 // --- STANDART VERİLERİ ÇEK ---
                 let savedMetal = parseFloat(data.metal) || 0;
@@ -1619,14 +1642,6 @@ async function identifyUser() {
                         // Henüz işlem yapmamış -> BEKLE
                         refTextEl.innerText = "WAITING...";
                     }
-                }
-
-                // Pop-up Kontrolü: Daha önce işlem yapmadıysa aç
-                if (!refActionTaken && !window.refModalShown) {
-                    setTimeout(() => {
-                        document.getElementById("refInputModal").style.display = "block";
-                    }, 2500);
-                    window.refModalShown = true;
                 }
 
                 updateUI();
@@ -2871,39 +2886,154 @@ function copyRefCode() {
     }
 }
 
-async function skipRefCode() {
+// --- YENİ REFERRAL SİSTEMİ FONKSİYONLARI ---
+
+// 1. Modalı Aç ve Durumu Kontrol Et
+function openRefSystem() {
+    const modal = document.getElementById("refSystemModal");
+    const enterSection = document.getElementById("refEnterSection");
+    const usedMsg = document.getElementById("refAlreadyUsedMsg");
+    const genBtn = document.getElementById("btnGenRef");
+    const displayBox = document.getElementById("myCodeDisplayBox");
+    const codeText = document.getElementById("myRefCodeTextDisplay");
+
+    modal.style.display = "block";
+
+    // Durum 1: Arkadaşının kodunu girdin mi?
+    // Not: window.hasUsedRefCode değişkenini setupRealtimeListener içinde veriyi çekerken güncellemelisin.
+    // Eğer veriyi globalde tutmuyorsan, Firebase'den gelen veriye göre kontrol edeceğiz.
+    // Şimdilik window.currentUserRefCode ve window.hasUsedRefCode varsayalım.
+    
+    // (setupRealtimeListener içinde data.usedRefCode verisini window.hasUsedRefCode = data.usedRefCode olarak kaydetmelisin)
+    if (window.hasUsedRefCode) {
+        enterSection.style.display = "none";
+        usedMsg.style.display = "block";
+    } else {
+        enterSection.style.display = "block";
+        usedMsg.style.display = "none";
+    }
+
+    // Durum 2: Kendi kodun var mı?
+    if (window.currentUserRefCode) {
+        genBtn.style.display = "none";
+        displayBox.style.display = "flex";
+        codeText.innerText = window.currentUserRefCode;
+    } else {
+        genBtn.style.display = "block";
+        displayBox.style.display = "none";
+    }
+}
+
+function closeRefSystem() {
+    document.getElementById("refSystemModal").style.display = "none";
+}
+
+// 2. Kendi Kodunu Manuel Oluştur
+async function generateMyRefCodeManual() {
     showBlockingLoader();
     
-    // 1. Kendi kodunu oluştur
     const newRefCode = generateRefCode();
-    
-    // 2. Veritabanına "seçim yapıldı" (refActionTaken) bilgisini işle
     const db = window.firebaseDB;
     const { doc, updateDoc } = window.firebaseFunctions;
     const myRef = doc(db, "players", currentUserID);
 
     try {
         await updateDoc(myRef, {
-            refActionTaken: true, // Bir daha sorma
-            myRefCode: newRefCode, // Kodunu ver
-            usedRefCode: false
+            myRefCode: newRefCode
         });
 
-        // 3. UI Güncelle
-        document.getElementById("refInputModal").style.display = "none";
-        const refTextEl = document.getElementById("myRefCodeText");
-        if (refTextEl) refTextEl.innerText = newRefCode;
+        // Global değişkeni güncelle
         window.currentUserRefCode = newRefCode;
-
+        
+        // UI Güncelle
         hideBlockingLoader();
+        openRefSystem(); // UI'ı yenilemek için tekrar çağırıyoruz
+        
     } catch (e) {
-        console.error("Skip Error:", e);
-        // Hata olursa (örn: yeni kullanıcı updateDoc yapamazsa)
+        console.error("Generate Error:", e);
         hideBlockingLoader();
-        document.getElementById("refInputModal").style.display = "none";
-        window.currentUserRefCode = newRefCode;
-        window.tempRefActionTaken = true; 
-        saveData(true); // saveData ile yedekten kaydet
+        alert("Error generating code. Try again.");
+    }
+}
+
+// 3. Mevcut Copy Fonksiyonunu Güncelle
+function copyRefCode() {
+    const code = document.getElementById("myRefCodeTextDisplay").innerText;
+    if (code && code !== "LOADING...") {
+        navigator.clipboard.writeText(code).then(() => {
+            alert("COPIED: " + code);
+        });
+    }
+}
+
+// 4. Submit Fonksiyonunu Güncelle (Input ID'si değiştiği için)
+async function submitRefCode() {
+    // Input ID'si değişti: newRefInput
+    const inputEl = document.getElementById("newRefInput");
+    const inputCode = inputEl.value.trim().toUpperCase();
+    const myCode = window.currentUserRefCode; // Globalden al
+
+    if (!inputCode) {
+        await showRefFeedback('error', 'ENTER CODE');
+        return;
+    }
+    if (myCode && inputCode === myCode) {
+        await showRefFeedback('error', 'YOUR CODE!');
+        return;
+    }
+
+    showBlockingLoader();
+
+    try {
+        const db = window.firebaseDB;
+        const { collection, query, where, getDocs, updateDoc, doc } = window.firebaseFunctions;
+
+        // Kod geçerli mi?
+        const usersRef = collection(db, "players");
+        const q = query(usersRef, where("myRefCode", "==", inputCode));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            hideBlockingLoader();
+            await showRefFeedback('error', 'INVALID CODE');
+            return;
+        }
+
+        // Ödül dağıtımı
+        let referrerId = "";
+        let referrerCurrentTranium = 0;
+        querySnapshot.forEach((doc) => {
+            referrerId = doc.id;
+            referrerCurrentTranium = parseFloat(doc.data().tranium) || 0;
+        });
+
+        const referrerRef = doc(db, "players", referrerId);
+        await updateDoc(referrerRef, {
+            tranium: referrerCurrentTranium + 20
+        });
+
+        // Bana ödül ver ve 'usedRefCode' işaretle
+        tranium += 20;
+        const myRef = doc(db, "players", currentUserID);
+        
+        await updateDoc(myRef, {
+            usedRefCode: true, // Artık bir kod kullandım
+            tranium: tranium
+        });
+        
+        window.hasUsedRefCode = true; // Global flag güncelle
+
+        updateUI();
+        hideBlockingLoader();
+        await showRefFeedback('success', '+20 TRANIUM');
+        
+        // Modalı yenile (Input kısmını gizlemek için)
+        openRefSystem();
+
+    } catch (error) {
+        console.error("Ref Error:", error);
+        hideBlockingLoader();
+        await showRefFeedback('error', 'NET ERROR');
     }
 }
 
@@ -3178,3 +3308,4 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
