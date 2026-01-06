@@ -2230,37 +2230,42 @@ async function executeTransaction(signer, amountETH, toAddress) {
         return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
       }
 
-      window.initHub = function() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        canvas.style.imageRendering = "pixelated";
+     window.initHub = function() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.imageRendering = "pixelated";
 
-        const now = Date.now();
-        const secondsPassed = Math.floor((now - lastTime) / 1000);
-        processMining(secondsPassed);
-        checkUpgradeProgress();
-        updateUI();
-        startEnergyCountdown();
-        for (let i = 0; i < 50; i++) spawnWorker();
-        for (let i = 0; i < 15; i++) spawnEnemy();
-        requestAnimationFrame(gameLoop);
-        setInterval(saveData, 3000);
+    const now = Date.now();
+    const secondsPassed = Math.floor((now - lastTime) / 1000);
+    processMining(secondsPassed);
+    checkUpgradeProgress();
+    updateUI();
+    startEnergyCountdown();
+    
+    // Spawn işlemleri
+    for (let i = 0; i < 50; i++) spawnWorker();
+    for (let i = 0; i < 15; i++) spawnEnemy();
+    
+    // Döngüleri başlat
+    requestAnimationFrame(gameLoop);
+    setInterval(saveData, 3000);
+    setInterval(checkUpgradeProgress, 1000);
+    
+    initJoystick();
 
-        setInterval(checkUpgradeProgress, 1000);
-        initJoystick();
-        window.initHub = function() {
-        // ... (diğer kodlar) ...
-        
-        setInterval(checkUpgradeProgress, 1000);
-        initJoystick();
+    // --- EKSİK OLAN AKTİFLİK TAKİBİ BURADA OLMALI ---
+    // Global değişkene atıyoruz ki forceSave erişebilsin
+    window.lastInteractionTime = Date.now(); 
+    
+    window.updateInteraction = function() { 
+        window.lastInteractionTime = Date.now(); 
+    };
 
-        // ---> KODU BURAYA YAPIŞTIR <---
-        
-        // --- AKTİFLİK TAKİBİ (Bunu zaten eklemiştik) ---
-        const updateInteraction = () => { lastInteractionTime = Date.now(); };
-        // ...
-      }
-      }
+    // Etkileşim dinleyicileri
+    ['click', 'touchstart', 'mousemove', 'keydown'].forEach(evt => 
+        window.addEventListener(evt, window.updateInteraction, {passive: true})
+    );
+}
 
       function initJoystick() {
         const joystickContainer = document.getElementById("joystickContainer");
@@ -2932,15 +2937,6 @@ function generateRefCode() {
     return result;
 }
 
-// Ref Kodunu Kopyalama
-function copyRefCode() {
-    const code = document.getElementById("myRefCodeText").innerText;
-    if (code && code !== "LOADING...") {
-        navigator.clipboard.writeText(code).then(() => {
-            alert("Code Copied: " + code);
-        });
-    }
-}
 
 // --- YENİ REFERRAL SİSTEMİ FONKSİYONLARI ---
 
@@ -3012,87 +3008,6 @@ async function generateMyRefCodeManual() {
     }
 }
 
-// 3. Mevcut Copy Fonksiyonunu Güncelle
-function copyRefCode() {
-    const code = document.getElementById("myRefCodeTextDisplay").innerText;
-    if (code && code !== "LOADING...") {
-        navigator.clipboard.writeText(code).then(() => {
-            // Alert yerine güzel efekti kullanıyoruz
-            showRefFeedback('success', 'COPIED!');
-        });
-    }
-}
-
-// 4. Submit Fonksiyonunu Güncelle (Input ID'si değiştiği için)
-async function submitRefCode() {
-    // Input ID'si değişti: newRefInput
-    const inputEl = document.getElementById("newRefInput");
-    const inputCode = inputEl.value.trim().toUpperCase();
-    const myCode = window.currentUserRefCode; // Globalden al
-
-    if (!inputCode) {
-        await showRefFeedback('error', 'ENTER CODE');
-        return;
-    }
-    if (myCode && inputCode === myCode) {
-        await showRefFeedback('error', 'YOUR CODE!');
-        return;
-    }
-
-    showBlockingLoader();
-
-    try {
-        const db = window.firebaseDB;
-        const { collection, query, where, getDocs, updateDoc, doc } = window.firebaseFunctions;
-
-        // Kod geçerli mi?
-        const usersRef = collection(db, "players");
-        const q = query(usersRef, where("myRefCode", "==", inputCode));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            hideBlockingLoader();
-            await showRefFeedback('error', 'INVALID CODE');
-            return;
-        }
-
-        // Ödül dağıtımı
-        let referrerId = "";
-        let referrerCurrentTranium = 0;
-        querySnapshot.forEach((doc) => {
-            referrerId = doc.id;
-            referrerCurrentTranium = parseFloat(doc.data().tranium) || 0;
-        });
-
-        const referrerRef = doc(db, "players", referrerId);
-        await updateDoc(referrerRef, {
-            tranium: referrerCurrentTranium + 20
-        });
-
-        // Bana ödül ver ve 'usedRefCode' işaretle
-        tranium += 20;
-        const myRef = doc(db, "players", currentUserID);
-        
-        await updateDoc(myRef, {
-            usedRefCode: true, // Artık bir kod kullandım
-            tranium: tranium
-        });
-        
-        window.hasUsedRefCode = true; // Global flag güncelle
-
-        updateUI();
-        hideBlockingLoader();
-        await showRefFeedback('success', '+20 TRANIUM');
-        
-        // Modalı yenile (Input kısmını gizlemek için)
-        openRefSystem();
-
-    } catch (error) {
-        console.error("Ref Error:", error);
-        hideBlockingLoader();
-        await showRefFeedback('error', 'NET ERROR');
-    }
-}
 
 function showRefFeedback(type, message) {
     const overlay = document.getElementById("refStatusOverlay");
@@ -3339,6 +3254,7 @@ function copyRefCode() {
 </script>
   </body>
 </html>
+
 
 
 
