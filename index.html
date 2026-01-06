@@ -1379,6 +1379,7 @@ Energy regenerates over time (1 per hour) even when you are offline.
     <canvas id="gameCanvas"></canvas>
 
     <script>
+      let notificationToken = null;
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
       const WORLD_SIZE = 2500;
@@ -1434,12 +1435,17 @@ let currentUserID = "test_user_001"; // Varsayılan test kullanıcısı
 
 async function identifyUser() {
     try {
-        // Eğer Farcaster içindeysek gerçek ID'yi al
         if (window.farcasterSDK) {
             const context = await window.farcasterSDK.context;
             if (context && context.user && context.user.fid) {
                 currentUserID = "user_" + context.user.fid;
                 console.log("👤 Kullanıcı Tanımlandı:", currentUserID);
+            }
+            
+            // GET NOTIFICATION TOKEN
+            if (context && context.client && context.client.notificationToken) {
+                notificationToken = context.client.notificationToken;
+                console.log("🔔 Notification Token alındı");
             }
         }
     } catch (e) {
@@ -1669,11 +1675,20 @@ async function identifyUser() {
         }, 800);
       }
 
-      // NEW: User Interaction to start the flow
+    async function requestNotificationPermission() {
+    try {
+        if (window.farcasterSDK && window.farcasterSDK.actions) {
+            const result = await window.farcasterSDK.actions.requestNotificationPermission();
+            console.log("🔔 Notification Permission:", result);
+        }
+    } catch (e) {
+        console.warn("Notification permission request failed:", e);
+    }
+}
+      
       function userEnterGame() {
-        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
-        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
-        
+        requestNotificationPermission();
+       
         // 2. Hide Intro
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "none";
@@ -2402,7 +2417,11 @@ async function saveData(force = false) {
         energyRegenerationStartTime: energyRegenerationStartTime,
         metalFacUpgradeEndTime: metalFacUpgradeEndTime,
         kristalFacUpgradeEndTime: kristalFacUpgradeEndTime
+           ...(notificationToken && { notificationToken: notificationToken }),
+        notif4h: 0,
+        notif6h: 0
     };
+
 
     try {
         await setDoc(doc(db, "players", currentUserID), gameData, { merge: true });
@@ -3131,4 +3150,5 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
