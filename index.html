@@ -1682,64 +1682,63 @@ async function identifyUser() {
       }
 
 async function enableNotifications() {
-    // 1. SDK kontrolü (PC ise çık)
-    if (!window.farcasterSDK || !window.farcasterSDK.actions) {
-        console.log("⚠️ PC ortamı veya SDK yok, bildirim atlanıyor.");
-        return;
-    }
+    // 1. SDK yoksa (PC) sessizce çık
+    if (!window.farcasterSDK || !window.farcasterSDK.actions) return;
 
     try {
-        console.log("🔔 Bildirim izni isteniyor...");
+        // SENİN VERDİĞİN KODDAKİ GİBİ: Context'i burada alıp ID'yi garanti ediyoruz
+        const context = await window.farcasterSDK.context;
         
-        // 2. Farcaster'dan Bildirim Token'ı İste (UserID sormuyoruz, sadece token)
+        // Eğer Context'ten ID gelirse, global değişkeni de güncelle ki referans sistemiyle çakışmasın
+        if (context && context.user && context.user.fid) {
+            currentUserID = "user_" + context.user.fid;
+            console.log("👤 Notification için ID Teyit Edildi:", currentUserID);
+        }
+
+        // 2. İZİN İSTE (TOKEN AL)
         const result = await window.farcasterSDK.actions.addFrame();
         
-        // 3. Token geldiyse veritabanına yaz
+        // 3. TOKEN GELDİ Mİ?
         if (result && result.notificationDetails) {
-            const token = result.notificationDetails.token;
-            const url = result.notificationDetails.url;
+            console.log("✅ Token Yakalandı:", result.notificationDetails.token);
             
-            console.log("✅ Token Alındı, Veritabanına yazılıyor...");
-
-            // Firebase fonksiyonlarını al
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
-
-            // KRİTİK NOKTA: Global 'currentUserID' kullanıyoruz.
-            // { merge: true } sayesinde referans kodları vb. SİLİNMEZ.
+            
+            // 4. DATABASE'E YAZ (Referans sistemini bozmadan!)
+            // 'merge: true' sayesinde sadece notification alanlarını günceller, diğerlerine dokunmaz.
             await setDoc(doc(db, "players", currentUserID), {
-                notificationToken: token,
-                notificationUrl: url,
-                // Eğer bu alanlar yoksa oluştur, varsa dokunma (merge mantığı)
-                lastNotificationUpdate: Date.now()
+                notificationToken: result.notificationDetails.token,
+                notificationUrl: result.notificationDetails.url,
+                // Debug için tarih atıyoruz
+                tokenUpdateDate: Date.now() 
             }, { merge: true });
 
-            console.log("💾 Token başarıyla kaydedildi.");
+            console.log("💾 Token başarıyla kaydedildi!");
+
         } else {
-            console.log("🚫 Kullanıcı bildirim izni vermedi veya token gelmedi.");
+            console.log("⚠️ İzin verildi ama Token dönmedi (Eski sürüm olabilir).");
         }
 
     } catch (error) {
-        // Hata olsa bile oyunu durdurma, sadece logla
-        console.error("❌ Bildirim hatası:", error);
+        // Hata olsa bile oyunun akışını bozma
+        console.error("Bildirim Token Hatası:", error);
     }
 }
       
-      async function userEnterGame() {
-    console.log("🎮 Oyuna giriş yapılıyor...");
-    
-    // Intro ekranını hemen kapat ki kullanıcı takılmasın
+      function userEnterGame() {
+    console.log("🎮 Oyuna giriş tetiklendi.");
+
+    // 1. Intro ekranını kapat
     const introOverlay = document.getElementById("introOverlay");
     if(introOverlay) introOverlay.style.display = "none";
     
-    // Yükleme ekranını başlat
+    // 2. Yükleme ekranını başlat
     startLoading();
 
-    // Bildirim isteğini arkaplanda (async) başlat.
-    // 'await' koymuyoruz ki oyunun açılmasını bloklamasın.
-    // Kullanıcı "İzin Ver" diyene kadar oyun arkada yüklensin.
+    // 3. Bildirimleri ARKAPLANDA etkinleştir (Oyunu bekletmez)
     enableNotifications().then(() => {
-        console.log("🔔 Bildirim süreci tamamlandı.");
+        console.log("🔔 Bildirim süreci tamam.");
     });
 }
 
@@ -3192,5 +3191,6 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
