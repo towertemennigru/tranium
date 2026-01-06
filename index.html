@@ -45,42 +45,32 @@
       console.log("🔥 Firebase (Firestore) Realtime Listener ile hazır!");
     </script>
     <script type="module">
-    // En güncel Frame SDK'sını çekiyoruz
     import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
-
-    // SDK'yı global değişkene atıyoruz
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 
     const triggerReady = async () => {
         try {
-            // SDK'nın context bilgisini bekle
             const context = await sdk.context;
-
-            // Eğer context gelirse (yani Farcaster içindeysek)
             if (context) {
                 console.log("✅ Farcaster Environment Detected");
                 
-                // Engelleyici ekranı kaldır
                 const blocker = document.getElementById("desktop-blocker");
                 if(blocker) blocker.style.display = "none";
                 
-                // SDK'ya hazır olduğumuzu bildir
                 sdk.actions.ready();
 
-                // ---> DEĞİŞİKLİK BURADA: OTOMATİK BİLDİRİM İZNİ <---
-                // Oyun açılır açılmaz (icon click) bildirim izni iste
-                setTimeout(() => {
-                    if(window.enableNotifications) {
-                        console.log("🔔 Uygulama açıldı, bildirim izni otomatik isteniyor...");
-                        window.enableNotifications(); 
+                // ---> OTOMATİK BİLDİRİM TETİKLEYİCİSİ <---
+                // Fonksiyonun yüklenmesi için kısa bir döngü ile bekliyoruz
+                const checkAndTrigger = setInterval(() => {
+                    if (window.enableNotifications) {
+                        console.log("🔔 Bildirim fonksiyonu bulundu, otomatik çalıştırılıyor...");
+                        window.enableNotifications();
+                        clearInterval(checkAndTrigger); // Bulunca döngüyü durdur
                     }
-                }, 500); // 0.5 saniye bekle ki diğer scriptler yüklensin
+                }, 100); // Her 100ms'de bir kontrol et
 
-                // Varsa intro'yu başlat
                 if(window.startIntro) window.startIntro();
-            } else {
-                console.warn("❌ Not in Farcaster");
             }
         } catch (e) {
             console.error("SDK Init Error:", e);
@@ -1675,68 +1665,63 @@ async function identifyUser() {
 async function enableNotifications() {
     console.log("🔔 Bildirim sistemi başlatılıyor...");
     
-    // 1. SDK kontrolü (PC'de yoksa çık)
-    if (!window.farcasterSDK) {
-        console.log("⚠️ SDK yok (PC ortamı), bildirim atlanıyor");
-        return;
-    }
+    if (!window.farcasterSDK) return;
 
     try {
-        // 2. Context'i bekle
         const context = await window.farcasterSDK.context;
         
         if (!context || !context.user || !context.user.fid) {
-            console.warn("❌ Context alınamadı, bildirim kaydedilemedi");
+            console.warn("❌ Context yok, devam ediliyor...");
             return;
         }
 
-        // Kullanıcı ID'sini güncelle
         const targetID = "user_" + context.user.fid;
         currentUserID = targetID; 
 
-        // 3. Farcaster'dan İzin İste
+        // İzin İste
         const result = await window.farcasterSDK.actions.addFrame();
         
-        // 4. Sonucu Analiz Et ve Token'ı Al
         if (result && result.notificationDetails) {
             const token = result.notificationDetails.token;
             const url = result.notificationDetails.url;
             
             console.log("✅ Token Alındı:", token);
 
-            // 5. Firebase'e Token'ı VE ZAMANLAYICILARI Kaydet
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
             
+            // ---> İŞTE GERİ İSTEDİĞİN KISIM <---
             await setDoc(doc(db, "players", targetID), {
                 notificationToken: token,
                 notificationUrl: url,
                 notificationsEnabled: true,
-                
-                // --- İŞTE GERİ GETİRDİĞİMİZ KISIM ---
-                notif4hSent: false,  // 4 saatlik bildirim henüz atılmadı
-                notif6hSent: false,  // 6 saatlik bildirim henüz atılmadı
-                lastNotificationUpdate: Date.now() // Sayaç şimdi başlıyor
-                // ------------------------------------
-                
+                notif4hSent: false,  // 4 saatlik sayaç
+                notif6hSent: false,  // 6 saatlik sayaç
+                lastNotificationUpdate: Date.now()
             }, { merge: true });
 
-            console.log("💾 Token ve Bildirim Ayarları Firebase'e kaydedildi!");
-        } else {
-            console.log("⚠️ Kullanıcı bildirim izni vermedi veya token dönmedi.");
+            console.log("💾 Bildirim ayarları başarıyla kaydedildi!");
         }
 
     } catch (error) {
         console.error("❌ Bildirim hatası:", error);
     }
 }
-      
-      async function userEnterGame() {
-    console.log("🎮 Oyuna giriş yapılıyor...");
 
+// ---> BU SATIR ÇOK ÖNEMLİ! <---
+// Bunu eklemezsen yukarıdaki SDK scripti bu fonksiyonu göremez ve çalışmaz.
+window.enableNotifications = enableNotifications;
+      
+   async function userEnterGame() {
+    console.log("🎮 Oyuna giriş yapılıyor...");
+    
+    // (enableNotifications çağrısını buradan sildik)
+    
+    // Intro'yu gizle
     const introOverlay = document.getElementById("introOverlay");
     introOverlay.style.display = "none";
-
+    
+    // Yüklemeyi başlat
     startLoading();
 }
 
@@ -3205,6 +3190,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
