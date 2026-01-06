@@ -16,57 +16,34 @@
     
     
     <title>TRANIUM VERSE - Strategy Hub</title>
+    
+   <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+      // BURAYA 'onSnapshot' EKLENDİ DİKKAT ET:
+      import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-  
-  // ⚠️ KRİTİK: onSnapshot EKLENDİ!
-  import { 
-    getFirestore, 
-    doc, 
-    setDoc, 
-    getDoc, 
-    updateDoc, 
-    onSnapshot,      // <--- BU EKSİKTİ!
-    collection, 
-    query, 
-    where, 
-    getDocs 
-  } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-  
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+      // SENİN YENİ PROJE AYARLARIN (tranium-6f126)
+      const firebaseConfig = {
+        apiKey: "AIzaSyD5ozuYZ7YWoHz6qC4zXO-hDwVEnHCa-6g",
+        authDomain: "tranium-6f126.firebaseapp.com",
+        projectId: "tranium-6f126",
+        storageBucket: "tranium-6f126.firebasestorage.app",
+        messagingSenderId: "570304399178",
+        appId: "1:570304399178:web:d83ce14dc3fc91b958e3b3",
+        measurementId: "G-6Q23R774CL"
+      };
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyD5ozuYZ7YWoHz6qC4zXO-hDwVEnHCa-6g",
-    authDomain: "tranium-6f126.firebaseapp.com",
-    projectId: "tranium-6f126",
-    storageBucket: "tranium-6f126.firebasestorage.app",
-    messagingSenderId: "570304399178",
-    appId: "1:570304399178:web:d83ce14dc3fc91b958e3b3",
-    measurementId: "G-6Q23R774CL"
-  };
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const analytics = getAnalytics(app);
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const analytics = getAnalytics(app);
-
-  window.firebaseDB = db;
-  
-  // ⚠️ KRİTİK: onSnapshot'ı da window'a ekle!
-  window.firebaseFunctions = { 
-    doc, 
-    setDoc, 
-    getDoc, 
-    updateDoc, 
-    onSnapshot,      // <--- BU EKSİKTİ!
-    collection, 
-    query, 
-    where, 
-    getDocs 
-  };
-  
-  console.log("🔥 Firebase (Firestore) Realtime Listener ile hazır!");
-</script>
+      window.firebaseDB = db;
+      // onSnapshot'ı buraya da ekledik ki aşağıdan erişebilelim
+      window.firebaseFunctions = { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs };
+      
+      console.log("🔥 Firebase (Firestore) Realtime Listener ile hazır!");
+    </script>
     <script type="module">
     // En güncel Frame SDK'sını çekiyoruz
     import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
@@ -1568,11 +1545,7 @@ async function identifyUser() {
 }
 
     
-      // ============================================
-// SADECE BU FONKSİYONU DEĞİŞTİR (Satır ~600 civarı)
-// ============================================
-
-async function setupRealtimeListener() {
+      async function setupRealtimeListener() {
     console.log("📡 Realtime Bağlantı Kuruluyor...");
     await identifyUser();
 
@@ -1632,13 +1605,6 @@ async function setupRealtimeListener() {
                 let myRefCode = data.myRefCode;
                 const refTextEl = document.getElementById("myRefCodeText");
 
-                console.log("🔍 Ref Durum Kontrolü:", { 
-                    refActionTaken, 
-                    myRefCode, 
-                    hasModalShown: window.refModalShown,
-                    hasInitialLoad: window.hasInitialLoadCompleted 
-                });
-
                 if (refTextEl) {
                     if (myRefCode) {
                         // Zaten kodu var
@@ -1655,19 +1621,12 @@ async function setupRealtimeListener() {
                     }
                 }
 
-                // ⚠️ KRİTİK NOKTA: SADECE İLK YÜKLENMEde VE daha önce işlem yapılmadıysa aç
-                if (!refActionTaken && !window.refModalShown && !window.hasInitialLoadCompleted) {
-                    console.log("✅ Ref modalı açılıyor (İlk giriş)");
+                // Pop-up Kontrolü: Daha önce işlem yapmadıysa aç
+                if (!refActionTaken && !window.refModalShown) {
                     setTimeout(() => {
                         document.getElementById("refInputModal").style.display = "block";
                     }, 2500);
                     window.refModalShown = true;
-                } else {
-                    console.log("⏭️ Ref modalı atlandı - Sebep:", {
-                        alreadyTakenAction: refActionTaken,
-                        alreadyShownThisSession: window.refModalShown,
-                        notFirstLoad: window.hasInitialLoadCompleted
-                    });
                 }
 
                 updateUI();
@@ -1682,9 +1641,8 @@ async function setupRealtimeListener() {
                 console.log("🆕 Yeni kullanıcı.");
                 energy = 10;
                 
-                // ⚠️ Yeni kullanıcıya da SADECE İLK YÜKLENMEde sor
-                if (!window.refModalShown && !window.hasInitialLoadCompleted) {
-                    console.log("✅ Yeni kullanıcı için ref modalı açılıyor");
+                // Yeni kullanıcıya hemen kod oluşturmuyoruz, önce sorsun.
+                if (!window.refModalShown) {
                     setTimeout(() => {
                         document.getElementById("refInputModal").style.display = "block";
                     }, 2500);
@@ -1704,40 +1662,6 @@ async function setupRealtimeListener() {
     }
 }
 
-
-// ============================================
-// 4. BONUS: Manuel Test Fonksiyonu
-// ============================================
-// Console'da test için (kodun sonuna ekle)
-
-window.testNotifications = async function() {
-    console.log("🧪 Manuel bildirim testi başlatılıyor...");
-    await enableNotifications();
-    console.log("✅ Test tamamlandı, Console'u kontrol et");
-};
-
-window.testRefModal = function() {
-    console.log("🧪 Ref modalı test ediliyor...");
-    document.getElementById("refInputModal").style.display = "block";
-    console.log("✅ Modal açıldı");
-};
-
-window.resetRefSystem = async function() {
-    console.log("🔄 Ref sistemi sıfırlanıyor...");
-    window.refModalShown = false;
-    window.hasInitialLoadCompleted = false;
-    
-    const db = window.firebaseDB;
-    const { doc, updateDoc } = window.firebaseFunctions;
-    
-    await updateDoc(doc(db, "players", currentUserID), {
-        refActionTaken: false,
-        myRefCode: null
-    });
-    
-    console.log("✅ Sıfırlama tamam, sayfayı yenile");
-};
-
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
         introOverlay.style.display = "flex";
@@ -1751,101 +1675,59 @@ window.resetRefSystem = async function() {
 
 // --- FİNAL GÜVENLİ BİLDİRİM KODU ---
 async function enableNotifications() {
-    console.log("🔔 Bildirim sistemi başlatılıyor...");
-    
-    // 1. SDK kontrolü (PC'de yoksa çık)
-    if (!window.farcasterSDK) {
-        console.log("⚠️ SDK yok (PC ortamı), bildirim atlanıyor");
-        return;
-    }
+    // SDK yoksa (PC) sessizce çık
+    if (!window.farcasterSDK) return;
 
     try {
-        // 2. Context'i bekle (Bu çok önemli!)
-        console.log("⏳ Context bekleniyor...");
+        // 1. GERÇEK ID'Yİ AL
         const context = await window.farcasterSDK.context;
-        
-        if (!context || !context.user || !context.user.fid) {
-            console.warn("❌ Context alınamadı, bildirim kaydedilemedi");
-            return;
+        let targetID = currentUserID;
+        if (context && context.user && context.user.fid) {
+            targetID = "user_" + context.user.fid;
+            currentUserID = targetID; // Global değişkeni de düzelt
         }
 
-        // 3. Gerçek kullanıcı ID'sini al
-        const targetID = "user_" + context.user.fid;
-        currentUserID = targetID;
-        console.log("👤 Kullanıcı ID:", targetID);
-
-        // 4. İzin iste
-        console.log("📱 addFrame() çağrılıyor...");
+        // 2. İZİN İSTE (Eski telefonda sadece ekleme sorar)
         const result = await window.farcasterSDK.actions.addFrame();
-        console.log("📦 addFrame sonucu:", result);
-
-        // 5. Token kontrolü
-        if (result && result.notificationDetails) {
-            const token = result.notificationDetails.token;
-            const url = result.notificationDetails.url;
+        
+        // 3. TOKEN GELDİ Mİ BAK
+        if (result.notificationDetails) {
+            // Harika! Yeni telefon, token geldi. Kaydet.
+            console.log("✅ Token Alındı (Yeni Sürüm)");
             
-            console.log("✅ Token alındı:", token);
-            console.log("📍 Notification URL:", url);
-
-            // 6. Firebase'e kaydet
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
             
-            console.log("💾 Token Firebase'e kaydediliyor...");
-            
             await setDoc(doc(db, "players", targetID), {
-                notificationToken: token,
-                notificationUrl: url,
+                notificationToken: result.notificationDetails.token,
+                notificationUrl: result.notificationDetails.url,
                 notif4hSent: false, 
-                notif6hSent: false,
-                lastNotificationUpdate: Date.now()
-            }, { merge: true });
-
-            console.log("✅ Token başarıyla kaydedildi!");
-            
-        } else {
-            console.warn("⚠️ notificationDetails boş geldi");
-            console.warn("Result içeriği:", JSON.stringify(result));
-            
-            // Eski sürümler için yedek kayıt
-            const db = window.firebaseDB;
-            const { doc, setDoc } = window.firebaseFunctions;
-            
-            await setDoc(doc(db, "players", targetID), {
-                notificationToken: "legacy_device",
-                notif4hSent: false,
                 notif6hSent: false
             }, { merge: true });
+
+        } else {
+            // Token gelmedi (Eski telefon veya PC).
+            // Sorun yok, sadece log düş, oyuncuyu rahatsız etme.
+            console.log("⚠️ Token alınamadı (Eski Sürüm veya İzin Yok). Oyun devam ediyor.");
         }
 
     } catch (error) {
-        console.error("❌ Bildirim hatası:", error);
-        console.error("Hata tipi:", error.name);
-        console.error("Hata mesajı:", error.message);
-        console.error("Stack:", error.stack);
+        // Bir hata olsa bile oyunu durdurma, sadece konsola yaz
+        console.error("Bildirim süreci hatası:", error);
     }
 }
       
-  async function userEnterGame() {
-    console.log("🎮 Oyuna giriş yapılıyor...");
-    
-    // 1. Önce bildirimleri etkinleştir (AWAIT ekledik!)
-    await enableNotifications();
-    
-    // 2. Intro'yu gizle
-    const introOverlay = document.getElementById("introOverlay");
-    introOverlay.style.display = "none";
-    
-    // 3. Yüklemeyi başlat
-    startLoading();
-}
-
-// BONUS: Manuel test için console fonksiyonu ekle
-window.testNotifications = async function() {
-    console.log("🧪 Manuel bildirim testi başlatılıyor...");
-    await enableNotifications();
-    console.log("✅ Test tamamlandı, Console'u kontrol et");
-};
+      function userEnterGame() {
+        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
+        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
+        enableNotifications();
+        // 2. Hide Intro
+        const introOverlay = document.getElementById("introOverlay");
+        introOverlay.style.display = "none";
+        
+        // 3. Start Loading
+        startLoading();
+      }
 
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
@@ -3296,13 +3178,5 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
-
-
-
-
-
-
-
-
 
 
