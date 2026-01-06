@@ -1681,50 +1681,109 @@ async function identifyUser() {
         }, 800);
       }
 
+// ÖNCEKİ HALI YERİNE BU KODU KULLAN
+
 async function enableNotifications() {
-    // 1. SDK yoksa (PC) sessizce çık
-    if (!window.farcasterSDK || !window.farcasterSDK.actions) return;
+    console.log("🔔 Bildirim sistemi başlatılıyor...");
+    
+    // 1. SDK kontrolü (PC'de yoksa çık)
+    if (!window.farcasterSDK) {
+        console.log("⚠️ SDK yok (PC ortamı), bildirim atlanıyor");
+        return;
+    }
 
     try {
-        // SENİN VERDİĞİN KODDAKİ GİBİ: Context'i burada alıp ID'yi garanti ediyoruz
+        // 2. Context'i bekle (Bu çok önemli!)
+        console.log("⏳ Context bekleniyor...");
         const context = await window.farcasterSDK.context;
         
-        // Eğer Context'ten ID gelirse, global değişkeni de güncelle ki referans sistemiyle çakışmasın
-        if (context && context.user && context.user.fid) {
-            currentUserID = "user_" + context.user.fid;
-            console.log("👤 Notification için ID Teyit Edildi:", currentUserID);
+        if (!context || !context.user || !context.user.fid) {
+            console.warn("❌ Context alınamadı, bildirim kaydedilemedi");
+            return;
         }
 
-        // 2. İZİN İSTE (TOKEN AL)
+        // 3. Gerçek kullanıcı ID'sini al
+        const targetID = "user_" + context.user.fid;
+        currentUserID = targetID; // Global değişkeni güncelle
+        console.log("👤 Kullanıcı ID:", targetID);
+
+        // 4. İzin iste
+        console.log("📱 addFrame() çağrılıyor...");
         const result = await window.farcasterSDK.actions.addFrame();
-        
-        // 3. TOKEN GELDİ Mİ?
+        console.log("📦 addFrame sonucu:", result);
+
+        // 5. Token kontrolü (Debug için detaylı log)
         if (result && result.notificationDetails) {
-            console.log("✅ Token Yakalandı:", result.notificationDetails.token);
+            const token = result.notificationDetails.token;
+            const url = result.notificationDetails.url;
             
+            console.log("✅ Token alındı:", token);
+            console.log("📍 Notification URL:", url);
+
+            // 6. Firebase'e kaydet
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
             
-            // 4. DATABASE'E YAZ (Referans sistemini bozmadan!)
-            // 'merge: true' sayesinde sadece notification alanlarını günceller, diğerlerine dokunmaz.
-            await setDoc(doc(db, "players", currentUserID), {
-                notificationToken: result.notificationDetails.token,
-                notificationUrl: result.notificationDetails.url,
-                // Debug için tarih atıyoruz
-                tokenUpdateDate: Date.now() 
+            console.log("💾 Token Firebase'e kaydediliyor...");
+            
+            await setDoc(doc(db, "players", targetID), {
+                notificationToken: token,
+                notificationUrl: url,
+                notif4hSent: false, 
+                notif6hSent: false,
+                lastNotificationUpdate: Date.now() // Debug için timestamp
             }, { merge: true });
 
-            console.log("💾 Token başarıyla kaydedildi!");
-
+            console.log("✅ Token başarıyla kaydedildi!");
+            
         } else {
-            console.log("⚠️ İzin verildi ama Token dönmedi (Eski sürüm olabilir).");
+            console.warn("⚠️ notificationDetails boş geldi");
+            console.warn("Result içeriği:", JSON.stringify(result));
+            
+            // Eski sürümler için yedek kayıt
+            const db = window.firebaseDB;
+            const { doc, setDoc } = window.firebaseFunctions;
+            
+            await setDoc(doc(db, "players", targetID), {
+                notificationToken: "legacy_device", // Eski cihaz işareti
+                notif4hSent: false,
+                notif6hSent: false
+            }, { merge: true });
         }
 
     } catch (error) {
-        // Hata olsa bile oyunun akışını bozma
-        console.error("Bildirim Token Hatası:", error);
+        // Hata detaylarını tam olarak göster
+        console.error("❌ Bildirim hatası:", error);
+        console.error("Hata tipi:", error.name);
+        console.error("Hata mesajı:", error.message);
+        console.error("Stack:", error.stack);
     }
 }
+
+// ÇAĞIRMA YERİNİ DEĞİŞTİR:
+// userEnterGame() içindeki enableNotifications() çağrısını SİL
+// Yerine aşağıdaki kodu ekle:
+
+async function userEnterGame() {
+    console.log("🎮 Oyuna giriş yapılıyor...");
+    
+    // 1. Önce bildirimleri etkinleştir
+    await enableNotifications(); // AWAIT ekledik!
+    
+    // 2. Intro'yu gizle
+    const introOverlay = document.getElementById("introOverlay");
+    introOverlay.style.display = "none";
+    
+    // 3. Yüklemeyi başlat
+    startLoading();
+}
+
+// BONUS: Manuel test için console fonksiyonu ekle
+window.testNotifications = async function() {
+    console.log("🧪 Manuel bildirim testi başlatılıyor...");
+    await enableNotifications();
+    console.log("✅ Test tamamlandı, Console'u kontrol et");
+};
       
       function userEnterGame() {
     console.log("🎮 Oyuna giriş tetiklendi.");
