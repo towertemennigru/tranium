@@ -1688,70 +1688,67 @@ async function identifyUser() {
  * Triggers the native Farcaster 'Add App' modal to request notification permissions.
  */
 async function enableNotifications() {
-    const btn = document.getElementById("btnEnableNotifs");
-    if(btn) {
-        btn.innerText = "KONTROL EDİLİYOR...";
-        btn.disabled = true;
-    }
-
-    if (!window.farcasterSDK || !window.farcasterSDK.actions) {
-        alert("❌ SDK Yok (PC?)");
+    // 1. Safety Check: Ensure SDK is loaded
+    if (!window.farcasterSDK ||!window.farcasterSDK.actions) {
+        console.warn("SDK not ready");
         return;
     }
 
-    try {
-        // 1. ÖNCE MEVCUT DURUMU KONTROL ET (Context'e bak)
-        const context = await window.farcasterSDK.context;
-        
-        // Eğer uygulama ZATEN EKLİYSE ve Token varsa:
-        if (context && context.client && context.client.notificationDetails) {
-            console.log("✅ Token zaten mevcut, tekrar istemeye gerek yok.");
-            
-            // Veritabanına kaydet/güncelle
-            if (context.user) {
-                await saveNotificationToken(context.user.fid, context.client.notificationDetails);
-                
-                // Başarılı olduğunu göster
-                if (typeof showFloatingText === "function") {
-                    showFloatingText("ZATEN BAĞLI!", "#00ffcc");
-                }
-                
-                // Butonu gizle, çünkü zaten işlem tamam
-                if(btn) btn.style.display = "none";
-                return; // Fonksiyondan çık
-            }
-        }
+    // 2. UX: Show loading state (utilizing existing game UI)
+    // Assuming a button with ID 'btnEnableNotifs' exists
+    const btn = document.getElementById("btnEnableNotifs");
+    if(btn) {
+        btn.innerText = "REQUESTING...";
+        btn.disabled = true;
+    }
 
-        // 2. EĞER TOKEN YOKSA, EKLEME PENCERESİNİ AÇ (addFrame)
-        // alert("DEBUG: Token bulunamadı, izin isteniyor..."); 
+    try {
+        // 3. Invoke the Atomic Action
         const result = await window.farcasterSDK.actions.addFrame();
 
+        // 4. Handle 'Success with Notifications'
         if (result.added && result.notificationDetails) {
-            // YENİ EKLENDİ VE TOKEN GELDİ
+            // Extract the critical data
+            const { token, url } = result.notificationDetails;
+            
+            // Get current user FID from the global scope or SDK context
+            const context = await window.farcasterSDK.context;
             if (context && context.user) {
                 await saveNotificationToken(context.user.fid, result.notificationDetails);
             }
-            alert("✅ YENİ İZİN ALINDI!");
-            if(btn) btn.style.display = "none";
 
-        } else if (result.added && !result.notificationDetails) {
-            // EKLENDİ AMA TOKEN YOK (iPhone 7 sorunu muhtemelen burası)
-            alert("⚠️ Uygulama eklendi ama Token gelmedi. \nSebep: Bildirimler kapalı veya iOS sürümü eski.");
+            // UI Feedback: Use the game's existing floating text system
+            if (typeof showFloatingText === "function") {
+                showFloatingText("SYSTEM LINKED!", "#00ffcc");
+            }
+            alert("✅ Notifications Enabled! You will be alerted when energy is full.");
             
-        } else {
-            // İPTAL EDİLDİ (result.added = false)
-            // Bu durumda ya kullanıcı reddetti ya da zaten ekliydi ama token alamadık.
-            alert("⚠️ İŞLEM SONUCU: Başarısız.\n\nSebep: Uygulama zaten ekli olabilir ama bildirim izni verilmemiş.\n\nÇÖZÜM: Warpcast ayarlarından bu uygulamayı kaldırıp tekrar dene.");
-            
+            // Update UI State
+            if(btn) btn.style.display = "none"; // Hide button after success
+        } 
+        // 5. Handle 'Success BUT Notifications Disabled'
+        else if (result.added &&!result.notificationDetails) {
+            alert("⚠️ App added, but notifications are disabled. Please enable them in the Farcaster settings menu.");
             if(btn) {
-                btn.innerText = "MANUEL DENE";
+                btn.innerText = "ENABLE ALERTS";
                 btn.disabled = false;
             }
         }
-
+        // 6. Handle 'Rejection'
+        else {
+            console.log("User rejected addFrame");
+            if(btn) {
+                btn.innerText = "ENABLE ALERTS";
+                btn.disabled = false;
+            }
+        }
     } catch (error) {
-        console.error("Notif Error:", error);
-        alert("Hata: " + error.message);
+        console.error("AddFrame Error:", error);
+        // Fallback for errors
+        if(btn) {
+            btn.innerText = "RETRY";
+            btn.disabled = false;
+        }
     }
 }
 
@@ -3280,12 +3277,3 @@ function copyRefCode() {
 </script>
   </body>
 </html>
-
-
-
-
-
-
-
-
-
