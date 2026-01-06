@@ -15,3 +15,27 @@
     "splashBackgroundColor": "#0a0a00"
   }
 }
+{
+  "added": true,
+  "notificationDetails": {
+    "url": "https://api.farcaster.xyz/v1/frame-notifications",
+    "token": "a05059ef2415c67b08ecceb539201cbc6..."
+  }
+}
+{
+  "user": { "fid": 1234,... },
+  "client": {
+    "clientFid": 9152,
+    "added": true,
+    "notificationDetails": {
+      "url": "...",
+      "token": "..."
+    }
+  }
+}
+"players/user_1234": {
+  "notificationToken": "a050...",
+  "notificationUrl": "https://api...",
+  "notificationsEnabled": true,
+  "lastInteraction": 1715000000
+}
