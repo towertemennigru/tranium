@@ -1655,66 +1655,88 @@ async function identifyUser() {
       }
 
    
-// PC ve MOBİL UYUMLU BİLDİRİM/KAYIT FONKSİYONU
 async function enableNotifications() {
-    console.log("🔔 Bildirim/Kayıt sistemi tetiklendi...");
+    console.log("🔔 Bildirim sistemi zorlanıyor...");
     
-    // SDK kontrolü (Eğer SDK hiç yoksa, yine de devam etmeye çalışalım)
+    // SDK yoksa (PC tarayıcısı vs) direkt geçiş izni ver
     if (!window.farcasterSDK) {
-        console.log("⚠️ SDK bulunamadı, PC/Test ortamı olabilir. Bildirim atlanıyor.");
-        return;
+        console.log("⚠️ SDK yok, PC modu varsayılıyor. Geçiş izni verildi.");
+        return true; 
     }
 
     try {
-        // 1. Context'i al ve Kullanıcıyı Belirle
+        // 1. Context'i al
         const context = await window.farcasterSDK.context;
-        if (context && context.user && context.user.fid) {
-            currentUserID = "user_" + context.user.fid;
-            console.log("👤 Kullanıcı ID:", currentUserID);
+        let isMobile = false;
+
+        // Kullanıcı ID'sini ve Cihaz Tipini belirle
+        if (context) {
+            if (context.user && context.user.fid) {
+                currentUserID = "user_" + context.user.fid;
+            }
+            // Client tipi mobil mi kontrol et (warpcast mobil uygulaması)
+            if (context.client && (context.client.clientFid || context.client.displayName)) {
+                 // Basit mobil kontrolü: Genelde client bilgisi mobilde doludur
+                 // Ancak garanti olması için token kontrolüne güveneceğiz.
+            }
         }
 
-        // 2. Farcaster'a Frame Ekleme İsteği Gönder (Mobilde Token üretir, PC'de Uygulama Ekler)
-        console.log("📱 addFrame() isteği gönderiliyor...");
+        // 2. İZİN İSTE (Kritik Nokta)
+        console.log("📱 addFrame() çağrılıyor...");
         let result = null;
         
         try {
             result = await window.farcasterSDK.actions.addFrame();
         } catch (err) {
-            console.warn("⚠️ addFrame çağrısı başarısız oldu (Kullanıcı reddetti veya PC desteklemiyor):", err);
+            console.warn("İzin penceresi hatası:", err);
+            // Hata aldıysa (User rejected), direkt FALSE döndür
+            return false;
+        }
+
+        // 3. SONUCU DEĞERLENDİR (HARD GATE)
+        
+        // SENARYO A: Token Geldi (Mükemmel - Mobil Başarılı)
+        if (result && result.notificationDetails && result.notificationDetails.token) {
+            console.log("✅ MOBİL: Token Alındı! Oyuna giriliyor.");
+            
+            // DB'ye kaydet
+            const db = window.firebaseDB;
+            const { doc, setDoc } = window.firebaseFunctions;
+            await setDoc(doc(db, "players", currentUserID), {
+                notificationToken: result.notificationDetails.token,
+                notificationUrl: result.notificationDetails.url,
+                notificationsEnabled: true,
+                platform: "mobile",
+                lastLogin: Date.now()
+            }, { merge: true });
+
+            return true; // BAŞARILI
         }
         
-        // 3. Firebase'e Kaydet (Token olsun ya da olmasın)
-        const db = window.firebaseDB;
-        const { doc, setDoc } = window.firebaseFunctions;
-        
-        let updateData = {
-            lastLogin: Date.now(),
-            frameAdded: true 
-        };
-
-        // Eğer TOKEN geldiyse (Mobil)
-        if (result && result.notificationDetails) {
-            console.log("✅ MOBİL: Bildirim İzni Verildi! Token:", result.notificationDetails.token);
-            updateData.notificationToken = result.notificationDetails.token;
-            updateData.notificationUrl = result.notificationDetails.url;
-            updateData.notificationsEnabled = true;
-            updateData.platform = "mobile";
-        } 
-        // Eğer TOKEN gelmediyse ama işlem başarılıysa (PC/Web)
+        // SENARYO B: Token Yok (PC Olabilir veya Mobil Reddedilmiş olabilir)
         else {
-            console.log("💻 PC/WEB: Uygulama eklendi (Token yok).");
-            updateData.platform = "web_or_desktop";
-            // PC'de bildirim tokeni olmadığı için varolanı silmiyoruz, merge ile devam ediyoruz.
-        }
+            // Basit bir User Agent kontrolü ile PC mi Mobil mi ayırt edelim
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const isSmartphone = /android|ipad|iphone|ipod/i.test(userAgent.toLowerCase());
 
-        // Veritabanını güncelle
-        await setDoc(doc(db, "players", currentUserID), updateData, { merge: true });
-        console.log("💾 Kullanıcı verisi güncellendi.");
+            if (isSmartphone) {
+                // Eğer telefonsa ve Token yoksa -> BAŞARISIZ (Oyun Yok)
+                console.warn("❌ MOBİL: Token alınamadı. Oyun engelleniyor.");
+                return false; 
+            } else {
+                // PC ise -> BAŞARILI (Geçiş izni)
+                console.log("💻 PC: Token yok ama PC olduğu için izin veriliyor.");
+                return true;
+            }
+        }
 
     } catch (error) {
-        console.error("❌ Kritik Bildirim Hatası:", error);
+        console.error("❌ Kritik Hata:", error);
+        return false; // Hata durumunda oyuna sokma
     }
 }
+// Window'a bağla
+window.enableNotifications = enableNotifications;
 
 // Global erişim için window'a ata
 window.enableNotifications = enableNotifications;
@@ -1722,18 +1744,45 @@ window.enableNotifications = enableNotifications;
       
      // Bu fonksiyonu kodunda bul ve içeriğini bu şekilde güncelle:
 async function userEnterGame() {
-    console.log("🎮 Oyuna giriş yapılıyor...");
+    console.log("🎮 Giriş deneniyor...");
     
-    // Bildirim iznini ŞİMDİ soruyoruz (Butona basıldığı için çalışır)
-    if(window.enableNotifications) {
-        await window.enableNotifications(); 
+    // 1. BUTONU KİLİTLE (Çift tıklamayı önle)
+    const btn = document.getElementById("enterBtn");
+    if(btn) {
+        btn.disabled = true;
+        btn.innerText = "CHECKING PERMISSIONS...";
+        btn.style.opacity = "0.5";
     }
+
+    // 2. İZİNLERİ KONTROL ET (HARD GATE)
+    const isAllowed = await window.enableNotifications();
+
+    if (!isAllowed) {
+        // --- İZİN YOKSA OYUN YOK ---
+        console.log("⛔ ERİŞİM ENGELLENDİ");
+        
+        // Kullanıcıya sert bir uyarı göster
+        alert("⚠️ ACCESS DENIED ⚠️\n\nYou MUST add the frame and enable notifications to play on mobile.\n\n(Bildirim izni vermeden oyuna giremezsiniz.)");
+        
+        // Butonu eski haline getir ki tekrar denesin
+        if(btn) {
+            btn.disabled = false;
+            btn.innerText = "START SIMULATION";
+            btn.style.opacity = "1";
+        }
+        return; // FONKSİYONU BURADA DURDUR (Loading başlamaz)
+    }
+
+    // 3. İZİN VARSA DEVAM ET
+    console.log("✅ Erişim onaylandı. Oyun başlıyor.");
     
     const introOverlay = document.getElementById("introOverlay");
-    introOverlay.style.display = "none";
+    if(introOverlay) introOverlay.style.display = "none";
     
     startLoading();
 }
+// Window'a bağla
+window.userEnterGame = userEnterGame;
 
 // !!! İŞTE BUTONUN ÇALIŞMASINI SAĞLAYAN SATIR BU !!!
 window.userEnterGame = userEnterGame;
@@ -3203,6 +3252,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
