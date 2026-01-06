@@ -1426,22 +1426,28 @@ Energy regenerates over time (1 per hour) even when you are offline.
       let metalFacUpgradeEndTime = 0;
       let kristalFacUpgradeEndTime = 0;
 
-      // Global değişkenler kısmına ekle
-let currentUserID = "test_user_001"; // Varsayılan test kullanıcısı
+// Global değişkenler
+let currentUserID = "test_user_001"; 
+let isUserIdentified = false; // Kimlik tespiti yapıldı mı kontrolü
 
+// Bu fonksiyonu SADECE bir kere, en başta çalıştıracağız.
 async function identifyUser() {
+    if (isUserIdentified) return currentUserID; // Zaten bulduysak tekrar bakma
+
     try {
-        // Eğer Farcaster içindeysek gerçek ID'yi al
         if (window.farcasterSDK) {
             const context = await window.farcasterSDK.context;
             if (context && context.user && context.user.fid) {
                 currentUserID = "user_" + context.user.fid;
-                console.log("👤 Kullanıcı Tanımlandı:", currentUserID);
+                console.log("👤 Farcaster Kullanıcısı Tanımlandı:", currentUserID);
             }
         }
     } catch (e) {
-        console.warn("Kullanıcı kimliği alınamadı, test modunda devam ediliyor.");
+        console.warn("Kimlik alınamadı, test modunda devam.");
     }
+    
+    isUserIdentified = true;
+    return currentUserID;
 }
 
       const imgBG = new Image();
@@ -1547,16 +1553,18 @@ async function identifyUser() {
     
       async function setupRealtimeListener() {
     console.log("📡 Realtime Bağlantı Kuruluyor...");
-    await identifyUser();
+    
+    // BURASI KRİTİK: Önce kimliğin kesinleşmesini bekle
+    await identifyUser(); 
 
     if (!window.firebaseDB || !window.firebaseFunctions) {
         initHub();
         return;
     }
 
-    const { doc, onSnapshot } = window.firebaseFunctions;
+    const { doc, onSnapshot, setDoc } = window.firebaseFunctions; // setDoc'u da ekledim
     const db = window.firebaseDB;
-
+        
     try {
         const docRef = doc(db, "players", currentUserID);
 
@@ -1673,61 +1681,67 @@ async function identifyUser() {
         }, 800);
       }
 
-// --- FİNAL GÜVENLİ BİLDİRİM KODU ---
 async function enableNotifications() {
-    // SDK yoksa (PC) sessizce çık
-    if (!window.farcasterSDK) return;
+    // 1. SDK kontrolü (PC ise çık)
+    if (!window.farcasterSDK || !window.farcasterSDK.actions) {
+        console.log("⚠️ PC ortamı veya SDK yok, bildirim atlanıyor.");
+        return;
+    }
 
     try {
-        // 1. GERÇEK ID'Yİ AL
-        const context = await window.farcasterSDK.context;
-        let targetID = currentUserID;
-        if (context && context.user && context.user.fid) {
-            targetID = "user_" + context.user.fid;
-            currentUserID = targetID; // Global değişkeni de düzelt
-        }
-
-        // 2. İZİN İSTE (Eski telefonda sadece ekleme sorar)
+        console.log("🔔 Bildirim izni isteniyor...");
+        
+        // 2. Farcaster'dan Bildirim Token'ı İste (UserID sormuyoruz, sadece token)
         const result = await window.farcasterSDK.actions.addFrame();
         
-        // 3. TOKEN GELDİ Mİ BAK
-        if (result.notificationDetails) {
-            // Harika! Yeni telefon, token geldi. Kaydet.
-            console.log("✅ Token Alındı (Yeni Sürüm)");
+        // 3. Token geldiyse veritabanına yaz
+        if (result && result.notificationDetails) {
+            const token = result.notificationDetails.token;
+            const url = result.notificationDetails.url;
             
+            console.log("✅ Token Alındı, Veritabanına yazılıyor...");
+
+            // Firebase fonksiyonlarını al
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
-            
-            await setDoc(doc(db, "players", targetID), {
-                notificationToken: result.notificationDetails.token,
-                notificationUrl: result.notificationDetails.url,
-                notif4hSent: false, 
-                notif6hSent: false
+
+            // KRİTİK NOKTA: Global 'currentUserID' kullanıyoruz.
+            // { merge: true } sayesinde referans kodları vb. SİLİNMEZ.
+            await setDoc(doc(db, "players", currentUserID), {
+                notificationToken: token,
+                notificationUrl: url,
+                // Eğer bu alanlar yoksa oluştur, varsa dokunma (merge mantığı)
+                lastNotificationUpdate: Date.now()
             }, { merge: true });
 
+            console.log("💾 Token başarıyla kaydedildi.");
         } else {
-            // Token gelmedi (Eski telefon veya PC).
-            // Sorun yok, sadece log düş, oyuncuyu rahatsız etme.
-            console.log("⚠️ Token alınamadı (Eski Sürüm veya İzin Yok). Oyun devam ediyor.");
+            console.log("🚫 Kullanıcı bildirim izni vermedi veya token gelmedi.");
         }
 
     } catch (error) {
-        // Bir hata olsa bile oyunu durdurma, sadece konsola yaz
-        console.error("Bildirim süreci hatası:", error);
+        // Hata olsa bile oyunu durdurma, sadece logla
+        console.error("❌ Bildirim hatası:", error);
     }
 }
       
-      function userEnterGame() {
-        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
-        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
-        enableNotifications();
-        // 2. Hide Intro
-        const introOverlay = document.getElementById("introOverlay");
-        introOverlay.style.display = "none";
-        
-        // 3. Start Loading
-        startLoading();
-      }
+      async function userEnterGame() {
+    console.log("🎮 Oyuna giriş yapılıyor...");
+    
+    // Intro ekranını hemen kapat ki kullanıcı takılmasın
+    const introOverlay = document.getElementById("introOverlay");
+    if(introOverlay) introOverlay.style.display = "none";
+    
+    // Yükleme ekranını başlat
+    startLoading();
+
+    // Bildirim isteğini arkaplanda (async) başlat.
+    // 'await' koymuyoruz ki oyunun açılmasını bloklamasın.
+    // Kullanıcı "İzin Ver" diyene kadar oyun arkada yüklensin.
+    enableNotifications().then(() => {
+        console.log("🔔 Bildirim süreci tamamlandı.");
+    });
+}
 
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
@@ -3178,4 +3192,5 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
