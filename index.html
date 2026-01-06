@@ -2877,36 +2877,52 @@ function copyRefCode() {
 async function skipRefCode() {
     showBlockingLoader();
     
-    // 1. Kendi kodunu oluştur
-    const newRefCode = generateRefCode();
+    // 1. Önce mevcut bir kod var mı kontrol et
+    let finalRefCode = window.currentUserRefCode;
     
-    // 2. Veritabanına "seçim yapıldı" (refActionTaken) bilgisini işle
+    // Eğer global değişkende yoksa, ekrandan da kontrol edelim (Yedek)
+    if (!finalRefCode) {
+        const uiCode = document.getElementById("myRefCodeText").innerText;
+        if (uiCode && uiCode !== "LOADING..." && uiCode !== "WAITING...") {
+            finalRefCode = uiCode;
+        }
+    }
+
+    // 2. Hala kod yoksa (Yeni Kullanıcı), o zaman yeni oluştur
+    if (!finalRefCode) {
+        finalRefCode = generateRefCode();
+    }
+    
+    // 3. Veritabanını güncelle
     const db = window.firebaseDB;
     const { doc, updateDoc } = window.firebaseFunctions;
     const myRef = doc(db, "players", currentUserID);
 
     try {
         await updateDoc(myRef, {
-            refActionTaken: true, // Bir daha sorma
-            myRefCode: newRefCode, // Kodunu ver
-            usedRefCode: false
+            refActionTaken: true,      // Bir daha sorma
+            myRefCode: finalRefCode,   // Mevcut kodu koru veya yenisini kaydet
+            // usedRefCode'u false yapmıyoruz, çünkü belki adam zaten kod girmiştir ama 
+            // sadece bu popup'ı skip ediyordur. Mevcut veriyi bozmuyoruz.
         });
 
-        // 3. UI Güncelle
+        // 4. UI Güncelle
         document.getElementById("refInputModal").style.display = "none";
         const refTextEl = document.getElementById("myRefCodeText");
-        if (refTextEl) refTextEl.innerText = newRefCode;
-        window.currentUserRefCode = newRefCode;
+        if (refTextEl) refTextEl.innerText = finalRefCode;
+        window.currentUserRefCode = finalRefCode;
 
         hideBlockingLoader();
     } catch (e) {
         console.error("Skip Error:", e);
-        // Hata olursa (örn: yeni kullanıcı updateDoc yapamazsa)
+        
+        // Hata durumunda (Örn: updateDoc başarısız olursa) yedek plan
         hideBlockingLoader();
         document.getElementById("refInputModal").style.display = "none";
-        window.currentUserRefCode = newRefCode;
+        
+        window.currentUserRefCode = finalRefCode;
         window.tempRefActionTaken = true; 
-        saveData(true); // saveData ile yedekten kaydet
+        saveData(true); // saveData içinde merge:true olduğu için güvenli
     }
 }
 
@@ -3183,6 +3199,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
