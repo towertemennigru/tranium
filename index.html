@@ -1561,106 +1561,106 @@ async function identifyUser() {
         const docRef = doc(db, "players", currentUserID);
 
         onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                
-                // --- STANDART VERİLERİ ÇEK ---
-                let savedMetal = parseFloat(data.metal) || 0;
-                let savedKristal = parseFloat(data.kristal) || 0;
-                let savedLastTime = parseInt(data.lastTime) || Date.now();
-                tranium = parseInt(data.tranium) || 0;
-                metalWorkers = parseInt(data.metalWorkers) || 0;
-                kristalWorkers = parseInt(data.kristalWorkers) || 0;
-                metalFacLvl = parseInt(data.metalFacLvl) || 1;
-                kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
-                
-                const serverEnergy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
-                if (Math.abs(serverEnergy - energy) > 0) energy = serverEnergy;
-                nextEnergyTime = parseInt(data.nextEnergyTime) || 0;
-                energyRegenerationStartTime = parseInt(data.energyRegenerationStartTime) || 0;
-                metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
-                kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        
+        // --- STANDART VERİLERİ ÇEK ---
+        let savedMetal = parseFloat(data.metal) || 0;
+        let savedKristal = parseFloat(data.kristal) || 0;
+        let savedLastTime = parseInt(data.lastTime) || Date.now();
+        tranium = parseInt(data.tranium) || 0;
+        metalWorkers = parseInt(data.metalWorkers) || 0;
+        kristalWorkers = parseInt(data.kristalWorkers) || 0;
+        metalFacLvl = parseInt(data.metalFacLvl) || 1;
+        kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
+        
+        const serverEnergy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
+        if (Math.abs(serverEnergy - energy) > 0) energy = serverEnergy;
+        nextEnergyTime = parseInt(data.nextEnergyTime) || 0;
+        energyRegenerationStartTime = parseInt(data.energyRegenerationStartTime) || 0;
+        metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
+        kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
 
-                // --- OFFLINE KAZANÇ ---
-                if (!window.hasInitialLoadCompleted) {
-                    const now = Date.now();
-                    const secondsPassed = (now - savedLastTime) / 1000;
-                    if (secondsPassed > 10) {
-                        const metalMultiplier = Math.pow(2, metalFacLvl - 1);
-                        const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
-                        const offlineMetalGain = secondsPassed * (metalWorkers * BASE_WORKER_SPEED * metalMultiplier);
-                        const offlineKristalGain = secondsPassed * (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier);
-                        if (offlineMetalGain > 0 || offlineKristalGain > 0) {
-                            savedMetal += offlineMetalGain;
-                            savedKristal += offlineKristalGain;
-                            alert(`WELCOME!\n\nOFFLINE EARNINGS:\n⚙️ +${Math.floor(offlineMetalGain)} Metal\n💎 +${Math.floor(offlineKristalGain)} Kristal`);
-                        }
-                    }
+        // --- OFFLINE KAZANÇ ---
+        if (!window.hasInitialLoadCompleted) {
+            const now = Date.now();
+            const secondsPassed = (now - savedLastTime) / 1000;
+            if (secondsPassed > 10) {
+                const metalMultiplier = Math.pow(2, metalFacLvl - 1);
+                const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
+                const offlineMetalGain = secondsPassed * (metalWorkers * BASE_WORKER_SPEED * metalMultiplier);
+                const offlineKristalGain = secondsPassed * (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier);
+                if (offlineMetalGain > 0 || offlineKristalGain > 0) {
+                    savedMetal += offlineMetalGain;
+                    savedKristal += offlineKristalGain;
+                    alert(`WELCOME!\n\nOFFLINE EARNINGS:\n⚙️ +${Math.floor(offlineMetalGain)} Metal\n💎 +${Math.floor(offlineKristalGain)} Kristal`);
                 }
-                metal = savedMetal;
-                kristal = savedKristal;
-
-                // --- REF SİSTEMİ DÜZELTİLMİŞ MANTIK ---
-                const refActionTaken = data.refActionTaken || false;
-                let myRefCode = data.myRefCode;
-                const refTextEl = document.getElementById("myRefCodeText");
-
-                if (refTextEl) {
-                    if (myRefCode) {
-                        // Zaten kodu var
-                        refTextEl.innerText = myRefCode;
-                        window.currentUserRefCode = myRefCode;
-                    } else if (refActionTaken) {
-                        // İşlem yapmış (SKIP demiş) ama kodu yok -> ŞİMDİ OLUŞTUR
-                        myRefCode = generateRefCode();
-                        refTextEl.innerText = myRefCode;
-                        window.currentUserRefCode = myRefCode;
-                    } else {
-                        // Henüz işlem yapmamış -> BEKLE
-                        refTextEl.innerText = "WAITING...";
-                    }
-                }
-
-                // Pop-up Kontrolü: Daha önce işlem yapmadıysa aç
-                if (!refActionTaken && !window.refModalShown) {
-                    setTimeout(() => {
-                        document.getElementById("refInputModal").style.display = "block";
-                    }, 2500);
-                    window.refModalShown = true;
-                }
-
-                updateUI();
-                if (!window.hasInitialLoadCompleted) {
-                    updateOfflineEnergyRegeneration();
-                    initHub();
-                    window.hasInitialLoadCompleted = true;
-                }
-
-            } else {
-                // --- YENİ KULLANICI ---
-                console.log("🆕 Yeni kullanıcı.");
-                energy = 10;
-                
-                // Yeni kullanıcıya hemen kod oluşturmuyoruz, önce sorsun.
-                if (!window.refModalShown) {
-                    setTimeout(() => {
-                        document.getElementById("refInputModal").style.display = "block";
-                    }, 2500);
-                    window.refModalShown = true;
-                }
-
-                if (!window.hasInitialLoadCompleted) {
-                    initHub();
-                    window.hasInitialLoadCompleted = true;
-                }
-                saveData(true);
             }
-        }, (error) => console.error(error));
-    } catch (error) {
-        console.error(error);
-        initHub();
+        }
+        metal = savedMetal;
+        kristal = savedKristal;
+
+        // --- REF SİSTEMİ DÜZELTİLMİŞ MANTIK ---
+        const refActionTaken = data.refActionTaken || false;
+        let myRefCode = data.myRefCode;
+        const refTextEl = document.getElementById("myRefCodeText");
+
+        if (refTextEl) {
+            if (myRefCode) {
+                // Zaten kodu var
+                refTextEl.innerText = myRefCode;
+                window.currentUserRefCode = myRefCode;
+            } else if (refActionTaken) {
+                // İşlem yapmış (SKIP demiş) ama kodu yok -> ŞİMDİ OLUŞTUR
+                myRefCode = generateRefCode();
+                refTextEl.innerText = myRefCode;
+                window.currentUserRefCode = myRefCode;
+            } else {
+                // Henüz işlem yapmamış -> BEKLE
+                refTextEl.innerText = "WAITING...";
+            }
+        }
+
+        // Pop-up Kontrolü: Daha önce işlem yapmadıysa aç
+        if (!refActionTaken && !window.refModalShown) {
+            setTimeout(() => {
+                document.getElementById("refInputModal").style.display = "block";
+            }, 2500);
+            window.refModalShown = true;
+        }
+
+        updateUI();
+        if (!window.hasInitialLoadCompleted) {
+            updateOfflineEnergyRegeneration();
+            initHub();
+            window.hasInitialLoadCompleted = true;
+        }
+
+    } else {
+        // --- YENİ KULLANICI ---
+        console.log("🆕 Yeni kullanıcı.");
+        energy = 10;
+        
+        // Yeni kullanıcıya hemen kod oluşturmuyoruz, önce sorsun.
+        if (!window.refModalShown) {
+            setTimeout(() => {
+                document.getElementById("refInputModal").style.display = "block";
+            }, 2500);
+            window.refModalShown = true;
+        }
+
+        if (!window.hasInitialLoadCompleted) {
+            initHub();
+            window.hasInitialLoadCompleted = true;
+        }
+        saveData(true);
     }
-}
+}, (error) => { 
+    // HATA OLURSA BURASI ÇALIŞIR
+    console.error("Realtime listener hatası:", error);
+    // Hata olursa da hub'ı başlatalım ki oyun çalışsın
+    initHub();
+});
 
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
@@ -1673,7 +1673,7 @@ async function identifyUser() {
         }, 800);
       }
 
-// --- FİNAL GÜVENLİ BİLDİRİM KODU ---
+// --- DÜZELTİLMİŞ NOTIFICATION TOKEN SİSTEMİ (Referral Code'u Bozmadan) ---
 async function enableNotifications() {
     // SDK yoksa (PC) sessizce çık
     if (!window.farcasterSDK) return;
@@ -1687,48 +1687,46 @@ async function enableNotifications() {
             currentUserID = targetID; // Global değişkeni de düzelt
         }
 
-        // 2. İZİN İSTE (Eski telefonda sadece ekleme sorar)
-        const result = await window.farcasterSDK.actions.addFrame();
-        
-        // 3. TOKEN GELDİ Mİ BAK
-        if (result.notificationDetails) {
-            // Harika! Yeni telefon, token geldi. Kaydet.
-            console.log("✅ Token Alındı (Yeni Sürüm)");
+        // 2. İZİN İSTE (Sadece mobilde, PC'de otomatik atla)
+        if (context && context.client && context.client.clientFid) {
+            const result = await window.farcasterSDK.actions.addFrame();
             
-            const db = window.firebaseDB;
-            const { doc, setDoc } = window.firebaseFunctions;
-            
-            await setDoc(doc(db, "players", targetID), {
-                notificationToken: result.notificationDetails.token,
-                notificationUrl: result.notificationDetails.url,
-                notif4hSent: false, 
-                notif6hSent: false
-            }, { merge: true });
-
-        } else {
-            // Token gelmedi (Eski telefon veya PC).
-            // Sorun yok, sadece log düş, oyuncuyu rahatsız etme.
-            console.log("⚠️ Token alınamadı (Eski Sürüm veya İzin Yok). Oyun devam ediyor.");
+            // 3. TOKEN GELDİ Mİ BAK
+            if (result && result.notificationDetails) {
+                // Harika! Yeni telefon, token geldi. Kaydet.
+                console.log("✅ Notification Token Alındı");
+                
+                const db = window.firebaseDB;
+                const { doc, setDoc } = window.firebaseFunctions;
+                
+                await setDoc(doc(db, "players", targetID), {
+                    notificationToken: result.notificationDetails.token,
+                    notificationUrl: result.notificationDetails.url,
+                    notif4hSent: false, 
+                    notif6hSent: false
+                }, { merge: true });
+            } else {
+                // Token gelmedi (Eski telefon veya PC).
+                console.log("⚠️ Token alınamadı (Eski Sürüm).");
+            }
         }
-
     } catch (error) {
-        // Bir hata olsa bile oyunu durdurma, sadece konsola yaz
         console.error("Bildirim süreci hatası:", error);
     }
 }
-      
-      function userEnterGame() {
-        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
-        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
-        enableNotifications();
-        // 2. Hide Intro
-        const introOverlay = document.getElementById("introOverlay");
-        introOverlay.style.display = "none";
-        
-        // 3. Start Loading
-        startLoading();
-      }
 
+// --- KULLANICI GİRİŞ FONKSİYONU (Düzeltilmiş) ---
+async function userEnterGame() {
+    // 1. Notification sistemini başlat (arka planda)
+    enableNotifications();
+    
+    // 2. Hide Intro
+    const introOverlay = document.getElementById("introOverlay");
+    introOverlay.style.display = "none";
+    
+    // 3. Start Loading
+    startLoading();
+}
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
         const progressBar = document.querySelector(".loading-progress-bar");
@@ -2423,7 +2421,7 @@ async function saveData(force = false) {
     // UI'dan veya globalden güncel kodu al
     let currentRefCodeToSave = window.currentUserRefCode;
     if (!currentRefCodeToSave) {
-        const uiText = document.getElementById("myRefCodeText").innerText;
+        const uiText = document.getElementById("myRefCodeText")?.innerText;
         if (uiText && uiText !== "LOADING..." && uiText !== "WAITING...") {
             currentRefCodeToSave = uiText;
         }
@@ -2434,19 +2432,23 @@ async function saveData(force = false) {
         kristal: kristal,
         tranium: tranium,
         
-        // Varsa kodu kaydet, yoksa dokunma
+        // REFERRAL CODE SİSTEMİ (BOZULMADAN)
         ...(currentRefCodeToSave && { myRefCode: currentRefCodeToSave }),
-        // SKIP tuşuna basıldıysa bunu kaydet
         ...(window.tempRefActionTaken && { refActionTaken: true }),
         
+        // OYUN VERİLERİ
         metalWorkers: metalWorkers,
         kristalWorkers: kristalWorkers,
         metalFacLvl: metalFacLvl,
         kristalFacLvl: kristalFacLvl,
         energy: energy,
         lastTime: Date.now(),
+        
+        // NOTIFICATION ALANLARI (EKLEDİK)
         notif4hSent: false, 
         notif6hSent: false,
+        
+        // ENERJİ SİSTEMİ
         nextEnergyTime: nextEnergyTime,
         energyRegenerationStartTime: energyRegenerationStartTime,
         metalFacUpgradeEndTime: metalFacUpgradeEndTime,
@@ -3178,5 +3180,6 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
