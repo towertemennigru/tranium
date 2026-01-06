@@ -1432,26 +1432,19 @@ Energy regenerates over time (1 per hour) even when you are offline.
       // Global değişkenler kısmına ekle
 let currentUserID = "test_user_001"; // Varsayılan test kullanıcısı
 
-// Global değişken
-let currentUserID = "test_user_001"; 
-
-// 1. KULLANICIYI TANI (En önemli adım)
 async function identifyUser() {
-    console.log("🕵️ Kimlik tespiti yapılıyor...");
     try {
+        // Eğer Farcaster içindeysek gerçek ID'yi al
         if (window.farcasterSDK) {
             const context = await window.farcasterSDK.context;
             if (context && context.user && context.user.fid) {
-                // Gerçek Farcaster ID'sini al
                 currentUserID = "user_" + context.user.fid;
-                console.log("✅ Farcaster Kimliği Doğrulandı:", currentUserID);
-                return true;
+                console.log("👤 Kullanıcı Tanımlandı:", currentUserID);
             }
         }
     } catch (e) {
-        console.warn("⚠️ Kimlik alınamadı, test modunda devam ediliyor.", e);
+        console.warn("Kullanıcı kimliği alınamadı, test modunda devam ediliyor.");
     }
-    return false;
 }
 
       const imgBG = new Image();
@@ -1672,62 +1665,72 @@ async function identifyUser() {
 
    
       // --- BİLDİRİM İZNİ VE KAYIT FONKSİYONU ---
-// 2. BİLDİRİM İZNİ İSTE
 async function enableNotifications() {
-    // SDK yoksa (PC) veya kimlik yoksa çık
-    if (!window.farcasterSDK) return;
+    console.log("🔔 Bildirim sistemi başlatılıyor...");
+    
+    // 1. SDK kontrolü (PC'de yoksa çık)
+    if (!window.farcasterSDK) {
+        console.log("⚠️ SDK yok (PC ortamı), bildirim atlanıyor");
+        return;
+    }
 
     try {
-        console.log("🔔 Bildirim/Frame Ekleme isteği gönderiliyor...");
+        // 2. Context'i bekle (Kullanıcı ID'sini kesinleştirmek için)
+        const context = await window.farcasterSDK.context;
         
-        // Farcaster'a "Beni ekle" de.
-        // NOT: Eğer kullanıcı daha önce eklediyse pencere AÇILMAZ, direkt sonuç döner.
+        if (!context || !context.user || !context.user.fid) {
+            console.warn("❌ Context alınamadı, bildirim kaydedilemedi");
+            return;
+        }
+
+        // Kullanıcı ID'sini güncelle (Garanti olsun)
+        const targetID = "user_" + context.user.fid;
+        currentUserID = targetID; 
+
+        // 3. Farcaster'dan İzin İste (Frame Ekleme Ekranı)
+        // Bu işlem kullanıcıya "Add Frame" popup'ını açar.
         const result = await window.farcasterSDK.actions.addFrame();
         
-        // Sonuç varsa (Token geldiyse)
+        // 4. Sonucu Analiz Et ve Token'ı Al
         if (result && result.notificationDetails) {
             const token = result.notificationDetails.token;
             const url = result.notificationDetails.url;
             
-            console.log("🎟️ Token alındı (Pencere açıldı veya sessizce alındı):", token);
+            console.log("✅ Token Alındı:", token);
 
-            // Firebase'e kaydet (Merge true olduğu için diğer verilerin silinmez)
+            // 5. Firebase'e Token'ı Kaydet
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
             
-            await setDoc(doc(db, "players", currentUserID), {
+            await setDoc(doc(db, "players", targetID), {
                 notificationToken: token,
                 notificationUrl: url,
                 notificationsEnabled: true,
                 lastNotificationUpdate: Date.now()
             }, { merge: true });
 
-            console.log("💾 Token veritabanına işlendi.");
+            console.log("💾 Token Firebase'e başarıyla kaydedildi!");
         } else {
-            console.log("⚠️ Kullanıcı pencereyi kapattı veya token vermedi.");
+            console.log("⚠️ Kullanıcı bildirim izni vermedi veya token dönmedi.");
         }
 
     } catch (error) {
-        console.error("❌ Bildirim işlemi hatası:", error);
+        console.error("❌ Bildirim hatası:", error);
     }
 }
       
-      // 3. OYUNA GİRİŞ TETİKLEYİCİSİ
-async function userEnterGame() {
-    console.log("🚀 Başlatma protokolü devrede...");
+      async function userEnterGame() {
+    console.log("🎮 Oyuna giriş yapılıyor...");
     
-    // A) ÖNCE KİMLİĞİ BUL (Bekle)
-    await identifyUser(); 
-    
-    // B) SONRA BİLDİRİM/TOKEN İŞLEMİNİ YAP (Bekle)
-    // Kimlik bulunduğu için token doğru yere (currentUserID) kaydedilecek.
+    // 1. Önce bildirimleri etkinleştirmeyi dene (Kullanıcıya sorar)
+    // await koyduğumuz için kullanıcı 'Ekle' veya 'İptal' diyene kadar bekler.
     await enableNotifications(); 
     
-    // C) EKRANI TEMİZLE VE YÜKLE
+    // 2. Intro'yu gizle
     const introOverlay = document.getElementById("introOverlay");
-    if(introOverlay) introOverlay.style.display = "none";
+    introOverlay.style.display = "none";
     
-    // D) OYUNU BAŞLAT
+    // 3. Yüklemeyi başlat
     startLoading();
 }
 
@@ -3196,8 +3199,6 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
-
-
 
 
 
