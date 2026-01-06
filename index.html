@@ -1655,54 +1655,69 @@ async function identifyUser() {
       }
 
    
+// PC ve MOBİL UYUMLU BİLDİRİM/KAYIT FONKSİYONU
 async function enableNotifications() {
-    console.log("🔔 Bildirim sistemi tetiklendi...");
+    console.log("🔔 Bildirim/Kayıt sistemi tetiklendi...");
     
+    // SDK kontrolü (Eğer SDK hiç yoksa, yine de devam etmeye çalışalım)
     if (!window.farcasterSDK) {
-        console.log("⚠️ PC ortamı, bildirim geçiliyor.");
+        console.log("⚠️ SDK bulunamadı, PC/Test ortamı olabilir. Bildirim atlanıyor.");
         return;
     }
 
     try {
-        // Context'i al
+        // 1. Context'i al ve Kullanıcıyı Belirle
         const context = await window.farcasterSDK.context;
-        
-        // Kullanıcı ID'sini netleştir
         if (context && context.user && context.user.fid) {
             currentUserID = "user_" + context.user.fid;
+            console.log("👤 Kullanıcı ID:", currentUserID);
         }
 
-        // Farcaster'a Frame Ekleme İsteği Gönder (Bildirim izni burada sorulur)
+        // 2. Farcaster'a Frame Ekleme İsteği Gönder (Mobilde Token üretir, PC'de Uygulama Ekler)
         console.log("📱 addFrame() isteği gönderiliyor...");
-        const result = await window.farcasterSDK.actions.addFrame();
+        let result = null;
         
-        // Sonucu Analiz Et
-        if (result && result.notificationDetails) {
-            const token = result.notificationDetails.token;
-            const url = result.notificationDetails.url;
-            
-            console.log("✅ İZİN VERİLDİ! Token:", token);
-
-            // Firebase'e kaydet
-            const db = window.firebaseDB;
-            const { doc, setDoc } = window.firebaseFunctions;
-            
-            await setDoc(doc(db, "players", currentUserID), {
-                notificationToken: token,
-                notificationUrl: url,
-                notificationsEnabled: true,
-                lastNotificationUpdate: Date.now()
-            }, { merge: true });
-
-            console.log("💾 Token DB'ye yazıldı.");
-        } else {
-            console.log("⚠️ Kullanıcı reddetti veya zaten ekli.");
+        try {
+            result = await window.farcasterSDK.actions.addFrame();
+        } catch (err) {
+            console.warn("⚠️ addFrame çağrısı başarısız oldu (Kullanıcı reddetti veya PC desteklemiyor):", err);
         }
+        
+        // 3. Firebase'e Kaydet (Token olsun ya da olmasın)
+        const db = window.firebaseDB;
+        const { doc, setDoc } = window.firebaseFunctions;
+        
+        let updateData = {
+            lastLogin: Date.now(),
+            frameAdded: true 
+        };
+
+        // Eğer TOKEN geldiyse (Mobil)
+        if (result && result.notificationDetails) {
+            console.log("✅ MOBİL: Bildirim İzni Verildi! Token:", result.notificationDetails.token);
+            updateData.notificationToken = result.notificationDetails.token;
+            updateData.notificationUrl = result.notificationDetails.url;
+            updateData.notificationsEnabled = true;
+            updateData.platform = "mobile";
+        } 
+        // Eğer TOKEN gelmediyse ama işlem başarılıysa (PC/Web)
+        else {
+            console.log("💻 PC/WEB: Uygulama eklendi (Token yok).");
+            updateData.platform = "web_or_desktop";
+            // PC'de bildirim tokeni olmadığı için varolanı silmiyoruz, merge ile devam ediyoruz.
+        }
+
+        // Veritabanını güncelle
+        await setDoc(doc(db, "players", currentUserID), updateData, { merge: true });
+        console.log("💾 Kullanıcı verisi güncellendi.");
 
     } catch (error) {
-        console.error("❌ Bildirim Hatası:", error);
+        console.error("❌ Kritik Bildirim Hatası:", error);
     }
 }
+
+// Global erişim için window'a ata
+window.enableNotifications = enableNotifications;
       window.enableNotifications = enableNotifications;
       
      // Bu fonksiyonu kodunda bul ve içeriğini bu şekilde güncelle:
@@ -3188,6 +3203,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
