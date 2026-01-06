@@ -1637,13 +1637,7 @@ async function identifyUser() {
                 console.log("🆕 Yeni kullanıcı.");
                 energy = 10;
                 
-                // Yeni kullanıcıya hemen kod oluşturmuyoruz, önce sorsun.
-                if (!window.refModalShown) {
-                    setTimeout(() => {
-                        document.getElementById("refInputModal").style.display = "block";
-                    }, 2500);
-                    window.refModalShown = true;
-                }
+                
 
                 if (!window.hasInitialLoadCompleted) {
                     initHub();
@@ -3189,6 +3183,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
