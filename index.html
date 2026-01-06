@@ -1683,61 +1683,81 @@ async function identifyUser() {
       }
 
 // --- FİNAL GÜVENLİ BİLDİRİM KODU ---
+// --- GÜVENLİ GİRİŞ VE BİLDİRİM YÖNETİMİ ---
+
 async function enableNotifications() {
-    // SDK yoksa (PC) sessizce çık
-    if (!window.farcasterSDK) return;
+    // SDK kontrolü (PC veya SDK yüklenmemişse atla)
+    if (!window.farcasterSDK) {
+        console.log("⚠️ SDK yok, bildirim adımı atlandı.");
+        return;
+    }
 
     try {
-        // 1. GERÇEK ID'Yİ AL
+        console.log("🔔 Bildirim süreci başlatılıyor...");
+        
+        // 1. Önce Context'ten ID'yi kesinleştir
         const context = await window.farcasterSDK.context;
-        let targetID = currentUserID;
+        let targetID = currentUserID; // Mevcut global ID varsayılan
+
         if (context && context.user && context.user.fid) {
             targetID = "user_" + context.user.fid;
-            currentUserID = targetID; // Global değişkeni de düzelt
+            // Global değişkeni de güncelle ki oyun içinde tutarsızlık olmasın
+            currentUserID = targetID; 
+            console.log("👤 Kullanıcı ID doğrulandı:", targetID);
         }
 
-        // 2. İZİN İSTE (Eski telefonda sadece ekleme sorar)
+        // 2. İzin İste (addFrame tetikle)
+        // Bu işlem mobil cihazda kullanıcıya "Ekle" butonu çıkartır
         const result = await window.farcasterSDK.actions.addFrame();
         
-        // 3. TOKEN GELDİ Mİ BAK
-        if (result.notificationDetails) {
-            // Harika! Yeni telefon, token geldi. Kaydet.
-            console.log("✅ Token Alındı (Yeni Sürüm)");
+        // 3. Token Kontrolü
+        if (result && result.notificationDetails) {
+            const token = result.notificationDetails.token;
+            const url = result.notificationDetails.url;
             
+            console.log("✅ Token ALINDI:", token);
+
+            // 4. Firebase'e Kaydet
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
-            
+
+            // Merge true ile diğer verileri (coin, workers) bozmadan sadece tokeni ekle
             await setDoc(doc(db, "players", targetID), {
-                notificationToken: result.notificationDetails.token,
-                notificationUrl: result.notificationDetails.url,
-                notif4hSent: false, 
-                notif6hSent: false
+                notificationToken: token,
+                notificationUrl: url,
+                // Eğer daha önce kaydedilmediyse bu flagları ekle
+                lastNotificationUpdate: Date.now() 
             }, { merge: true });
 
+            console.log("💾 Token başarıyla kaydedildi.");
         } else {
-            // Token gelmedi (Eski telefon veya PC).
-            // Sorun yok, sadece log düş, oyuncuyu rahatsız etme.
-            console.log("⚠️ Token alınamadı (Eski Sürüm veya İzin Yok). Oyun devam ediyor.");
+            console.log("ℹ️ Token gelmedi (Kullanıcı reddetti veya zaten ekli).");
         }
 
     } catch (error) {
-        // Bir hata olsa bile oyunu durdurma, sadece konsola yaz
-        console.error("Bildirim süreci hatası:", error);
+        console.error("❌ Bildirim hatası:", error);
+        // Hata olsa bile oyunu durdurmuyoruz, devam etsin
     }
 }
-      
-      function userEnterGame() {
-        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
-        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
-        enableNotifications();
-        // 2. Hide Intro
-        const introOverlay = document.getElementById("introOverlay");
-        introOverlay.style.display = "none";
-        
-        // 3. Start Loading
-        startLoading();
-      }
 
+async function userEnterGame() {
+    const btn = document.getElementById("enterBtn");
+    if(btn) btn.innerHTML = "LOADING..."; // Butona basıldığını hissettir
+    
+    // 1. Bildirimleri hallet (Await ile bekle ki işlem bitsin)
+    await enableNotifications();
+    
+    // 2. Intro'yu gizle
+    const introOverlay = document.getElementById("introOverlay");
+    if(introOverlay) introOverlay.style.display = "none";
+    
+    // 3. Yüklemeyi başlat
+    if(typeof startLoading === "function") {
+        startLoading();
+    } else {
+        console.error("startLoading fonksiyonu bulunamadı!");
+    }
+}
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
         const progressBar = document.querySelector(".loading-progress-bar");
@@ -3277,5 +3297,6 @@ function copyRefCode() {
 </script>
   </body>
 </html>
+
 
 
