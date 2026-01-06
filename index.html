@@ -1569,117 +1569,109 @@ async function identifyUser() {
 }
 
     
-      async function setupRealtimeListener() {
-    console.log("📡 Realtime Bağlantı Kuruluyor...");
-    await identifyUser();
+      // ÖNCEKİ HALI YERİNE BU KODU KULLAN
 
-    if (!window.firebaseDB || !window.firebaseFunctions) {
-        initHub();
+async function enableNotifications() {
+    console.log("🔔 Bildirim sistemi başlatılıyor...");
+    
+    // 1. SDK kontrolü (PC'de yoksa çık)
+    if (!window.farcasterSDK) {
+        console.log("⚠️ SDK yok (PC ortamı), bildirim atlanıyor");
         return;
     }
 
-    const { doc, onSnapshot } = window.firebaseFunctions;
-    const db = window.firebaseDB;
-
     try {
-        const docRef = doc(db, "players", currentUserID);
+        // 2. Context'i bekle (Bu çok önemli!)
+        console.log("⏳ Context bekleniyor...");
+        const context = await window.farcasterSDK.context;
+        
+        if (!context || !context.user || !context.user.fid) {
+            console.warn("❌ Context alınamadı, bildirim kaydedilemedi");
+            return;
+        }
 
-        onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-       
-      window.currentUserRefCode = data.myRefCode || null;
-      window.hasUsedRefCode = data.usedRefCode || false; // Bu satır önemli!
-                
-                // --- STANDART VERİLERİ ÇEK ---
-                let savedMetal = parseFloat(data.metal) || 0;
-                let savedKristal = parseFloat(data.kristal) || 0;
-                let savedLastTime = parseInt(data.lastTime) || Date.now();
-                tranium = parseInt(data.tranium) || 0;
-                metalWorkers = parseInt(data.metalWorkers) || 0;
-                kristalWorkers = parseInt(data.kristalWorkers) || 0;
-                metalFacLvl = parseInt(data.metalFacLvl) || 1;
-                kristalFacLvl = parseInt(data.kristalFacLvl) || 1;
-                
-                const serverEnergy = (data.energy !== undefined) ? parseInt(data.energy) : 10;
-                if (Math.abs(serverEnergy - energy) > 0) energy = serverEnergy;
-                nextEnergyTime = parseInt(data.nextEnergyTime) || 0;
-                energyRegenerationStartTime = parseInt(data.energyRegenerationStartTime) || 0;
-                metalFacUpgradeEndTime = parseInt(data.metalFacUpgradeEndTime) || 0;
-                kristalFacUpgradeEndTime = parseInt(data.kristalFacUpgradeEndTime) || 0;
+        // 3. Gerçek kullanıcı ID'sini al
+        const targetID = "user_" + context.user.fid;
+        currentUserID = targetID; // Global değişkeni güncelle
+        console.log("👤 Kullanıcı ID:", targetID);
 
-                // --- OFFLINE KAZANÇ ---
-                if (!window.hasInitialLoadCompleted) {
-                    const now = Date.now();
-                    const secondsPassed = (now - savedLastTime) / 1000;
-                    if (secondsPassed > 10) {
-                        const metalMultiplier = Math.pow(2, metalFacLvl - 1);
-                        const kristalMultiplier = Math.pow(2, kristalFacLvl - 1);
-                        const offlineMetalGain = secondsPassed * (metalWorkers * BASE_WORKER_SPEED * metalMultiplier);
-                        const offlineKristalGain = secondsPassed * (kristalWorkers * BASE_WORKER_SPEED * kristalMultiplier);
-                        if (offlineMetalGain > 0 || offlineKristalGain > 0) {
-                            savedMetal += offlineMetalGain;
-                            savedKristal += offlineKristalGain;
-                            alert(`WELCOME!\n\nOFFLINE EARNINGS:\n⚙️ +${Math.floor(offlineMetalGain)} Metal\n💎 +${Math.floor(offlineKristalGain)} Kristal`);
-                        }
-                    }
-                }
-                metal = savedMetal;
-                kristal = savedKristal;
+        // 4. İzin iste
+        console.log("📱 addFrame() çağrılıyor...");
+        const result = await window.farcasterSDK.actions.addFrame();
+        console.log("📦 addFrame sonucu:", result);
 
-                // --- REF SİSTEMİ DÜZELTİLMİŞ MANTIK ---
-                const refActionTaken = data.refActionTaken || false;
-                let myRefCode = data.myRefCode;
-                const refTextEl = document.getElementById("myRefCodeText");
+        // 5. Token kontrolü (Debug için detaylı log)
+        if (result && result.notificationDetails) {
+            const token = result.notificationDetails.token;
+            const url = result.notificationDetails.url;
+            
+            console.log("✅ Token alındı:", token);
+            console.log("📍 Notification URL:", url);
 
-                if (refTextEl) {
-                    if (myRefCode) {
-                        // Zaten kodu var
-                        refTextEl.innerText = myRefCode;
-                        window.currentUserRefCode = myRefCode;
-                    } else if (refActionTaken) {
-                        // İşlem yapmış (SKIP demiş) ama kodu yok -> ŞİMDİ OLUŞTUR
-                        myRefCode = generateRefCode();
-                        refTextEl.innerText = myRefCode;
-                        window.currentUserRefCode = myRefCode;
-                    } else {
-                        // Henüz işlem yapmamış -> BEKLE
-                        refTextEl.innerText = "WAITING...";
-                    }
-                }
+            // 6. Firebase'e kaydet
+            const db = window.firebaseDB;
+            const { doc, setDoc } = window.firebaseFunctions;
+            
+            console.log("💾 Token Firebase'e kaydediliyor...");
+            
+            await setDoc(doc(db, "players", targetID), {
+                notificationToken: token,
+                notificationUrl: url,
+                notif4hSent: false, 
+                notif6hSent: false,
+                lastNotificationUpdate: Date.now() // Debug için timestamp
+            }, { merge: true });
 
-                updateUI();
-                if (!window.hasInitialLoadCompleted) {
-                    updateOfflineEnergyRegeneration();
-                    initHub();
-                    window.hasInitialLoadCompleted = true;
-                }
+            console.log("✅ Token başarıyla kaydedildi!");
+            
+        } else {
+            console.warn("⚠️ notificationDetails boş geldi");
+            console.warn("Result içeriği:", JSON.stringify(result));
+            
+            // Eski sürümler için yedek kayıt
+            const db = window.firebaseDB;
+            const { doc, setDoc } = window.firebaseFunctions;
+            
+            await setDoc(doc(db, "players", targetID), {
+                notificationToken: "legacy_device", // Eski cihaz işareti
+                notif4hSent: false,
+                notif6hSent: false
+            }, { merge: true });
+        }
 
-            } else {
-                // --- YENİ KULLANICI ---
-                console.log("🆕 Yeni kullanıcı.");
-                energy = 10;
-                
-                // Yeni kullanıcıya hemen kod oluşturmuyoruz, önce sorsun.
-                if (!window.refModalShown) {
-                    setTimeout(() => {
-                        document.getElementById("refInputModal").style.display = "block";
-                    }, 2500);
-                    window.refModalShown = true;
-                }
-
-                if (!window.hasInitialLoadCompleted) {
-                    initHub();
-                    window.hasInitialLoadCompleted = true;
-                }
-                saveData(true);
-            }
-        }, (error) => console.error(error));
     } catch (error) {
-        console.error(error);
-        initHub();
+        // Hata detaylarını tam olarak göster
+        console.error("❌ Bildirim hatası:", error);
+        console.error("Hata tipi:", error.name);
+        console.error("Hata mesajı:", error.message);
+        console.error("Stack:", error.stack);
     }
 }
+
+// ÇAĞIRMA YERİNİ DEĞİŞTİR:
+// userEnterGame() içindeki enableNotifications() çağrısını SİL
+// Yerine aşağıdaki kodu ekle:
+
+async function userEnterGame() {
+    console.log("🎮 Oyuna giriş yapılıyor...");
+    
+    // 1. Önce bildirimleri etkinleştir
+    await enableNotifications(); // AWAIT ekledik!
+    
+    // 2. Intro'yu gizle
+    const introOverlay = document.getElementById("introOverlay");
+    introOverlay.style.display = "none";
+    
+    // 3. Yüklemeyi başlat
+    startLoading();
+}
+
+// BONUS: Manuel test için console fonksiyonu ekle
+window.testNotifications = async function() {
+    console.log("🧪 Manuel bildirim testi başlatılıyor...");
+    await enableNotifications();
+    console.log("✅ Test tamamlandı, Console'u kontrol et");
+};
 
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
@@ -3287,5 +3279,6 @@ function copyRefCode() {
 </script>
   </body>
 </html>
+
 
 
