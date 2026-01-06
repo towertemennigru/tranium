@@ -1692,109 +1692,61 @@ async function identifyUser() {
         }, 800);
       }
 
-// ÖNCEKİ HALI YERİNE BU KODU KULLAN
-
+// --- FİNAL GÜVENLİ BİLDİRİM KODU ---
 async function enableNotifications() {
-    console.log("🔔 Bildirim sistemi başlatılıyor...");
-    
-    // 1. SDK kontrolü (PC'de yoksa çık)
-    if (!window.farcasterSDK) {
-        console.log("⚠️ SDK yok (PC ortamı), bildirim atlanıyor");
-        return;
-    }
+    // SDK yoksa (PC) sessizce çık
+    if (!window.farcasterSDK) return;
 
     try {
-        // 2. Context'i bekle (Bu çok önemli!)
-        console.log("⏳ Context bekleniyor...");
+        // 1. GERÇEK ID'Yİ AL
         const context = await window.farcasterSDK.context;
-        
-        if (!context || !context.user || !context.user.fid) {
-            console.warn("❌ Context alınamadı, bildirim kaydedilemedi");
-            return;
+        let targetID = currentUserID;
+        if (context && context.user && context.user.fid) {
+            targetID = "user_" + context.user.fid;
+            currentUserID = targetID; // Global değişkeni de düzelt
         }
 
-        // 3. Gerçek kullanıcı ID'sini al
-        const targetID = "user_" + context.user.fid;
-        currentUserID = targetID; // Global değişkeni güncelle
-        console.log("👤 Kullanıcı ID:", targetID);
-
-        // 4. İzin iste
-        console.log("📱 addFrame() çağrılıyor...");
+        // 2. İZİN İSTE (Eski telefonda sadece ekleme sorar)
         const result = await window.farcasterSDK.actions.addFrame();
-        console.log("📦 addFrame sonucu:", result);
-
-        // 5. Token kontrolü (Debug için detaylı log)
-        if (result && result.notificationDetails) {
-            const token = result.notificationDetails.token;
-            const url = result.notificationDetails.url;
+        
+        // 3. TOKEN GELDİ Mİ BAK
+        if (result.notificationDetails) {
+            // Harika! Yeni telefon, token geldi. Kaydet.
+            console.log("✅ Token Alındı (Yeni Sürüm)");
             
-            console.log("✅ Token alındı:", token);
-            console.log("📍 Notification URL:", url);
-
-            // 6. Firebase'e kaydet
             const db = window.firebaseDB;
             const { doc, setDoc } = window.firebaseFunctions;
             
-            console.log("💾 Token Firebase'e kaydediliyor...");
-            
             await setDoc(doc(db, "players", targetID), {
-                notificationToken: token,
-                notificationUrl: url,
+                notificationToken: result.notificationDetails.token,
+                notificationUrl: result.notificationDetails.url,
                 notif4hSent: false, 
-                notif6hSent: false,
-                lastNotificationUpdate: Date.now() // Debug için timestamp
-            }, { merge: true });
-
-            console.log("✅ Token başarıyla kaydedildi!");
-            
-        } else {
-            console.warn("⚠️ notificationDetails boş geldi");
-            console.warn("Result içeriği:", JSON.stringify(result));
-            
-            // Eski sürümler için yedek kayıt
-            const db = window.firebaseDB;
-            const { doc, setDoc } = window.firebaseFunctions;
-            
-            await setDoc(doc(db, "players", targetID), {
-                notificationToken: "legacy_device", // Eski cihaz işareti
-                notif4hSent: false,
                 notif6hSent: false
             }, { merge: true });
+
+        } else {
+            // Token gelmedi (Eski telefon veya PC).
+            // Sorun yok, sadece log düş, oyuncuyu rahatsız etme.
+            console.log("⚠️ Token alınamadı (Eski Sürüm veya İzin Yok). Oyun devam ediyor.");
         }
 
     } catch (error) {
-        // Hata detaylarını tam olarak göster
-        console.error("❌ Bildirim hatası:", error);
-        console.error("Hata tipi:", error.name);
-        console.error("Hata mesajı:", error.message);
-        console.error("Stack:", error.stack);
+        // Bir hata olsa bile oyunu durdurma, sadece konsola yaz
+        console.error("Bildirim süreci hatası:", error);
     }
 }
-
-// ÇAĞIRMA YERİNİ DEĞİŞTİR:
-// userEnterGame() içindeki enableNotifications() çağrısını SİL
-// Yerine aşağıdaki kodu ekle:
-
-async function userEnterGame() {
-    console.log("🎮 Oyuna giriş yapılıyor...");
-    
-    // 1. Önce bildirimleri etkinleştir
-    await enableNotifications(); // AWAIT ekledik!
-    
-    // 2. Intro'yu gizle
-    const introOverlay = document.getElementById("introOverlay");
-    introOverlay.style.display = "none";
-    
-    // 3. Yüklemeyi başlat
-    startLoading();
-}
-
-// BONUS: Manuel test için console fonksiyonu ekle
-window.testNotifications = async function() {
-    console.log("🧪 Manuel bildirim testi başlatılıyor...");
-    await enableNotifications();
-    console.log("✅ Test tamamlandı, Console'u kontrol et");
-};
+      
+      function userEnterGame() {
+        // Not: SDK zaten otomatik başlatıldı, burada tekrar çağırmaya gerek yok
+        // ama kullanıcı arayüzünü güncellemek için burası çalışacak.
+        enableNotifications();
+        // 2. Hide Intro
+        const introOverlay = document.getElementById("introOverlay");
+        introOverlay.style.display = "none";
+        
+        // 3. Start Loading
+        startLoading();
+      }
 
       function startLoading() {
         const loadingOverlay = document.getElementById("loadingOverlay");
@@ -3335,5 +3287,3 @@ function copyRefCode() {
 </script>
   </body>
 </html>
-
-
