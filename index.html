@@ -1366,6 +1366,9 @@ Energy regenerates over time (1 per hour) even when you are offline.
   <span id="myRefCodeText" style="font-size: 16px; font-weight: 900; color: var(--gold); letter-spacing: 2px; cursor: pointer;" onclick="copyRefCode()">LOADING...</span>
   <div style="font-size: 9px; color: var(--neon); margin-top: 3px;">Share to earn +20 Tranium per friend!</div>
 </div>
+      <button class="btn-refine" style="background: #333; color: white; border: 1px solid var(--neon); margin-top: 10px; font-size: 12px; min-height: 50px;" onclick="openRefModal()">
+    🎁 ENTER INVITE CODE
+</button>
 
       <div class="footer">
         <span id="energyStatus" class="energy-info">⚡ ENERGY: 10/10</span>
@@ -1621,13 +1624,6 @@ async function identifyUser() {
                     }
                 }
 
-                // Pop-up Kontrolü: Daha önce işlem yapmadıysa aç
-                if (!refActionTaken && !window.refModalShown) {
-                    setTimeout(() => {
-                        document.getElementById("refInputModal").style.display = "block";
-                    }, 2500);
-                    window.refModalShown = true;
-                }
 
                 updateUI();
                 if (!window.hasInitialLoadCompleted) {
@@ -3004,6 +3000,10 @@ function showRefFeedback(type, message) {
         await showRefFeedback('error', 'NET ERROR');
     }
 }
+   function openRefModal() {
+    // Modalı manuel olarak açar
+    document.getElementById("refInputModal").style.display = "block";
+}
     </script>
     <script>
       (function () {
@@ -3131,3 +3131,4 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
