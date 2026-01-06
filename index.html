@@ -70,12 +70,6 @@
 
                 // ---> DEĞİŞİKLİK BURADA: OTOMATİK BİLDİRİM İZNİ <---
                 // Oyun açılır açılmaz (icon click) bildirim izni iste
-                setTimeout(() => {
-                    if(window.enableNotifications) {
-                        console.log("🔔 Uygulama açıldı, bildirim izni otomatik isteniyor...");
-                        window.enableNotifications(); 
-                    }
-                }, 500); // 0.5 saniye bekle ki diğer scriptler yüklensin
 
                 // Varsa intro'yu başlat
                 if(window.startIntro) window.startIntro();
@@ -1720,16 +1714,18 @@ async function enableNotifications() {
     }
 }
       
-      async function userEnterGame() {
+      // MEVCUT userEnterGame FONKSİYONUNU SİL VE BUNU YAPIŞTIR
+async function userEnterGame() {
     console.log("🎮 Oyuna giriş yapılıyor...");
     
-    // NOT: await enableNotifications(); BURADAN SİLİNDİ!
+    // 1. Butona tıklandığı an bildirim iznini sor (En garantisi budur)
+    await enableNotifications(); 
     
-    // 1. Intro'yu gizle
+    // 2. Intro'yu gizle
     const introOverlay = document.getElementById("introOverlay");
     introOverlay.style.display = "none";
     
-    // 2. Yüklemeyi başlat
+    // 3. Yüklemeyi başlat
     startLoading();
 }
 
@@ -3198,6 +3194,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
