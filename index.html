@@ -52,36 +52,43 @@
     window.farcasterSDK = sdk;
     window.isMiniApp = true;
 
-    const triggerReady = async () => {
+    // Around line 300-350, REPLACE the triggerReady function:
+const triggerReady = async () => {
     try {
-        // SDK'nın context (bağlam) bilgisini bekle
-        const context = await sdk.context;
-
-        // Eğer context gelirse (yani Farcaster içindeysek)
-        if (context) {
-            console.log("✅ Farcaster Environment Detected");
-            
-            // Engelleyici ekranı kaldır
-            document.getElementById("desktop-blocker").style.display = "none";
-            
-            // SDK'ya hazır olduğumuzu bildir
-            sdk.actions.ready();
-
-            // Varsa intro'yu başlat
-            if(window.startIntro) window.startIntro();
+        // Show intro FIRST, regardless of Farcaster
+        startIntro();
+        
+        // THEN try to detect Farcaster
+        if (window.farcasterSDK) {
+            const context = await window.farcasterSDK.context;
+            if (context) {
+                console.log("✅ Farcaster Environment Detected");
+                document.getElementById("desktop-blocker").style.display = "none";
+                window.farcasterSDK.actions.ready();
+            }
         } else {
-            // Context yoksa (Normal tarayıcı)
-            console.warn("❌ Not in Farcaster");
-            // Engelleyici ekran kalmaya devam eder
+            // If not in Farcaster, hide blocker anyway for testing
+            console.warn("❌ Not in Farcaster - Running in test mode");
+            document.getElementById("desktop-blocker").style.display = "none";
         }
     } catch (e) {
         console.error("SDK Init Error:", e);
-        // Hata olursa da engelleyici ekran kalır
+        // Still show the intro on error
+        startIntro();
+        document.getElementById("desktop-blocker").style.display = "none";
     }
 };
 
+// Make sure this runs:
+document.addEventListener('DOMContentLoaded', triggerReady);
+
     document.addEventListener('DOMContentLoaded', triggerReady);
-</script>
+// Add this inside your window.onload or after DOM is ready:
+document.getElementById('enterBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    userEnterGame();
+});
+    </script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
 
@@ -3157,6 +3164,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
