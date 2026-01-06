@@ -1605,6 +1605,13 @@ async function identifyUser() {
                 let myRefCode = data.myRefCode;
                 const refTextEl = document.getElementById("myRefCodeText");
 
+                console.log("🔍 Ref Durum Kontrolü:", { 
+                    refActionTaken, 
+                    myRefCode, 
+                    hasModalShown: window.refModalShown,
+                    hasInitialLoad: window.hasInitialLoadCompleted 
+                });
+
                 if (refTextEl) {
                     if (myRefCode) {
                         // Zaten kodu var
@@ -1621,12 +1628,19 @@ async function identifyUser() {
                     }
                 }
 
-                // Pop-up Kontrolü: Daha önce işlem yapmadıysa aç
-                if (!refActionTaken && !window.refModalShown) {
+                // ⚠️ KRİTİK NOKTA: SADECE İLK YÜKLENMEde VE daha önce işlem yapılmadıysa aç
+                if (!refActionTaken && !window.refModalShown && !window.hasInitialLoadCompleted) {
+                    console.log("✅ Ref modalı açılıyor (İlk giriş)");
                     setTimeout(() => {
                         document.getElementById("refInputModal").style.display = "block";
                     }, 2500);
                     window.refModalShown = true;
+                } else {
+                    console.log("⏭️ Ref modalı atlandı - Sebep:", {
+                        alreadyTakenAction: refActionTaken,
+                        alreadyShownThisSession: window.refModalShown,
+                        notFirstLoad: window.hasInitialLoadCompleted
+                    });
                 }
 
                 updateUI();
@@ -1641,8 +1655,9 @@ async function identifyUser() {
                 console.log("🆕 Yeni kullanıcı.");
                 energy = 10;
                 
-                // Yeni kullanıcıya hemen kod oluşturmuyoruz, önce sorsun.
-                if (!window.refModalShown) {
+                // ⚠️ Yeni kullanıcıya da SADECE İLK YÜKLENMEde sor
+                if (!window.refModalShown && !window.hasInitialLoadCompleted) {
+                    console.log("✅ Yeni kullanıcı için ref modalı açılıyor");
                     setTimeout(() => {
                         document.getElementById("refInputModal").style.display = "block";
                     }, 2500);
@@ -1661,6 +1676,40 @@ async function identifyUser() {
         initHub();
     }
 }
+
+
+// ============================================
+// 4. BONUS: Manuel Test Fonksiyonu
+// ============================================
+// Console'da test için (kodun sonuna ekle)
+
+window.testNotifications = async function() {
+    console.log("🧪 Manuel bildirim testi başlatılıyor...");
+    await enableNotifications();
+    console.log("✅ Test tamamlandı, Console'u kontrol et");
+};
+
+window.testRefModal = function() {
+    console.log("🧪 Ref modalı test ediliyor...");
+    document.getElementById("refInputModal").style.display = "block";
+    console.log("✅ Modal açıldı");
+};
+
+window.resetRefSystem = async function() {
+    console.log("🔄 Ref sistemi sıfırlanıyor...");
+    window.refModalShown = false;
+    window.hasInitialLoadCompleted = false;
+    
+    const db = window.firebaseDB;
+    const { doc, updateDoc } = window.firebaseFunctions;
+    
+    await updateDoc(doc(db, "players", currentUserID), {
+        refActionTaken: false,
+        myRefCode: null
+    });
+    
+    console.log("✅ Sıfırlama tamam, sayfayı yenile");
+};
 
       function startIntro() {
         const introOverlay = document.getElementById("introOverlay");
@@ -1695,7 +1744,7 @@ async function enableNotifications() {
 
         // 3. Gerçek kullanıcı ID'sini al
         const targetID = "user_" + context.user.fid;
-        currentUserID = targetID; // Global değişkeni güncelle
+        currentUserID = targetID;
         console.log("👤 Kullanıcı ID:", targetID);
 
         // 4. İzin iste
@@ -1703,7 +1752,7 @@ async function enableNotifications() {
         const result = await window.farcasterSDK.actions.addFrame();
         console.log("📦 addFrame sonucu:", result);
 
-        // 5. Token kontrolü (Debug için detaylı log)
+        // 5. Token kontrolü
         if (result && result.notificationDetails) {
             const token = result.notificationDetails.token;
             const url = result.notificationDetails.url;
@@ -1722,7 +1771,7 @@ async function enableNotifications() {
                 notificationUrl: url,
                 notif4hSent: false, 
                 notif6hSent: false,
-                lastNotificationUpdate: Date.now() // Debug için timestamp
+                lastNotificationUpdate: Date.now()
             }, { merge: true });
 
             console.log("✅ Token başarıyla kaydedildi!");
@@ -1736,14 +1785,13 @@ async function enableNotifications() {
             const { doc, setDoc } = window.firebaseFunctions;
             
             await setDoc(doc(db, "players", targetID), {
-                notificationToken: "legacy_device", // Eski cihaz işareti
+                notificationToken: "legacy_device",
                 notif4hSent: false,
                 notif6hSent: false
             }, { merge: true });
         }
 
     } catch (error) {
-        // Hata detaylarını tam olarak göster
         console.error("❌ Bildirim hatası:", error);
         console.error("Hata tipi:", error.name);
         console.error("Hata mesajı:", error.message);
@@ -1751,11 +1799,11 @@ async function enableNotifications() {
     }
 }
       
-   async function userEnterGame() {
+  async function userEnterGame() {
     console.log("🎮 Oyuna giriş yapılıyor...");
     
-    // 1. Önce bildirimleri etkinleştir
-    await enableNotifications(); // AWAIT ekledik!
+    // 1. Önce bildirimleri etkinleştir (AWAIT ekledik!)
+    await enableNotifications();
     
     // 2. Intro'yu gizle
     const introOverlay = document.getElementById("introOverlay");
@@ -3221,6 +3269,7 @@ function showRefFeedback(type, message) {
 </script>
   </body>
 </html>
+
 
 
 
